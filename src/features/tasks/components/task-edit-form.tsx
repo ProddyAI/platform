@@ -122,7 +122,7 @@ export const TaskEditForm = ({
 									type="button"
 									variant="outline"
 								>
-									<CalendarIcon className="mr-2 h-4 w-4" />
+									<CalendarIcon className="mr-2 size-4" />
 									{dueDate ? (
 										format(dueDate, "PPP")
 									) : (

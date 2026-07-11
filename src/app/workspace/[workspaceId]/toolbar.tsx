@@ -188,7 +188,7 @@ const SearchDialogContent = ({
 					title="Toggle AI Search"
 					variant="ghost"
 				>
-					<Sparkles className="h-4 w-4" />
+					<Sparkles className="size-4" />
 				</Button>
 				<div className="flex-1">
 					{useAI ? (
@@ -388,7 +388,7 @@ const SearchDialogContent = ({
 											value={`status:${status._id}:${status.channelId}`}
 										>
 											<div
-												className="w-2 h-2 rounded-full mr-2"
+												className="size-2 rounded-full mr-2"
 												style={{ backgroundColor: status.color }}
 											/>
 											<span className="truncate">{status.name}</span>
@@ -893,7 +893,7 @@ export const WorkspaceToolbar = () => {
 							<Bell className="size-5" />
 							{!isLoadingMentions && counts && counts.total > 0 && (
 								<Badge
-									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground ring-2 ring-card shadow-sm text-[10px]"
+									className="absolute -top-2 -right-2 size-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground ring-2 ring-card shadow-sm text-[10px]"
 									variant="default"
 								>
 									{counts.total > 9 ? "9+" : counts.total}

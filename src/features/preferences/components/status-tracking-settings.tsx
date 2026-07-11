@@ -34,7 +34,7 @@ export const StatusTrackingSettings = () => {
 							className="flex items-center gap-2 text-base font-medium"
 							htmlFor="status-tracking-toggle"
 						>
-							<Activity className="h-4 w-4" />
+							<Activity className="size-4" />
 							Status Tracking
 						</Label>
 						<p className="text-sm text-muted-foreground">Loading...</p>
@@ -55,7 +55,7 @@ export const StatusTrackingSettings = () => {
 						className="flex items-center gap-2 text-base font-medium"
 						htmlFor="status-tracking-toggle"
 					>
-						<Activity className="h-4 w-4" />
+						<Activity className="size-4" />
 						Status Tracking
 					</Label>
 					<p className="text-sm text-muted-foreground">
@@ -74,7 +74,7 @@ export const StatusTrackingSettings = () => {
 			{!statusTrackingEnabled && (
 				<div className="rounded-lg bg-muted/50 p-3">
 					<div className="flex items-center gap-2 text-sm">
-						<EyeOff className="h-4 w-4 text-muted-foreground" />
+						<EyeOff className="size-4 text-muted-foreground" />
 						<span className="text-muted-foreground">
 							Your status bubble will be hidden from others, and your last seen
 							time won&apos;t be tracked

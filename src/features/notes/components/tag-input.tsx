@@ -15,15 +15,6 @@ interface TagInputProps {
 	maxTags?: number;
 }
 
-const TAG_COLORS = [
-	"bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-950 dark:text-pink-300 dark:border-pink-800",
-	"bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-	"bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
-	"bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
-	"bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
-	"bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800",
-];
-
 export const TagInput = ({
 	tags,
 	onTagsChange,
@@ -33,15 +24,6 @@ export const TagInput = ({
 }: TagInputProps) => {
 	const [inputValue, setInputValue] = useState("");
 	const [isInputVisible, setIsInputVisible] = useState(false);
-
-	const getTagColor = (tag: string) => {
-		// Generate consistent color based on tag name
-		const hash = tag.split("").reduce((a, b) => {
-			a = (a << 5) - a + b.charCodeAt(0);
-			return a & a;
-		}, 0);
-		return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
-	};
 
 	const addTag = (tag: string) => {
 		const trimmedTag = tag.trim().toLowerCase();
@@ -81,21 +63,18 @@ export const TagInput = ({
 			{/* Existing tags */}
 			{tags.map((tag) => (
 				<Badge
-					className={cn(
-						"text-xs px-2 py-1 h-6 flex items-center gap-1",
-						getTagColor(tag)
-					)}
+					className="text-xs px-2 py-1 h-6 flex items-center gap-1"
 					key={tag}
 					variant="outline"
 				>
 					<span>{tag}</span>
 					<button
 						aria-label={`Remove ${tag}`}
-						className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
+						className="hover:bg-muted rounded-full p-0.5 transition-colors"
 						onClick={() => removeTag(tag)}
 						type="button"
 					>
-						<X className="h-2.5 w-2.5" />
+						<X className="size-2.5" />
 					</button>
 				</Badge>
 			))}
@@ -118,7 +97,7 @@ export const TagInput = ({
 						size="sm"
 						variant="ghost"
 					>
-						<Plus className="h-3 w-3 mr-1" />
+						<Plus className="size-3 mr-1" />
 						Add tag
 					</Button>
 				)

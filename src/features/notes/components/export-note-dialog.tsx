@@ -455,7 +455,7 @@ export const ExportNoteDialog = ({
 						onClick={() => setExportFormat("markdown")}
 						variant={exportFormat === "markdown" ? "default" : "outline"}
 					>
-						<FileText aria-hidden="true" className="h-5 w-5 mb-1" />
+						<FileText aria-hidden="true" className="size-5 mb-1" />
 						<span className="text-xs">Markdown</span>
 					</Button>
 
@@ -464,7 +464,7 @@ export const ExportNoteDialog = ({
 						onClick={() => setExportFormat("html")}
 						variant={exportFormat === "html" ? "default" : "outline"}
 					>
-						<Globe aria-hidden="true" className="h-5 w-5 mb-1" />
+						<Globe aria-hidden="true" className="size-5 mb-1" />
 						<span className="text-xs">HTML</span>
 					</Button>
 
@@ -473,7 +473,7 @@ export const ExportNoteDialog = ({
 						onClick={() => setExportFormat("json")}
 						variant={exportFormat === "json" ? "default" : "outline"}
 					>
-						<FileJson aria-hidden="true" className="h-5 w-5 mb-1" />
+						<FileJson aria-hidden="true" className="size-5 mb-1" />
 						<span className="text-xs">JSON</span>
 					</Button>
 
@@ -482,7 +482,7 @@ export const ExportNoteDialog = ({
 						onClick={() => setExportFormat("pdf")}
 						variant={exportFormat === "pdf" ? "default" : "outline"}
 					>
-						<FileType aria-hidden="true" className="h-5 w-5 mb-1" />
+						<FileType aria-hidden="true" className="size-5 mb-1" />
 						<span className="text-xs">PDF</span>
 					</Button>
 				</div>
@@ -494,7 +494,7 @@ export const ExportNoteDialog = ({
 						onClick={handleExportToChat}
 						variant="outline"
 					>
-						<MessageSquare className="h-4 w-4 mr-2" />
+						<MessageSquare className="size-4 mr-2" />
 						Share in Chat
 					</Button>
 
@@ -503,7 +503,7 @@ export const ExportNoteDialog = ({
 						disabled={isExporting}
 						onClick={handleExportToSystem}
 					>
-						<Download className="h-4 w-4 mr-2" />
+						<Download className="size-4 mr-2" />
 						{isExporting ? "Exporting..." : "Download"}
 					</Button>
 				</DialogFooter>

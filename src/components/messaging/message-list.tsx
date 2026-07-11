@@ -192,7 +192,7 @@ export const MessageList = ({
 								<Hint label="Generate daily recap">
 									<Button
 										aria-label="Generate daily recap"
-										className="h-7 w-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground"
+										className="size-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground"
 										disabled={isGeneratingRecap}
 										onClick={() => handleGenerateRecap(dateKey, messages)}
 										size="iconSm"

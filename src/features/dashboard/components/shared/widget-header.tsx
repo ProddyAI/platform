@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface WidgetHeaderProps {
-	/** Icon element, e.g. `<FileText className="h-5 w-5 text-primary" />`. */
+	/** Icon element, e.g. `<FileText className="size-5 text-primary" />`. */
 	icon: React.ReactNode;
 	title: string;
 	/** Count badge content, e.g. `sortedItems.length`. Omit/undefined to hide it. */

@@ -80,14 +80,14 @@ export const TaskToggleView = ({
 		>
 			<TabsList className="flex w-full">
 				<TabsTrigger className="flex-1 gap-2" value="active">
-					<Circle className="h-4 w-4" />
+					<Circle className="size-4" />
 					Active
 					<span className={cn(badgeVariants({ variant: "outline" }), "ml-1")}>
 						{activeTasks.length}
 					</span>
 				</TabsTrigger>
 				<TabsTrigger className="flex-1 gap-2" value="completed">
-					<CheckCircle2 className="h-4 w-4" />
+					<CheckCircle2 className="size-4" />
 					Completed
 					<span className={cn(badgeVariants({ variant: "outline" }), "ml-1")}>
 						{completedTasks.length}

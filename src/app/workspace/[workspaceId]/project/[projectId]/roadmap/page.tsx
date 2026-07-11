@@ -45,7 +45,7 @@ const ProjectRoadmapPage = () => {
 	}
 
 	return (
-		<div className="flex h-full w-full min-w-0 flex-col overflow-x-hidden">
+		<div className="flex size-full min-w-0 flex-col overflow-x-hidden">
 			<ProjectNavTabs />
 
 			<div className="min-h-0 flex-1 overflow-hidden">

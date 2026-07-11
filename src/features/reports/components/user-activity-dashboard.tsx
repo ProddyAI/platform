@@ -161,7 +161,7 @@ export const UserActivityDashboard = ({
 	if (userActivity.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg">
-				<Users className="h-12 w-12 text-muted-foreground mb-2" />
+				<Users className="size-12 text-muted-foreground mb-2" />
 				<h3 className="text-lg font-medium">No user activity data</h3>
 				<p className="text-sm text-muted-foreground">
 					Start interacting with the platform to generate activity data.
@@ -239,7 +239,7 @@ export const UserActivityDashboard = ({
 						className="flex items-center gap-1.5 text-xs text-muted-foreground"
 						role="status"
 					>
-						<Loader aria-hidden="true" className="h-3 w-3 animate-spin" />
+						<Loader aria-hidden="true" className="size-3 animate-spin" />
 						Updating…
 					</span>
 				)}
@@ -349,7 +349,7 @@ export const UserActivityDashboard = ({
 								/>
 							) : (
 								<div className="flex flex-col items-center justify-center h-full bg-muted/20 rounded-md">
-									<Clock className="h-12 w-12 text-muted-foreground mb-2" />
+									<Clock className="size-12 text-muted-foreground mb-2" />
 									<p className="text-muted-foreground text-sm">
 										No time tracking data available
 									</p>

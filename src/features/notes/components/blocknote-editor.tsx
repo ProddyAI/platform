@@ -206,7 +206,7 @@ export const BlockNoteEditor = ({
 
 	if (sync.isLoading) {
 		return (
-			<div className="flex h-full w-full items-center justify-center">
+			<div className="flex size-full items-center justify-center">
 				<div className="flex flex-col items-center gap-3 text-muted-foreground">
 					<Loader2 className="size-6 animate-spin text-primary" />
 					<span className="text-sm">Loading note...</span>
@@ -220,7 +220,7 @@ export const BlockNoteEditor = ({
 
 		if (autoCreateFailed) {
 			return (
-				<div className="flex h-full w-full items-center justify-center">
+				<div className="flex size-full items-center justify-center">
 					<div className="text-center space-y-3">
 						<p className="text-sm text-muted-foreground">
 							This note couldn't be set up.
@@ -239,7 +239,7 @@ export const BlockNoteEditor = ({
 		}
 
 		return (
-			<div className="flex h-full w-full items-center justify-center">
+			<div className="flex size-full items-center justify-center">
 				<div className="flex flex-col items-center gap-3 text-muted-foreground">
 					<Loader2 className="size-6 animate-spin text-primary" />
 					<span className="text-sm">Setting up this note...</span>
@@ -256,16 +256,16 @@ export const BlockNoteEditor = ({
 			{saveStatus && (
 				<div
 					aria-live="polite"
-					className="absolute bottom-3 right-4 z-10 flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border border-border/50 shadow-sm transition-opacity duration-300"
+					className="absolute bottom-3 right-4 z-10 flex items-center gap-1.5 text-xs text-muted-foreground bg-card px-2 py-1 rounded-full border border-border shadow-sm transition-opacity duration-300"
 				>
 					{saveStatus === "saving" ? (
 						<>
-							<Loader2 className="h-3 w-3 animate-spin text-primary" />
+							<Loader2 className="size-3 animate-spin text-primary" />
 							<span>Saving…</span>
 						</>
 					) : (
 						<>
-							<CheckCircle2 className="h-3 w-3 text-green-500" />
+							<CheckCircle2 className="size-3 text-success" />
 							<span>Saved</span>
 						</>
 					)}

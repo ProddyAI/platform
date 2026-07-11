@@ -84,7 +84,7 @@ export const PomodoroTimer = () => {
 						>
 							<Timer className="size-5" />
 							{isActive && (
-								<span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-secondary ring-2 ring-primary" />
+								<span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-secondary ring-2 ring-primary" />
 							)}
 						</Button>
 					</PopoverTrigger>

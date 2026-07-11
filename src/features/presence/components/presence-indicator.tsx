@@ -32,10 +32,10 @@ export const PresenceIndicator = ({
 	}
 
 	const statusColors = {
-		online: "bg-green-500",
-		idle: "bg-yellow-500",
-		dnd: "bg-red-500",
-		offline: "bg-gray-400",
+		online: "bg-success",
+		idle: "bg-warning",
+		dnd: "bg-destructive",
+		offline: "bg-muted-foreground",
 	};
 
 	const statusLabels = {
@@ -50,7 +50,7 @@ export const PresenceIndicator = ({
 			case "dnd":
 				return (
 					<Minus
-						className="size-2 text-gray-700 dark:text-gray-800 translate-x-[0.5px]"
+						className="size-2 text-destructive-foreground translate-x-[0.5px]"
 						strokeWidth={3}
 					/>
 				);
@@ -76,7 +76,7 @@ export const PresenceIndicator = ({
 				<TooltipTrigger asChild>
 					<div
 						className={cn(
-							"absolute -bottom-0.5 -right-0.5 size-3 rounded-full flex items-center justify-center border border-gray-300/50 dark:border-gray-600/50 cursor-default",
+							"absolute -bottom-0.5 -right-0.5 size-3 rounded-full flex items-center justify-center border border-card cursor-default",
 							statusColors[displayStatus],
 							className
 						)}

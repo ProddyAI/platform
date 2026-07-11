@@ -177,11 +177,11 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					{...attributes}
 					{...listeners}
 				>
-					<GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+					<GripVertical className="size-3.5 text-muted-foreground" />
 				</button>
 
 				<span
-					className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+					className="size-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
 					style={{ backgroundColor: status.color }}
 				/>
 
@@ -201,13 +201,13 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						<TooltipTrigger asChild>
 							<span>
 								<Button
-									className="h-6 w-6 hover:bg-muted"
+									className="size-6 hover:bg-muted"
 									disabled={disableCreateIssue}
 									onClick={handleStartCreating}
 									size="icon"
 									variant="ghost"
 								>
-									<Plus className="w-3.5 h-3.5" />
+									<Plus className="size-3.5" />
 								</Button>
 							</span>
 						</TooltipTrigger>
@@ -224,23 +224,23 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
-							className="h-6 w-6 hover:bg-muted"
+							className="size-6 hover:bg-muted"
 							size="icon"
 							variant="ghost"
 						>
-							<MoreHorizontal className="w-3.5 h-3.5" />
+							<MoreHorizontal className="size-3.5" />
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-40">
 						<DropdownMenuItem onClick={onEditStatus}>
-							<Pencil className="w-3.5 h-3.5 mr-2" />
+							<Pencil className="size-3.5 mr-2" />
 							Edit Status
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							className="text-destructive focus:text-destructive"
 							onClick={onDeleteStatus}
 						>
-							<Trash className="w-3.5 h-3.5 mr-2" />
+							<Trash className="size-3.5 mr-2" />
 							Delete Status
 						</DropdownMenuItem>
 					</DropdownMenuContent>
@@ -314,7 +314,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						onClick={handleStartCreating}
 						type="button"
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus className="size-3.5" />
 						{disableCreateIssue ? "Issue limit reached" : "Add issue"}
 					</button>
 				)}

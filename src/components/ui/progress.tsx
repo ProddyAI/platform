@@ -22,7 +22,7 @@ const Progress = React.forwardRef<
 		{...props}
 	>
 		<ProgressPrimitiveIndicator
-			className="h-full w-full flex-1 bg-secondary transition-all data-[state=indeterminate]:animate-pulse motion-reduce:data-[state=indeterminate]:animate-none"
+			className="size-full flex-1 bg-secondary transition-all data-[state=indeterminate]:animate-pulse motion-reduce:data-[state=indeterminate]:animate-none"
 			style={
 				value == null
 					? undefined

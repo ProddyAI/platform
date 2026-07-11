@@ -87,7 +87,7 @@ const LoadingCard = () => {
 
 			<CardHeader className="pb-2 pt-5 pr-24">
 				<div className="flex items-center gap-3">
-					<Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+					<Skeleton className="size-10 rounded-xl flex-shrink-0" />
 					<div className="space-y-1.5 flex-1 min-w-0">
 						<Skeleton className="h-4 w-20" />
 						<Skeleton className="h-3 w-40" />

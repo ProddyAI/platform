@@ -51,11 +51,11 @@ export class NoteEditorErrorBoundary extends Component<
 	render() {
 		if (this.state.hasError) {
 			return (
-				<div className="flex h-full w-full items-center justify-center">
+				<div className="flex size-full items-center justify-center">
 					<div className="text-center space-y-4 max-w-sm px-6">
 						{/* Icon */}
-						<div className="mx-auto w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-							<AlertTriangle className="h-8 w-8 text-amber-500" />
+						<div className="mx-auto size-16 rounded-2xl bg-warning/10 flex items-center justify-center">
+							<AlertTriangle className="size-8 text-warning" />
 						</div>
 
 						{/* Message */}
@@ -88,7 +88,7 @@ export class NoteEditorErrorBoundary extends Component<
 								onClick={this.handleReset}
 								type="button"
 							>
-								<RefreshCw className="h-4 w-4" />
+								<RefreshCw className="size-4" />
 								Try Again
 							</button>
 							<p className="text-xs text-muted-foreground">

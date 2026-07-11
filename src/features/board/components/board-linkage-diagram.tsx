@@ -201,7 +201,7 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 			<DialogContent className="max-w-4xl w-full">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
-						<Network className="w-4 h-4" />
+						<Network className="size-4" />
 						Issue Linkage Diagram
 					</DialogTitle>
 				</DialogHeader>

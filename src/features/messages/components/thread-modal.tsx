@@ -87,13 +87,13 @@ const SpecialContentChip = ({ parsed }: { parsed: ParsedMessageBody }) => (
 		<div className="flex items-center gap-2 rounded-md bg-muted p-2 border border-primary/20">
 			{parsed.type === "canvas" ? (
 				<span className="text-sm font-medium flex items-center gap-1.5">
-					<Paintbrush className="h-4 w-4 text-primary" />
+					<Paintbrush className="size-4 text-primary" />
 					{parsed.content}
 				</span>
 			) : parsed.type === "file" ? (
 				<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
 					<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
-						<File className="h-4 w-4 text-primary" />
+						<File className="size-4 text-primary" />
 						<span className="truncate">{parsed.content}</span>
 					</span>
 					{parsed.fileUrl && (
@@ -104,13 +104,13 @@ const SpecialContentChip = ({ parsed }: { parsed: ParsedMessageBody }) => (
 							size="iconSm"
 							variant="ghost"
 						>
-							<Download className="h-4 w-4" />
+							<Download className="size-4" />
 						</Button>
 					)}
 				</div>
 			) : (
 				<span className="text-sm font-medium flex items-center gap-1.5">
-					<FileText className="h-4 w-4 text-primary" />
+					<FileText className="size-4 text-primary" />
 					{parsed.content}
 				</span>
 			)}
@@ -350,7 +350,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 			<DialogContent className="max-w-2xl h-[80vh] p-0 flex flex-col gap-0">
 				{/* Header */}
 				<div className="flex items-center gap-3 p-4 border-b flex-shrink-0">
-					<MessageSquare className="h-5 w-5 text-primary flex-shrink-0" />
+					<MessageSquare className="size-5 text-primary flex-shrink-0" />
 					<div className="min-w-0 flex-1">
 						<h2 className="text-lg font-semibold">Thread</h2>
 						<div className="flex min-w-0 items-center gap-2 mt-1">
@@ -364,12 +364,12 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 							>
 								{thread.context.type === "channel" ? (
 									<span className="flex min-w-0 items-center gap-1">
-										<Hash className="h-3 w-3 flex-shrink-0" />
+										<Hash className="size-3 flex-shrink-0" />
 										<span className="truncate">{thread.context.name}</span>
 									</span>
 								) : (
 									<span className="flex min-w-0 items-center gap-1">
-										<User className="h-3 w-3 flex-shrink-0" />
+										<User className="size-3 flex-shrink-0" />
 										<span className="truncate">{thread.context.name}</span>
 									</span>
 								)}
@@ -382,7 +382,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 					<div className="space-y-4">
 						<div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
 							<div className="flex items-start gap-3">
-								<Avatar className="h-10 w-10 flex-shrink-0">
+								<Avatar className="size-10 flex-shrink-0">
 									<AvatarImage src={thread.parentUser.image} />
 									<AvatarFallback>
 										{thread.parentUser.name.charAt(0)}
@@ -415,7 +415,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 						{allReplies.length === 0 && !threadReplies ? (
 							<div className="flex items-center justify-center py-8">
-								<Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+								<Loader className="size-6 animate-spin text-muted-foreground" />
 							</div>
 						) : (
 							<>
@@ -430,7 +430,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 										>
 											{isLoadingMoreReplies ? (
 												<>
-													<Loader className="mr-1.5 h-3 w-3 animate-spin" />
+													<Loader className="mr-1.5 size-3 animate-spin" />
 													Loading…
 												</>
 											) : (
@@ -455,7 +455,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 														className="flex items-start gap-3 pl-4"
 														key={reply._id}
 													>
-														<Avatar className="h-8 w-8 flex-shrink-0">
+														<Avatar className="size-8 flex-shrink-0">
 															<AvatarImage src={reply.user?.image} />
 															<AvatarFallback>
 																{reply.user?.name?.charAt(0) || "?"}
@@ -492,7 +492,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 									</div>
 								) : (
 									<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-										<MessageSquare className="h-8 w-8 mb-2" />
+										<MessageSquare className="size-8 mb-2" />
 										<p className="text-sm">No replies yet</p>
 									</div>
 								)}

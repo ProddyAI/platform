@@ -52,7 +52,7 @@ export const SummaryModal = ({
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
-						<Sparkles className="h-5 w-5 text-secondary" />
+						<Sparkles className="size-5 text-secondary" />
 						<span>
 							Message Summary
 							<span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -76,12 +76,12 @@ export const SummaryModal = ({
 					<Button onClick={handleCopy} variant="outline">
 						{isCopied ? (
 							<>
-								<Check className="mr-2 h-4 w-4" />
+								<Check className="mr-2 size-4" />
 								Copied
 							</>
 						) : (
 							<>
-								<Copy className="mr-2 h-4 w-4" />
+								<Copy className="mr-2 size-4" />
 								Copy to clipboard
 							</>
 						)}

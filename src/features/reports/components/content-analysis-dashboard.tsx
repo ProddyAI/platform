@@ -291,7 +291,7 @@ export const ContentAnalysisDashboard = ({
 						className="flex items-center gap-1.5 text-xs text-muted-foreground"
 						role="status"
 					>
-						<Loader aria-hidden="true" className="h-3 w-3 animate-spin" />
+						<Loader aria-hidden="true" className="size-3 animate-spin" />
 						Updating…
 					</span>
 				)}
@@ -301,15 +301,15 @@ export const ContentAnalysisDashboard = ({
 			<Tabs className="space-y-4" defaultValue="messages">
 				<TabsList>
 					<TabsTrigger value="messages">
-						<MessageSquare className="h-4 w-4 mr-2" />
+						<MessageSquare className="size-4 mr-2" />
 						Messages
 					</TabsTrigger>
 					<TabsTrigger value="files">
-						<FileText className="h-4 w-4 mr-2" />
+						<FileText className="size-4 mr-2" />
 						Files
 					</TabsTrigger>
 					<TabsTrigger value="activity">
-						<Calendar className="h-4 w-4 mr-2" />
+						<Calendar className="size-4 mr-2" />
 						Activity Patterns
 					</TabsTrigger>
 				</TabsList>
@@ -364,7 +364,7 @@ export const ContentAnalysisDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
 									{isInitialLoading ? (
-										<Skeleton className="h-full w-full" />
+										<Skeleton className="size-full" />
 									) : messagesByDayData.length > 0 ? (
 										<LineChart
 											data={messagesByDayData}
@@ -392,7 +392,7 @@ export const ContentAnalysisDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px]">
 									{isInitialLoading ? (
-										<Skeleton className="h-full w-full" />
+										<Skeleton className="size-full" />
 									) : (
 										<PieChart
 											data={contentTypeData}
@@ -412,7 +412,7 @@ export const ContentAnalysisDashboard = ({
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-hidden">
 								{isInitialLoading ? (
-									<Skeleton className="h-full w-full" />
+									<Skeleton className="size-full" />
 								) : messageLengthData.length > 0 ? (
 									<BarChart
 										data={messageLengthData}
@@ -438,7 +438,7 @@ export const ContentAnalysisDashboard = ({
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[300px] max-h-[300px] overflow-auto">
 								{isInitialLoading ? (
-									<Skeleton className="h-full w-full" />
+									<Skeleton className="size-full" />
 								) : resolvedMessageData?.topSenders &&
 									resolvedMessageData.topSenders.length > 0 ? (
 									<HorizontalBarChart
@@ -473,7 +473,7 @@ export const ContentAnalysisDashboard = ({
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[320px] max-h-[320px]">
 								{isInitialLoading ? (
-									<Skeleton className="h-full w-full" />
+									<Skeleton className="size-full" />
 								) : (
 									<PieChart
 										data={
@@ -515,7 +515,7 @@ export const ContentAnalysisDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
 									{isInitialLoading ? (
-										<Skeleton className="h-full w-full" />
+										<Skeleton className="size-full" />
 									) : busiestHoursData.length > 0 ? (
 										<BarChart
 											data={busiestHoursData}
@@ -543,7 +543,7 @@ export const ContentAnalysisDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
 									{isInitialLoading ? (
-										<Skeleton className="h-full w-full" />
+										<Skeleton className="size-full" />
 									) : weeklyActivityData.length > 0 ? (
 										<BarChart
 											data={weeklyActivityData}
@@ -572,7 +572,7 @@ export const ContentAnalysisDashboard = ({
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-auto">
 								{isInitialLoading ? (
-									<Skeleton className="h-full w-full" />
+									<Skeleton className="size-full" />
 								) : responseTimesData.length > 0 ? (
 									<HorizontalBarChart
 										data={responseTimesData}

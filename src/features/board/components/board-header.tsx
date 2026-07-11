@@ -42,7 +42,7 @@ interface StatusStatsProps {
 const StatusStats = ({ totalIssues, statusCount }: StatusStatsProps) => (
 	<div className="flex items-center gap-3 text-xs text-muted-foreground">
 		<span className="flex items-center gap-1.5">
-			<span className="w-2 h-2 rounded-full bg-primary/60" />
+			<span className="size-2 rounded-full bg-primary/60" />
 			<span>
 				<strong className="text-foreground">{statusCount}</strong>{" "}
 				{statusCount === 1 ? "status" : "statuses"}
@@ -82,7 +82,7 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 				size="sm"
 				variant="ghost"
 			>
-				<Icon className="w-3.5 h-3.5" />
+				<Icon className="size-3.5" />
 				<span className="hidden sm:inline">{label}</span>
 			</Button>
 		))}
@@ -104,7 +104,7 @@ const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
 					size="sm"
 					variant="outline"
 				>
-					<Plus className="w-3.5 h-3.5" />
+					<Plus className="size-3.5" />
 					<span className="hidden md:inline">Add status</span>
 				</Button>
 			</TooltipTrigger>
@@ -123,12 +123,12 @@ const SearchButton = ({ onClick }: SearchButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Search issues"
-					className="h-8 w-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
+					className="size-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
 					onClick={onClick}
 					size="icon"
 					variant="ghost"
 				>
-					<Search className="w-4 h-4" />
+					<Search className="size-4" />
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>Search issues (⌘K)</TooltipContent>
@@ -146,12 +146,12 @@ const LinkageDiagramButton = ({ onClick }: LinkageDiagramButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="View linkage diagram"
-					className="h-8 w-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
+					className="size-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
 					onClick={onClick}
 					size="icon"
 					variant="ghost"
 				>
-					<Network className="w-4 h-4" />
+					<Network className="size-4" />
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>View issue linkage diagram</TooltipContent>
@@ -180,16 +180,16 @@ const ConnectChannelButton = ({
 							: "Connect status updates channel"
 					}
 					className={cn(
-						"h-8 w-8 p-0 flex-shrink-0 relative transition-colors",
+						"size-8 p-0 flex-shrink-0 relative transition-colors",
 						isConnected ? "text-success hover:bg-success/10" : "hover:bg-muted"
 					)}
 					onClick={onClick}
 					size="icon"
 					variant="ghost"
 				>
-					<Link2 className="w-4 h-4" />
+					<Link2 className="size-4" />
 					{isConnected && (
-						<Check className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-background text-success" />
+						<Check className="absolute bottom-0.5 right-0.5 size-2.5 rounded-full bg-background text-success" />
 					)}
 				</Button>
 			</TooltipTrigger>
@@ -224,12 +224,12 @@ const AnalyzeBlockersButton = ({
 				>
 					{loading ? (
 						<>
-							<Loader2 className="w-3.5 h-3.5 animate-spin" />
+							<Loader2 className="size-3.5 animate-spin" />
 							<span className="hidden md:inline">Detecting…</span>
 						</>
 					) : (
 						<>
-							<Bot className="w-3.5 h-3.5" />
+							<Bot className="size-3.5" />
 							<span className="hidden md:inline">Detect blockers</span>
 						</>
 					)}

@@ -26,8 +26,8 @@ const buttonVariants = cva(
 				default: "h-10 px-5 py-2",
 				sm: "h-8 px-3.5",
 				lg: "h-11 px-6",
-				icon: "h-10 w-10",
-				iconSm: "h-8 w-8",
+				icon: "size-10",
+				iconSm: "size-8",
 			},
 		},
 		defaultVariants: {
@@ -74,7 +74,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 						{loading ? (
 							<Loader2
 								aria-hidden="true"
-								className="mr-2 h-4 w-4 animate-spin"
+								className="mr-2 size-4 animate-spin"
 							/>
 						) : null}
 						{children}

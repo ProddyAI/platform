@@ -77,7 +77,7 @@ export const Note = ({
 			x={x}
 			y={y}
 		>
-			<div className="relative h-full w-full">
+			<div className="relative size-full">
 				{!value && (
 					<span
 						className="pointer-events-none absolute inset-0 flex items-center justify-center text-center opacity-50"
@@ -93,7 +93,7 @@ export const Note = ({
 				)}
 				<ContentEditable
 					className={cn(
-						"h-full w-full flex items-center justify-center text-center outline-none"
+						"size-full flex items-center justify-center text-center outline-none"
 					)}
 					html={value ? sanitizeHtml(value) : ""}
 					onChange={handleContentChange}

@@ -96,7 +96,7 @@ const DeleteWorkspaceSection = ({
 			<AlertDialog onOpenChange={handleOpenChange} open={isOpen}>
 				<AlertDialogTrigger asChild>
 					<Button className="w-full" variant="destructive">
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="mr-2 size-4" />
 						Delete Workspace
 					</Button>
 				</AlertDialogTrigger>
@@ -249,12 +249,12 @@ export const WorkspaceManagement = ({
 								>
 									{isUpdating ? (
 										<>
-											<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+											<RefreshCw className="mr-2 size-4 animate-spin" />
 											Saving...
 										</>
 									) : (
 										<>
-											<Save className="mr-2 h-4 w-4" />
+											<Save className="mr-2 size-4" />
 											Save
 										</>
 									)}
@@ -289,9 +289,9 @@ export const WorkspaceManagement = ({
 							<CollapsibleTrigger asChild>
 								<Button size="sm" variant="ghost">
 									{channelsExpanded ? (
-										<ChevronDown className="h-4 w-4" />
+										<ChevronDown className="size-4" />
 									) : (
-										<ChevronRight className="h-4 w-4" />
+										<ChevronRight className="size-4" />
 									)}
 									<span className="ml-2">
 										{channelsExpanded ? "Hide" : "Show"}

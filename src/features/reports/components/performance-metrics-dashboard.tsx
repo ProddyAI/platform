@@ -266,7 +266,7 @@ export const PerformanceMetricsDashboard = ({
 							<Skeleton className="h-4 w-52 mt-1" />
 						</CardHeader>
 						<CardContent className="flex items-center justify-center">
-							<Skeleton className="h-[300px] w-[300px] rounded-full" />
+							<Skeleton className="size-[300px] rounded-full" />
 						</CardContent>
 					</Card>
 				</div>
@@ -281,7 +281,7 @@ export const PerformanceMetricsDashboard = ({
 				{isRefreshing && (
 					<Loader
 						aria-label="Refreshing metrics"
-						className="h-4 w-4 animate-spin text-muted-foreground"
+						className="size-4 animate-spin text-muted-foreground"
 					/>
 				)}
 			</div>
@@ -294,11 +294,11 @@ export const PerformanceMetricsDashboard = ({
 			>
 				<TabsList>
 					<TabsTrigger value="tasks">
-						<CheckSquare className="h-4 w-4 mr-2" />
+						<CheckSquare className="size-4 mr-2" />
 						Task Performance
 					</TabsTrigger>
 					<TabsTrigger value="users">
-						<Users className="h-4 w-4 mr-2" />
+						<Users className="size-4 mr-2" />
 						User Performance
 					</TabsTrigger>
 				</TabsList>
@@ -478,8 +478,8 @@ export const PerformanceMetricsDashboard = ({
 										/>
 									) : (
 										<div className="flex flex-col items-center justify-center h-full bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
-											<div className="w-32 h-32 rounded-full bg-muted/30 mb-4 flex items-center justify-center">
-												<CheckSquare className="h-12 w-12 text-muted-foreground/40" />
+											<div className="size-32 rounded-full bg-muted/30 mb-4 flex items-center justify-center">
+												<CheckSquare className="size-12 text-muted-foreground/40" />
 											</div>
 											<p className="text-muted-foreground/60 text-sm">
 												No task data available
@@ -576,7 +576,7 @@ export const PerformanceMetricsDashboard = ({
 													<div className="flex items-center justify-between">
 														<div className="flex items-center gap-2 font-medium">
 															<span
-																className={`h-2.5 w-2.5 rounded-full ${seriesColorClass(index)}`}
+																className={`size-2.5 rounded-full ${seriesColorClass(index)}`}
 															/>
 															{category.label}
 														</div>
@@ -598,7 +598,7 @@ export const PerformanceMetricsDashboard = ({
 										</div>
 									) : (
 										<div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
-											<CheckSquare className="h-10 w-10 text-muted-foreground/40 mb-2" />
+											<CheckSquare className="size-10 text-muted-foreground/40 mb-2" />
 											<p className="text-muted-foreground/60 text-sm">
 												No category data available
 											</p>
@@ -635,7 +635,7 @@ export const PerformanceMetricsDashboard = ({
 													<div className="flex items-center justify-between">
 														<div className="font-medium flex items-center">
 															{index === 0 && (
-																<Award className="h-4 w-4 text-warning mr-1" />
+																<Award className="size-4 text-warning mr-1" />
 															)}
 															{user.name}
 														</div>

@@ -149,7 +149,7 @@ export const NotesWidget = ({
 			<WidgetHeader
 				badge={sortedNotes.length > 0 ? sortedNotes.length : undefined}
 				controls={controls}
-				icon={<FileText className="h-5 w-5 text-primary" />}
+				icon={<FileText className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Recent Notes"
 			/>
@@ -166,7 +166,7 @@ export const NotesWidget = ({
 										</h5>
 										<RelativeTime
 											className="text-[10px]"
-											iconClassName="h-2.5 w-2.5"
+											iconClassName="size-2.5"
 											timestamp={note.updatedAt}
 										/>
 									</div>

@@ -75,7 +75,7 @@ export const TaskSidebar = ({
 		<div className="w-[300px] h-full border-l bg-muted/70 p-6 overflow-y-auto flex-shrink-0">
 			<div className="flex items-center justify-between mb-6">
 				<h3 className="font-semibold text-base flex items-center text-foreground">
-					<Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+					<Filter className="size-4 mr-2 text-muted-foreground" />
 					Filters
 				</h3>
 				{isFilterActive() && (
@@ -85,7 +85,7 @@ export const TaskSidebar = ({
 						size="sm"
 						variant="ghost"
 					>
-						<X className="h-3.5 w-3.5 mr-1" /> Clear all
+						<X className="size-3.5 mr-1" /> Clear all
 					</Button>
 				)}
 			</div>
@@ -101,9 +101,9 @@ export const TaskSidebar = ({
 				>
 					<span>Priority</span>
 					{expandedSections.priority ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
+						<ChevronDown className="size-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
+						<ChevronRight className="size-4 text-muted-foreground" />
 					)}
 				</Button>
 
@@ -135,7 +135,7 @@ export const TaskSidebar = ({
 								filterOptions.priority === "high" ? "secondary" : "ghost"
 							}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-warning" />
+							<div className="mr-2 size-3 rounded-full bg-warning" />
 							High
 						</Button>
 						<Button
@@ -151,7 +151,7 @@ export const TaskSidebar = ({
 								filterOptions.priority === "medium" ? "secondary" : "ghost"
 							}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-primary" />
+							<div className="mr-2 size-3 rounded-full bg-primary" />
 							Medium
 						</Button>
 						<Button
@@ -165,7 +165,7 @@ export const TaskSidebar = ({
 							size="sm"
 							variant={filterOptions.priority === "low" ? "secondary" : "ghost"}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-muted-foreground/60" />
+							<div className="mr-2 size-3 rounded-full bg-muted-foreground/60" />
 							Low
 						</Button>
 					</div>
@@ -183,9 +183,9 @@ export const TaskSidebar = ({
 				>
 					<span>Due date</span>
 					{expandedSections.dueDate ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
+						<ChevronDown className="size-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
+						<ChevronRight className="size-4 text-muted-foreground" />
 					)}
 				</Button>
 
@@ -217,7 +217,7 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "overdue" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-destructive" />
+							<Clock className="mr-2 size-4 text-destructive" />
 							Overdue
 						</Button>
 						<Button
@@ -233,7 +233,7 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "today" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-warning" />
+							<Clock className="mr-2 size-4 text-warning" />
 							Today
 						</Button>
 						<Button
@@ -249,7 +249,7 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "upcoming" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-primary" />
+							<Clock className="mr-2 size-4 text-primary" />
 							Upcoming
 						</Button>
 						<Button
@@ -265,7 +265,7 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "no-date" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+							<Clock className="mr-2 size-4 text-muted-foreground" />
 							No due date
 						</Button>
 					</div>
@@ -283,9 +283,9 @@ export const TaskSidebar = ({
 				>
 					<span>Categories</span>
 					{expandedSections.categories ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
+						<ChevronDown className="size-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
+						<ChevronRight className="size-4 text-muted-foreground" />
 					)}
 				</Button>
 
@@ -341,7 +341,7 @@ export const TaskSidebar = ({
 									}
 								>
 									<div
-										className="mr-2 h-3 w-3 rounded-full border-2"
+										className="mr-2 size-3 rounded-full border-2"
 										style={{
 											backgroundColor: category.color,
 											borderColor: category.color,
@@ -372,9 +372,9 @@ export const TaskSidebar = ({
 				>
 					<span>Sort</span>
 					{expandedSections.sort ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
+						<ChevronDown className="size-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
+						<ChevronRight className="size-4 text-muted-foreground" />
 					)}
 				</Button>
 
@@ -448,7 +448,7 @@ export const TaskSidebar = ({
 									filterOptions.sortDirection === "asc" ? "secondary" : "ghost"
 								}
 							>
-								<SortAsc className="mr-2 h-4 w-4" />
+								<SortAsc className="mr-2 size-4" />
 								Ascending
 							</Button>
 							<Button
@@ -464,7 +464,7 @@ export const TaskSidebar = ({
 									filterOptions.sortDirection === "desc" ? "secondary" : "ghost"
 								}
 							>
-								<SortDesc className="mr-2 h-4 w-4" />
+								<SortDesc className="mr-2 size-4" />
 								Descending
 							</Button>
 						</div>

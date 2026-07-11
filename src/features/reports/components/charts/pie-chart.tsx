@@ -203,7 +203,7 @@ export const PieChart = ({
 	return (
 		<div
 			className={cn(
-				"relative flex h-full w-full flex-col items-center justify-center gap-3 py-2",
+				"relative flex size-full flex-col items-center justify-center gap-3 py-2",
 				className
 			)}
 			ref={containerRef}
@@ -219,7 +219,7 @@ export const PieChart = ({
 				}}
 			>
 				<svg
-					className="w-full h-full"
+					className="size-full"
 					preserveAspectRatio="xMidYMid meet"
 					viewBox="0 0 100 100"
 				>

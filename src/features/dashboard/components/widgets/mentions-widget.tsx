@@ -160,7 +160,7 @@ export const MentionsWidget = ({
 							size="sm"
 							variant="ghost"
 						>
-							<CheckCircle className="mr-2 h-4 w-4" />
+							<CheckCircle className="mr-2 size-4" />
 							Mark all as read
 						</Button>
 					)
@@ -168,7 +168,7 @@ export const MentionsWidget = ({
 				badge={counts && counts.total > 0 ? counts.total : undefined}
 				className="pr-2"
 				controls={controls}
-				icon={<AtSign className="h-5 w-5 text-primary" />}
+				icon={<AtSign className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Mentions"
 			/>
@@ -186,7 +186,7 @@ export const MentionsWidget = ({
 								<WidgetCard key={mention.id}>
 									<div className="flex items-start gap-3">
 										<div className="relative">
-											<Avatar className="h-8 w-8">
+											<Avatar className="size-8">
 												<AvatarImage
 													alt={mention.author.name || "User avatar"}
 													src={mention.author.image}
@@ -212,7 +212,7 @@ export const MentionsWidget = ({
 															className="flex shrink-0 items-center gap-1 border-2"
 															variant="outline"
 														>
-															<Hash className="h-3 w-3" />
+															<Hash className="size-3" />
 															{mention.source.name}
 														</Badge>
 													)}

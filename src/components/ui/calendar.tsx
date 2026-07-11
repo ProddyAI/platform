@@ -203,22 +203,22 @@ function Calendar({
 			<div className="flex items-center justify-between mb-4">
 				<Button
 					aria-label="Previous month"
-					className="h-7 w-7 bg-transparent p-0"
+					className="size-7 bg-transparent p-0"
 					onClick={handlePrevMonth}
 					size="icon"
 					variant="outline"
 				>
-					<ChevronLeft className="h-4 w-4" />
+					<ChevronLeft className="size-4" />
 				</Button>
 				<div className="font-medium text-sm">{format(month, "MMMM yyyy")}</div>
 				<Button
 					aria-label="Next month"
-					className="h-7 w-7 bg-transparent p-0"
+					className="size-7 bg-transparent p-0"
 					onClick={handleNextMonth}
 					size="icon"
 					variant="outline"
 				>
-					<ChevronRight className="h-4 w-4" />
+					<ChevronRight className="size-4" />
 				</Button>
 			</div>
 
@@ -261,7 +261,7 @@ function Calendar({
 												aria-current={meta.isToday ? "date" : undefined}
 												aria-selected={meta.isSelected}
 												className={cn(
-													"h-8 w-8 p-0 font-normal text-sm",
+													"size-8 p-0 font-normal text-sm",
 													meta.isSelected &&
 														"bg-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground",
 													meta.isToday &&
@@ -285,7 +285,7 @@ function Calendar({
 												{day}
 											</Button>
 										) : (
-											<div className="h-8 w-8" />
+											<div className="size-8" />
 										)}
 									</div>
 								);

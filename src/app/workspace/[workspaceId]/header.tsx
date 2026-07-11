@@ -47,7 +47,7 @@ const CollapsedButton = forwardRef<
 				size="icon"
 				variant="ghost"
 			>
-				<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+				<div className="flex size-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 					{workspace.name.charAt(0).toUpperCase()}
 				</div>
 			</Button>
@@ -68,7 +68,7 @@ const ExpandedButton = forwardRef<
 			variant="ghost"
 			{...props}
 		>
-			<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+			<div className="flex size-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 				{workspace.name.charAt(0).toUpperCase()}
 			</div>
 			<div className="flex flex-col items-start min-w-0">
@@ -154,7 +154,7 @@ export const WorkspaceHeader = ({
 										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-lg hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
 										onClick={() => setInviteOpen(true)}
 									>
-										<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+										<div className="flex size-6 items-center justify-center rounded-lg bg-secondary/10 transition-standard group-hover:bg-secondary/20">
 											<Plus className="size-3.5 text-secondary" />
 										</div>
 										<span className="font-medium">
@@ -169,7 +169,7 @@ export const WorkspaceHeader = ({
 								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-lg hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
 								onClick={() => setSwitchOpen(true)}
 							>
-								<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+								<div className="flex size-6 items-center justify-center rounded-lg bg-secondary/10 transition-standard group-hover:bg-secondary/20">
 									<RefreshCw className="size-3.5 text-secondary transition-transform duration-200 group-hover:rotate-45" />
 								</div>
 								<span className="font-medium">Switch Workspace</span>
@@ -196,7 +196,7 @@ export const WorkspaceHeader = ({
 										onClick={() => onWorkspaceClick(item._id)}
 										type="button"
 									>
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg">
+										<div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg">
 											{item.name.charAt(0).toUpperCase()}
 										</div>
 										<div className="flex flex-col items-start">
@@ -227,7 +227,7 @@ export const WorkspaceHeader = ({
 									}}
 									type="button"
 								>
-									<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg">
+									<div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg">
 										<Plus className="size-5" />
 									</div>
 									<p className="text-sm font-semibold tracking-tight text-foreground">

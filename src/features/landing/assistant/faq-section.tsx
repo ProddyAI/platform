@@ -49,7 +49,7 @@ export const FAQSection = () => {
 						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: shouldReduceMotion ? 0 : 0.2 }}
 					>
-						<div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+						<div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-foreground">
 								How does Proddy AI access my workspace data?
 							</h3>
@@ -61,7 +61,7 @@ export const FAQSection = () => {
 							</p>
 						</div>
 
-						<div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+						<div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-foreground">
 								Is my conversation with Proddy AI private?
 							</h3>
@@ -73,7 +73,7 @@ export const FAQSection = () => {
 							</p>
 						</div>
 
-						<div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+						<div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-foreground">
 								Can Proddy AI create content for me?
 							</h3>
@@ -96,7 +96,7 @@ export const FAQSection = () => {
 						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: shouldReduceMotion ? 0 : 0.3 }}
 					>
-						<div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+						<div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-foreground">
 								What types of questions can I ask Proddy AI?
 							</h3>
@@ -108,7 +108,7 @@ export const FAQSection = () => {
 							</p>
 						</div>
 
-						<div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+						<div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-foreground">
 								Does Proddy AI learn from my team&apos;s usage?
 							</h3>
@@ -120,15 +120,14 @@ export const FAQSection = () => {
 							</p>
 						</div>
 
-						<div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+						<div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-foreground">
 								Is Proddy AI free to use?
 							</h3>
 							<p className="text-muted-foreground">
-								Yes, Proddy AI is completely free during our public beta period.
-								We&apos;re using a freemium model where core AI features will
-								remain free, with advanced features available in paid plans once
-								we exit beta.
+								Yes, core Proddy AI features are free on every plan. Higher AI
+								usage limits and advanced features are available on our paid
+								plans — see the pricing page for details.
 							</p>
 						</div>
 					</motion.div>

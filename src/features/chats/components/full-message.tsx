@@ -77,7 +77,7 @@ export const FullMessage = ({
 						onClick={() => onOpenProfile(memberId)}
 						type="button"
 					>
-						<Avatar className="h-8 w-8 md:h-10 md:w-10">
+						<Avatar className="size-8 md:h-10 md:w-10">
 							<AvatarImage alt={authorName} src={authorImage} />
 							<AvatarFallback>{avatarFallback}</AvatarFallback>
 						</Avatar>

@@ -14,7 +14,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { FaGithub, FaSlack } from "react-icons/fa";
+import { SiGithub, SiSlack } from "react-icons/si";
 import { toast } from "sonner";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { Badge } from "../../../components/ui/badge";
@@ -90,7 +90,7 @@ type ToolkitConfig = {
 // glyph + name rather than per-brand hex fills.
 const toolkits: Record<Toolkit, ToolkitConfig> = {
 	github: {
-		icon: FaGithub,
+		icon: SiGithub,
 		name: "GitHub",
 		description: "Manage repos, issues & pull requests with AI",
 		capability: "Repos · Issues · PRs",
@@ -102,7 +102,7 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 		capability: "Send · Read · Search",
 	},
 	slack: {
-		icon: FaSlack,
+		icon: SiSlack,
 		name: "Slack",
 		description: "Send messages, manage channels & team notifications",
 		capability: "Messages · Channels · Users",
@@ -152,11 +152,11 @@ function ServiceToolkitIcon({
 	isConnected: boolean;
 }) {
 	return (
-		<div className="relative flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-muted text-foreground shadow-sm">
-			<Icon className="h-5 w-5" />
+		<div className="relative flex-shrink-0 size-10 rounded-xl flex items-center justify-center bg-muted text-foreground shadow-sm">
+			<Icon className="size-5" />
 			{isConnected && (
-				<span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-success border-2 border-card flex items-center justify-center">
-					<CheckCircle2 className="h-2.5 w-2.5 text-success-foreground" />
+				<span className="absolute -bottom-1 -right-1 size-4 rounded-full bg-success border-2 border-card flex items-center justify-center">
+					<CheckCircle2 className="size-2.5 text-success-foreground" />
 				</span>
 			)}
 		</div>
@@ -171,7 +171,7 @@ function ConnectedAccountMeta({
 	return (
 		<div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/60 rounded-lg px-3 py-2 border border-border/40">
 			<span className="flex items-center gap-1.5">
-				<Wifi className="h-3 w-3 text-success" />
+				<Wifi className="size-3 text-success" />
 				Connected
 				{connectedAccount.connectedAt && (
 					<span className="text-muted-foreground/70">
@@ -181,7 +181,7 @@ function ConnectedAccountMeta({
 			</span>
 			{connectedAccount.lastUsed && (
 				<span className="flex items-center gap-1">
-					<Zap className="h-3 w-3" />
+					<Zap className="size-3" />
 					Used {timeAgo(connectedAccount.lastUsed)}
 				</span>
 			)}
@@ -210,9 +210,9 @@ function ConnectedActionButtons({
 				variant="outline"
 			>
 				{isRefreshing ? (
-					<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+					<Loader2 className="size-3.5 mr-1.5 animate-spin" />
 				) : (
-					<RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+					<RefreshCw className="size-3.5 mr-1.5" />
 				)}
 				{isRefreshing ? "Checking…" : "Verify"}
 			</Button>
@@ -225,9 +225,9 @@ function ConnectedActionButtons({
 				variant="outline"
 			>
 				{isDisconnecting ? (
-					<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+					<Loader2 className="size-3.5 mr-1.5 animate-spin" />
 				) : (
-					<Unlink className="h-3.5 w-3.5 mr-1.5" />
+					<Unlink className="size-3.5 mr-1.5" />
 				)}
 				{isDisconnecting ? "Disconnecting…" : "Disconnect"}
 			</Button>
@@ -255,12 +255,12 @@ function ConnectButton({
 		>
 			{isConnecting ? (
 				<>
-					<Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+					<Loader2 className="size-3.5 mr-2 animate-spin" />
 					Redirecting…
 				</>
 			) : (
 				<>
-					<Icon className="h-3.5 w-3.5 mr-2" />
+					<Icon className="size-3.5 mr-2" />
 					Connect {name}
 				</>
 			)}
@@ -500,7 +500,7 @@ export const ServiceIntegrationCard = ({
 						/>
 
 						<p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
-							<WifiOff className="h-3 w-3" />
+							<WifiOff className="size-3" />
 							Authorize once, use everywhere in Proddy AI
 						</p>
 					</div>

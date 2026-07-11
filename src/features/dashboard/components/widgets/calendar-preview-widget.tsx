@@ -168,7 +168,7 @@ export const CalendarPreviewWidget = ({
 				badge={upcomingEvents.length > 0 ? upcomingEvents.length : undefined}
 				className="pr-2"
 				controls={controls}
-				icon={<CalendarIcon className="h-5 w-5 text-primary" />}
+				icon={<CalendarIcon className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Upcoming Events"
 			/>

@@ -500,7 +500,7 @@ export const BoardPageContent = ({
 	}
 
 	return (
-		<div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
+		<div className="size-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
 			{boardLimitReached && (
 				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-xl border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
 					<span>

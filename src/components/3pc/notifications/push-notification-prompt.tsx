@@ -63,9 +63,9 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
 					{permission === "granted" ? (
-						<Bell className="h-5 w-5 text-primary" />
+						<Bell className="size-5 text-primary" />
 					) : (
-						<BellOff className="h-5 w-5 text-muted-foreground" />
+						<BellOff className="size-5 text-muted-foreground" />
 					)}
 					Browser Push Notifications
 				</CardTitle>
@@ -77,7 +77,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 				{/* Ad Blocker Warning */}
 				{isAdBlockerActive && (
 					<Alert className="border-destructive/20 bg-destructive/10">
-						<AlertTriangle className="h-4 w-4 text-destructive" />
+						<AlertTriangle className="size-4 text-destructive" />
 						<AlertDescription className="text-destructive">
 							Notifications may be blocked by your browser or network settings
 						</AlertDescription>
@@ -86,7 +86,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 
 				{permission === "granted" ? (
 					<Alert className="border-primary/20 bg-primary/10">
-						<CheckCircle2 className="h-4 w-4 text-primary" />
+						<CheckCircle2 className="size-4 text-primary" />
 						<AlertDescription className="text-foreground">
 							Push notifications are enabled. You&apos;ll receive real-time
 							alerts based on your notification preferences below.
@@ -94,7 +94,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 					</Alert>
 				) : permission === "denied" ? (
 					<Alert className="border-destructive/20 bg-destructive/10">
-						<BellOff className="h-4 w-4 text-destructive" />
+						<BellOff className="size-4 text-destructive" />
 						<AlertDescription className="text-destructive">
 							Push notifications are blocked. To enable them, please update your
 							browser settings and allow notifications for this site.
@@ -113,7 +113,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 							onClick={requestPermission}
 							size="lg"
 						>
-							<Bell className="h-4 w-4 mr-2" />
+							<Bell className="size-4 mr-2" />
 							{isRequesting ? "Requesting..." : "Enable Push Notifications"}
 						</Button>
 					</>

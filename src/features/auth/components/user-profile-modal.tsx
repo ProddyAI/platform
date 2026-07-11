@@ -602,7 +602,7 @@ export const UserProfileModal = ({
 							{isEditMode ? (
 								<div className="h-full flex flex-col overflow-hidden">
 									<Tabs
-										className="w-full h-full flex flex-col overflow-hidden"
+										className="size-full flex flex-col overflow-hidden"
 										defaultValue={defaultTab}
 									>
 										<TabsList className="grid w-full grid-cols-3 mx-6 mt-4 flex-shrink-0">

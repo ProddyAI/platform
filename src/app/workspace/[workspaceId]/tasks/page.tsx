@@ -196,7 +196,7 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 								placeholder="Search tasks..."
 								value={searchQuery}
 							/>
-							<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+							<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 						</div>
 						<Button
 							aria-label="Open task filters"
@@ -211,7 +211,7 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 					{isLoading ? (
 						<div className="flex h-40 items-center justify-center">
-							<Loader className="h-6 w-6 animate-spin text-primary" />
+							<Loader className="size-6 animate-spin text-primary" />
 						</div>
 					) : (
 						<div className="space-y-6">

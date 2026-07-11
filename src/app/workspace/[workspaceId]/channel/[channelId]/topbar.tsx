@@ -47,7 +47,7 @@ const Topbar = () => {
 						>
 							<Icon
 								className={cn(
-									"h-4 w-4 md:h-5 md:w-5 flex-shrink-0",
+									"size-4 md:h-5 md:w-5 flex-shrink-0",
 									tab.active && "text-primary"
 								)}
 							/>

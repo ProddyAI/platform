@@ -51,24 +51,24 @@ export const CalendarHeader = ({
 				<div className="flex items-center gap-2 rounded-full border border-border bg-muted p-1">
 					<Button
 						aria-label="Previous month"
-						className="h-8 w-8 p-0"
+						className="size-8 p-0"
 						onClick={onPreviousMonth}
 						size="sm"
 						variant="ghost"
 					>
-						<ChevronLeft className="h-4 w-4" />
+						<ChevronLeft className="size-4" />
 					</Button>
 					<h1 className="min-w-[160px] rounded-full border border-border bg-card px-4 py-1.5 text-center text-sm font-medium shadow-sm">
 						{format(currentDate, "MMMM yyyy")}
 					</h1>
 					<Button
 						aria-label="Next month"
-						className="h-8 w-8 p-0"
+						className="size-8 p-0"
 						onClick={onNextMonth}
 						size="sm"
 						variant="ghost"
 					>
-						<ChevronRight className="h-4 w-4" />
+						<ChevronRight className="size-4" />
 					</Button>
 				</div>
 
@@ -86,7 +86,7 @@ export const CalendarHeader = ({
 						>
 							<Search
 								aria-hidden="true"
-								className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+								className="absolute left-3.5 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground"
 							/>
 							<Input
 								aria-label="Search events"
@@ -98,7 +98,7 @@ export const CalendarHeader = ({
 							{searchQuery.length > 0 && (
 								<Button
 									aria-label="Clear search"
-									className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+									className="absolute right-1 top-1/2 size-6 -translate-y-1/2 p-0"
 									onClick={() => {
 										setSearchQuery("");
 										onSearch?.("");
@@ -107,7 +107,7 @@ export const CalendarHeader = ({
 									type="button"
 									variant="ghost"
 								>
-									<X className="h-3.5 w-3.5" />
+									<X className="size-3.5" />
 								</Button>
 							)}
 						</form>

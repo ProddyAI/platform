@@ -406,7 +406,7 @@ export const ChannelsManagement = ({
 
 				{canManage && (
 					<Button onClick={() => setCreateOpen(true)}>
-						<Plus className="mr-2 h-4 w-4" />
+						<Plus className="mr-2 size-4" />
 						New Channel
 					</Button>
 				)}
@@ -427,14 +427,14 @@ export const ChannelsManagement = ({
 							<TableRow key={`channel-skeleton-${row}`}>
 								<TableCell>
 									<div className="flex items-center gap-2">
-										<Skeleton className="h-4 w-4 rounded-full" />
+										<Skeleton className="size-4 rounded-full" />
 										<Skeleton className="h-4 w-32" />
 									</div>
 								</TableCell>
 								<TableCell>
 									<div className="flex items-center gap-2">
-										<Skeleton className="h-8 w-8 rounded-md" />
-										<Skeleton className="h-8 w-8 rounded-md" />
+										<Skeleton className="size-8 rounded-md" />
+										<Skeleton className="size-8 rounded-md" />
 									</div>
 								</TableCell>
 							</TableRow>
@@ -443,14 +443,14 @@ export const ChannelsManagement = ({
 				</Table>
 			) : !channels || channels.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-8 text-center">
-					<Hash className="h-12 w-12 text-muted-foreground mb-4" />
+					<Hash className="size-12 text-muted-foreground mb-4" />
 					<h3 className="text-lg font-medium">No channels</h3>
 					<p className="text-sm text-muted-foreground">
 						Create a channel to get started
 					</p>
 					{canManage && (
 						<Button className="mt-4" onClick={() => setCreateOpen(true)}>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="mr-2 size-4" />
 							New Channel
 						</Button>
 					)}
@@ -471,7 +471,7 @@ export const ChannelsManagement = ({
 										{channel.icon ? (
 											<span className="mr-2 text-xl">{channel.icon}</span>
 										) : (
-											<Hash className="mr-2 h-4 w-4 text-muted-foreground" />
+											<Hash className="mr-2 size-4 text-muted-foreground" />
 										)}
 										{channel.name}
 									</div>
@@ -485,7 +485,7 @@ export const ChannelsManagement = ({
 												size="sm"
 												variant="outline"
 											>
-												<Edit className="h-4 w-4" />
+												<Edit className="size-4" />
 											</Button>
 										)}
 										{canManage && (
@@ -496,7 +496,7 @@ export const ChannelsManagement = ({
 												size="sm"
 												variant="outline"
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className="size-4" />
 											</Button>
 										)}
 									</div>
@@ -539,7 +539,7 @@ export const ChannelsManagement = ({
 										{/* biome-ignore lint/a11y/useSemanticElements: This upload zone contains nested controls, so replacing it with a button would create invalid nested buttons. */}
 										<div
 											aria-label="Upload channel icon"
-											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all"
+											className="relative flex size-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all"
 											onClick={() =>
 												!isUploadingEdit && editImageInputRef.current?.click()
 											}
@@ -569,7 +569,7 @@ export const ChannelsManagement = ({
 													)}
 													<button
 														aria-label="Remove icon"
-														className="absolute -top-2 -right-2 h-6 w-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+														className="absolute -top-2 -right-2 size-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
 														onClick={(e) => {
 															e.stopPropagation();
 															if (
@@ -584,12 +584,12 @@ export const ChannelsManagement = ({
 														}}
 														type="button"
 													>
-														<X className="h-3.5 w-3.5" />
+														<X className="size-3.5" />
 													</button>
 												</>
 											) : (
 												<div className="flex flex-col items-center gap-1">
-													<Upload className="h-6 w-6 text-muted-foreground" />
+													<Upload className="size-6 text-muted-foreground" />
 													<span className="text-xs text-muted-foreground text-center">
 														{isUploadingEdit ? "Uploading..." : "Upload"}
 													</span>
@@ -602,10 +602,10 @@ export const ChannelsManagement = ({
 										>
 											<button
 												aria-label="Select emoji icon"
-												className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+												className="absolute -bottom-1 -right-1 size-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
 												type="button"
 											>
-												<Smile className="h-4 w-4" />
+												<Smile className="size-4" />
 											</button>
 										</EmojiPopover>
 									</div>
@@ -644,7 +644,7 @@ export const ChannelsManagement = ({
 						<Button disabled={isUpdating} onClick={handleUpdateChannel}>
 							{isUpdating ? (
 								<>
-									<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+									<RefreshCw className="mr-2 size-4 animate-spin" />
 									Updating...
 								</>
 							) : (

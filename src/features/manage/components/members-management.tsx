@@ -157,7 +157,7 @@ const EmailInviteSection = ({
 								return (
 									<SelectItem key={value} value={value}>
 										<div className="flex items-center gap-2">
-											<Icon className="h-4 w-4" />
+											<Icon className="size-4" />
 											{label}
 										</div>
 									</SelectItem>
@@ -178,7 +178,7 @@ const EmailInviteSection = ({
 						className="flex items-center gap-2 text-sm font-medium"
 						htmlFor="inviteComment"
 					>
-						<MessageSquare className="h-4 w-4" />
+						<MessageSquare className="size-4" />
 						Invitation Note
 					</Label>
 					<Textarea
@@ -343,7 +343,7 @@ export const MembersManagement = ({
 							<TableRow key={`member-skeleton-${index}`}>
 								<TableCell>
 									<div className="flex items-center gap-3">
-										<Skeleton className="h-8 w-8 rounded-full" />
+										<Skeleton className="size-8 rounded-full" />
 										<div className="space-y-1.5">
 											<Skeleton className="h-4 w-32" />
 											<Skeleton className="h-3 w-40" />
@@ -354,7 +354,7 @@ export const MembersManagement = ({
 									<Skeleton className="h-5 w-16 rounded-full" />
 								</TableCell>
 								<TableCell>
-									<Skeleton className="h-8 w-8" />
+									<Skeleton className="size-8" />
 								</TableCell>
 							</TableRow>
 						))}
@@ -362,7 +362,7 @@ export const MembersManagement = ({
 				</Table>
 			) : !members || members.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-8 text-center">
-					<Shield className="h-12 w-12 text-muted-foreground mb-4" />
+					<Shield className="size-12 text-muted-foreground mb-4" />
 					<h3 className="text-lg font-medium">No members</h3>
 					<p className="text-sm text-muted-foreground mb-4">
 						Invite members to your workspace
@@ -390,7 +390,7 @@ export const MembersManagement = ({
 							<TableRow key={member._id}>
 								<TableCell>
 									<div className="flex items-center gap-3">
-										<Avatar className="h-8 w-8">
+										<Avatar className="size-8">
 											<AvatarImage
 												alt={member.user.name}
 												src={member.user.image}
@@ -431,7 +431,7 @@ export const MembersManagement = ({
 															size="sm"
 															variant="outline"
 														>
-															<UserCog className="h-4 w-4" />
+															<UserCog className="size-4" />
 														</Button>
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
@@ -501,7 +501,7 @@ export const MembersManagement = ({
 												size="sm"
 												variant="outline"
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className="size-4" />
 											</Button>
 										)}
 									</div>

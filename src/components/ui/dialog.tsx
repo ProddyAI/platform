@@ -52,7 +52,7 @@ const DialogContent = React.forwardRef<
 					isThumbnail && "bg-card p-0.5 opacity-80"
 				)}
 			>
-				<X className="h-4 w-4" />
+				<X className="size-4" />
 				<span className="sr-only">Close</span>
 			</DialogPrimitive.Close>
 		</DialogPrimitive.Content>

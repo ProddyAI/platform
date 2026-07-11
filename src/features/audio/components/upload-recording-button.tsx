@@ -132,18 +132,18 @@ export const UploadRecordingButton = () => {
 
 	const getIcon = () => {
 		if (step === "done")
-			return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+			return <CheckCircle2 className="size-4 text-success" />;
 		if (step === "error")
-			return <AlertCircle className="w-4 h-4 text-destructive" />;
-		if (isProcessing) return <Loader2 className="w-4 h-4 animate-spin" />;
-		return <Upload className="w-4 h-4" />;
+			return <AlertCircle className="size-4 text-destructive" />;
+		if (isProcessing) return <Loader2 className="size-4 animate-spin" />;
+		return <Upload className="size-4" />;
 	};
 
 	return (
 		<div className="relative">
 			<input
 				accept="audio/*,video/mp4,video/webm"
-				className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
+				className="peer absolute inset-0 size-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
 				disabled={isProcessing}
 				onChange={handleUpload}
 				ref={fileRef}
@@ -151,7 +151,7 @@ export const UploadRecordingButton = () => {
 				type="file"
 			/>
 			<Button
-				className={`gap-2 pointer-events-none text-xs peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ${step === "done" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : step === "error" ? "border-destructive/30 text-destructive bg-destructive/10" : ""}`}
+				className={`gap-2 pointer-events-none text-xs peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ${step === "done" ? "border-success/30 text-success bg-success/10" : step === "error" ? "border-destructive/30 text-destructive bg-destructive/10" : ""}`}
 				disabled={isProcessing}
 				size="sm"
 				variant="outline"

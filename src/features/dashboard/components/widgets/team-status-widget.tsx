@@ -103,7 +103,7 @@ export const TeamStatusWidget = ({
 				badge={onlineCount > 0 ? `${onlineCount} online` : undefined}
 				className="pr-2"
 				controls={controls}
-				icon={<Users className="h-5 w-5 text-primary" />}
+				icon={<Users className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Team Status"
 			/>
@@ -115,7 +115,7 @@ export const TeamStatusWidget = ({
 							<WidgetCard key={teamMember._id}>
 								<div className="flex items-start gap-3">
 									<div className="relative">
-										<Avatar className="h-8 w-8">
+										<Avatar className="size-8">
 											<AvatarImage
 												alt={teamMember.user?.name ?? "User avatar"}
 												src={teamMember.user?.image}
@@ -154,7 +154,7 @@ export const TeamStatusWidget = ({
 											size="sm"
 											variant="ghost"
 										>
-											<MessageSquare className="mr-2 h-3.5 w-3.5" />
+											<MessageSquare className="mr-2 size-3.5" />
 											Message
 										</Button>
 									</div>

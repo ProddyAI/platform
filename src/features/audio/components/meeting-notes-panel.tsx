@@ -154,7 +154,7 @@ export const MeetingNotesPanel = ({
 			{/* Header */}
 			<div className="flex items-center justify-between p-4 border-b border-border">
 				<div className="flex items-center gap-2">
-					<Brain className="w-5 h-5 text-primary" />
+					<Brain className="size-5 text-primary" />
 					<h2 className="font-semibold text-lg text-foreground">
 						AI Meeting Notes
 					</h2>
@@ -166,7 +166,7 @@ export const MeetingNotesPanel = ({
 					size="icon"
 					variant="ghost"
 				>
-					<X className="w-4 h-4" />
+					<X className="size-4" />
 				</Button>
 			</div>
 
@@ -175,7 +175,7 @@ export const MeetingNotesPanel = ({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
 						<div
-							className={`w-2 h-2 rounded-full ${isListening ? "bg-destructive animate-pulse" : "bg-muted-foreground/40"}`}
+							className={`size-2 rounded-full ${isListening ? "bg-destructive animate-pulse" : "bg-muted-foreground/40"}`}
 						/>
 						<span className="text-xs text-muted-foreground">
 							{isListening ? "Listening..." : "Microphone muted"}
@@ -241,7 +241,7 @@ export const MeetingNotesPanel = ({
 							</div>
 						) : (
 							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
-								<FileText className="w-8 h-8 mb-3 opacity-20" />
+								<FileText className="size-8 mb-3 opacity-20" />
 								<p className="text-sm">No transcript yet.</p>
 								<p className="text-xs mt-1">
 									Unmute your microphone to start capturing the conversation.
@@ -256,7 +256,7 @@ export const MeetingNotesPanel = ({
 					<ScrollArea className="h-full p-4">
 						{meetingNotes?.status === "generating" ? (
 							<div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
-								<Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+								<Loader2 className="size-8 animate-spin mb-4 text-primary" />
 								<p className="text-sm">Analyzing conversation...</p>
 							</div>
 						) : meetingNotes?.summary ? (
@@ -264,7 +264,7 @@ export const MeetingNotesPanel = ({
 								<div>
 									<div className="flex items-center justify-between mb-2">
 										<h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-											<FileText className="w-4 h-4 text-muted-foreground" />{" "}
+											<FileText className="size-4 text-muted-foreground" />{" "}
 											Executive Summary
 										</h3>
 										<Button
@@ -287,7 +287,7 @@ export const MeetingNotesPanel = ({
 									meetingNotes.decisions.length > 0 && (
 										<div>
 											<h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-												<Target className="w-4 h-4 text-muted-foreground" /> Key
+												<Target className="size-4 text-muted-foreground" /> Key
 												Decisions
 											</h3>
 											<ul className="space-y-2">
@@ -296,7 +296,7 @@ export const MeetingNotesPanel = ({
 														className="text-sm text-muted-foreground flex items-start gap-2 bg-muted p-2.5 rounded-md"
 														key={`${decision}-${i}`}
 													>
-														<div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+														<div className="size-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
 														<span>{decision}</span>
 													</li>
 												))}
@@ -306,7 +306,7 @@ export const MeetingNotesPanel = ({
 							</div>
 						) : (
 							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
-								<Brain className="w-8 h-8 mb-3 opacity-20" />
+								<Brain className="size-8 mb-3 opacity-20" />
 								<p className="text-sm">Summary not generated yet.</p>
 								<p className="text-xs mt-1">
 									Click &quot;Generate AI Notes&quot; to analyze the transcript.
@@ -324,7 +324,7 @@ export const MeetingNotesPanel = ({
 					<ScrollArea className="h-full p-4">
 						{meetingNotes?.status === "generating" ? (
 							<div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
-								<Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+								<Loader2 className="size-8 animate-spin mb-4 text-primary" />
 								<p className="text-sm">Extracting action items...</p>
 							</div>
 						) : latestGeneration?.actionItems &&
@@ -332,7 +332,7 @@ export const MeetingNotesPanel = ({
 							<div className="space-y-3">
 								<div className="flex items-center justify-between mb-3">
 									<h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-										<CheckSquare className="w-4 h-4 text-muted-foreground" />{" "}
+										<CheckSquare className="size-4 text-muted-foreground" />{" "}
 										Action Items
 									</h3>
 									<Button
@@ -343,7 +343,7 @@ export const MeetingNotesPanel = ({
 										size="sm"
 										variant="outline"
 									>
-										{!isPushingTasks && <Target className="w-3 h-3" />}
+										{!isPushingTasks && <Target className="size-3" />}
 										Push to Tasks
 									</Button>
 								</div>
@@ -353,7 +353,7 @@ export const MeetingNotesPanel = ({
 										key={`${task.title}-${i}`}
 									>
 										<div className="mt-0.5">
-											<div className="w-4 h-4 rounded border border-muted-foreground/40" />
+											<div className="size-4 rounded border border-muted-foreground/40" />
 										</div>
 										<p className="text-sm text-foreground">{task.title}</p>
 									</div>
@@ -361,7 +361,7 @@ export const MeetingNotesPanel = ({
 							</div>
 						) : (
 							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
-								<CheckSquare className="w-8 h-8 mb-3 opacity-20" />
+								<CheckSquare className="size-8 mb-3 opacity-20" />
 								<p className="text-sm">No action items found.</p>
 							</div>
 						)}

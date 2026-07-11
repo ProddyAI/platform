@@ -395,7 +395,7 @@ export const AiNotemaker = ({
 			)}
 			<div
 				className={cn(
-					"relative z-[100] bg-card shadow-xl transition-all duration-300 ease-in-out border-border flex flex-col pointer-events-auto h-full w-full overflow-hidden shrink-0"
+					"relative z-[100] bg-card shadow-xl transition-all duration-300 ease-in-out border-border flex flex-col pointer-events-auto size-full overflow-hidden shrink-0"
 				)}
 			>
 				<div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card flex-shrink-0 z-20 sticky top-0 shadow-sm">
@@ -415,7 +415,7 @@ export const AiNotemaker = ({
 					<div className="flex items-center gap-2">
 						{isFocusMode ? (
 							<Button
-								className="h-9 w-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
+								className="size-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
 								onClick={() => setIsFocusMode(false)}
 								size="icon"
 								title="Exit Focus Mode"
@@ -425,7 +425,7 @@ export const AiNotemaker = ({
 							</Button>
 						) : (
 							<Button
-								className="h-9 w-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
+								className="size-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
 								onClick={() => setIsFocusMode(true)}
 								size="icon"
 								title="Enter Focus Mode"
@@ -436,7 +436,7 @@ export const AiNotemaker = ({
 						)}
 						<div className="w-px h-5 bg-border mx-1" />
 						<Button
-							className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all hover:scale-105 active:scale-95"
+							className="size-9 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all hover:scale-105 active:scale-95"
 							onClick={() => setIsOpen(false)}
 							size="icon"
 							title="Close AI Assistant"
@@ -922,15 +922,15 @@ export const AiNotemaker = ({
 												<div className="mr-auto p-4 rounded-lg bg-card rounded-bl-sm border border-border shadow-sm">
 													<div className="flex gap-1.5 items-center">
 														<span
-															className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+															className="size-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
 															style={{ animationDelay: "0ms" }}
 														/>
 														<span
-															className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+															className="size-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
 															style={{ animationDelay: "150ms" }}
 														/>
 														<span
-															className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+															className="size-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
 															style={{ animationDelay: "300ms" }}
 														/>
 													</div>
@@ -982,7 +982,7 @@ export const AiNotemaker = ({
 									value={chatInput}
 								/>
 								<Button
-									className="bg-secondary hover:bg-secondary/90 h-12 w-12 shadow-sm transition-all hover:scale-105 active:scale-95"
+									className="bg-secondary hover:bg-secondary/90 size-12 shadow-sm transition-all hover:scale-105 active:scale-95"
 									disabled={isChatting || !chatInput.trim()}
 									size="icon"
 									type="submit"

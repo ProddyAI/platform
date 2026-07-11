@@ -100,7 +100,7 @@ export const AssignedCardsWidget = ({
 				}
 				badge={sortedCards.length > 0 ? sortedCards.length : undefined}
 				controls={controls}
-				icon={<KanbanSquare className="h-5 w-5 text-primary" />}
+				icon={<KanbanSquare className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Assigned Issues"
 			/>
@@ -118,7 +118,7 @@ export const AssignedCardsWidget = ({
 										{card.dueDate && (
 											<RelativeTime
 												className="text-[10px]"
-												iconClassName="h-2.5 w-2.5"
+												iconClassName="size-2.5"
 												overdue={isOverdue(card.dueDate)}
 												timestamp={card.dueDate}
 											/>

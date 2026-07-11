@@ -80,7 +80,7 @@ class ChannelActivityErrorBoundary extends Component<
 		if (this.state.hasError) {
 			return (
 				<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg gap-2">
-					<AlertTriangle className="h-8 w-8 text-destructive" />
+					<AlertTriangle className="size-8 text-destructive" />
 					<h3 className="text-lg font-medium text-foreground">
 						Couldn&apos;t load channel activity
 					</h3>
@@ -92,7 +92,7 @@ class ChannelActivityErrorBoundary extends Component<
 						onClick={this.handleRetry}
 						type="button"
 					>
-						<RefreshCw className="h-4 w-4" />
+						<RefreshCw className="size-4" />
 						Try again
 					</button>
 				</div>
@@ -220,7 +220,7 @@ const ChannelActivityDashboardContent = ({
 	if (channelActivity.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg">
-				<Hash className="h-12 w-12 text-muted-foreground mb-2" />
+				<Hash className="size-12 text-muted-foreground mb-2" />
 				<h3 className="text-lg font-medium">No channel activity data</h3>
 				<p className="text-sm text-muted-foreground">
 					Start interacting with channels to generate activity data.
@@ -323,7 +323,7 @@ const ChannelActivityDashboardContent = ({
 						className="flex items-center gap-1.5 text-xs text-muted-foreground"
 						role="status"
 					>
-						<Loader className="h-3.5 w-3.5 animate-spin" />
+						<Loader className="size-3.5 animate-spin" />
 						Refreshing...
 					</span>
 				)}
@@ -445,7 +445,7 @@ const ChannelActivityDashboardContent = ({
 								/>
 							) : (
 								<div className="flex flex-col items-center justify-center h-full bg-muted/20 rounded-md">
-									<Clock className="h-12 w-12 text-muted-foreground mb-2" />
+									<Clock className="size-12 text-muted-foreground mb-2" />
 									<p className="text-muted-foreground text-sm">
 										No time tracking data available
 									</p>

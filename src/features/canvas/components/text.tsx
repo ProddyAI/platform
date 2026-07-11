@@ -386,7 +386,7 @@ export const Text = ({
 			y={y} // Add data attribute for debugging
 		>
 			<div
-				className="w-full h-full"
+				className="size-full"
 				onPointerDown={handlePointerDown}
 				style={{
 					cursor: isEditing ? "text" : isDragging ? "grabbing" : "grab",
@@ -396,7 +396,7 @@ export const Text = ({
 				<ContentEditable
 					aria-label={isEditing ? "Editable text" : "Text element"}
 					className={cn(
-						"h-full w-full flex items-center justify-center text-center drop-shadow-md outline-none"
+						"size-full flex items-center justify-center text-center drop-shadow-md outline-none"
 					)}
 					disabled={!isEditing}
 					html={value ? sanitizeHtml(value) : "Text"}

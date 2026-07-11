@@ -143,7 +143,7 @@ export const MemberItem = ({
 								</Avatar>
 								{member && (
 									<PresenceIndicator
-										className="w-2 h-2 md:w-2.5 md:h-2.5"
+										className="size-2 md:w-2.5 md:h-2.5"
 										status={status}
 									/>
 								)}
@@ -164,7 +164,7 @@ export const MemberItem = ({
 							</Avatar>
 							{member && (
 								<PresenceIndicator
-									className="w-2 h-2 md:w-2.5 md:h-2.5"
+									className="size-2 md:w-2.5 md:h-2.5"
 									status={status}
 								/>
 							)}
@@ -205,7 +205,7 @@ export const ChannelItem = ({
 			return (
 				<Image
 					alt={`Channel icon for ${label}`}
-					className="h-full w-full rounded-full object-cover"
+					className="size-full rounded-full object-cover"
 					height={28}
 					onError={() => setImageLoadError(true)}
 					src={iconImageUrl}
@@ -285,7 +285,7 @@ export const ProjectItem = ({
 			return (
 				<Image
 					alt={`Project icon for ${label}`}
-					className="h-full w-full rounded-full object-cover"
+					className="size-full rounded-full object-cover"
 					height={28}
 					onError={() => setImageLoadError(true)}
 					src={iconImageUrl}

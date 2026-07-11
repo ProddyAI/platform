@@ -120,7 +120,7 @@ export const MilestoneDetail = ({
 										daysUntil < 0
 											? "text-destructive"
 											: daysUntil < 7
-												? "text-orange-500"
+												? "text-warning"
 												: "text-muted-foreground"
 									)}
 								>
@@ -201,9 +201,9 @@ export const MilestoneDetail = ({
 								>
 									<div className="mt-0.5 shrink-0">
 										{isDone ? (
-											<CheckCircle2 className="size-4 text-emerald-500" />
+											<CheckCircle2 className="size-4 text-success" />
 										) : bucket === "inProgress" ? (
-											<Clock className="size-4 text-blue-500" />
+											<Clock className="size-4 text-primary" />
 										) : (
 											<Circle className="size-4 text-muted-foreground/40" />
 										)}

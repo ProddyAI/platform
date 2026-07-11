@@ -11,7 +11,7 @@ export const CTASection = () => {
 	const ctaRef = useRef<HTMLDivElement>(null);
 	const isCtaInView = useInView(ctaRef, { once: true, margin: "-100px 0px" });
 	const shouldReduceMotion = useReducedMotion();
-	const hiddenY = shouldReduceMotion ? 0 : 20;
+	const hiddenY = shouldReduceMotion ? 0 : 12;
 
 	return (
 		<section className="py-20 bg-background" ref={ctaRef}>
@@ -22,7 +22,7 @@ export const CTASection = () => {
 					}
 					className="text-center"
 					initial={{ opacity: 0, y: hiddenY }}
-					transition={{ duration: 0.5 }}
+					transition={{ duration: 0.35 }}
 				>
 					<motion.h2
 						animate={
@@ -30,7 +30,7 @@ export const CTASection = () => {
 						}
 						className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4"
 						initial={{ opacity: 0, y: hiddenY }}
-						transition={{ duration: 0.5, delay: 0.1 }}
+						transition={{ duration: 0.35, delay: 0.05 }}
 					>
 						Start Building with{" "}
 						<span className="text-primary">Proddy Today</span>
@@ -42,9 +42,9 @@ export const CTASection = () => {
 						}
 						className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
 						initial={{ opacity: 0, y: hiddenY }}
-						transition={{ duration: 0.5, delay: 0.2 }}
+						transition={{ duration: 0.35, delay: 0.1 }}
 					>
-						Create a workspace. Invite your team. Free during the public beta.
+						Create a workspace. Invite your team. Free to get started.
 					</motion.p>
 
 					<motion.div
@@ -53,7 +53,7 @@ export const CTASection = () => {
 						}
 						className="flex flex-col sm:flex-row gap-4 justify-center"
 						initial={{ opacity: 0, y: hiddenY }}
-						transition={{ duration: 0.5, delay: 0.3 }}
+						transition={{ duration: 0.35, delay: 0.15 }}
 					>
 						<Button
 							asChild
@@ -80,10 +80,9 @@ export const CTASection = () => {
 						}
 						className="text-sm text-muted-foreground mt-6"
 						initial={{ opacity: 0, y: hiddenY }}
-						transition={{ duration: 0.5, delay: 0.4 }}
+						transition={{ duration: 0.35, delay: 0.2 }}
 					>
-						No credit card required • Free during public beta • Full platform
-						access
+						No credit card required • Free plan available • Full platform access
 					</motion.p>
 				</motion.div>
 			</div>

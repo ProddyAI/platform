@@ -149,7 +149,7 @@ const DroppableItem = ({
 				{!isCollapsed && onNew && (
 					<Hint align="center" label={hint} side="top">
 						<Button
-							className="h-7 w-7 flex-shrink-0 p-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 rounded-md hover:bg-sidebar-accent"
+							className="size-7 flex-shrink-0 p-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 rounded-md hover:bg-sidebar-accent"
 							onClick={onNew}
 							size="sm"
 							variant="ghost"
@@ -341,7 +341,7 @@ export const WorkspaceSidebar = ({
 			{onMobileClose && (
 				<div className="flex justify-end p-2 md:hidden flex-shrink-0">
 					<Button
-						className="h-8 w-8 rounded-full p-0"
+						className="size-8 rounded-full p-0"
 						onClick={onMobileClose}
 						size="sm"
 						variant="ghost"
@@ -541,10 +541,10 @@ export const WorkspaceSidebar = ({
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
-								href={`/workspace/${workspaceId}/meeting`}
+								href={`/workspace/${workspaceId}/meetings`}
 								icon={Brain}
-								id="meeting"
-								isActive={pathname.includes("/meeting")}
+								id="meetings"
+								isActive={pathname.includes("/meetings")}
 								isCollapsed={isCollapsed}
 								label="Meetings"
 							/>
@@ -668,7 +668,7 @@ export const WorkspaceSidebar = ({
 						side="right"
 					>
 						<Button
-							className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
+							className="size-8 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
 							onClick={() => setIsCollapsed(!isCollapsed)}
 							size="sm"
 							variant="ghost"

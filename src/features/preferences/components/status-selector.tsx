@@ -66,7 +66,7 @@ export const StatusSelector = () => {
 						className="flex items-center gap-2 text-base font-medium"
 						htmlFor="dnd-toggle"
 					>
-						<Moon className="h-4 w-4" />
+						<Moon className="size-4" />
 						Do Not Disturb
 					</Label>
 					<p className="text-sm text-muted-foreground">
@@ -86,7 +86,7 @@ export const StatusSelector = () => {
 						className="flex items-center gap-2 text-base font-medium"
 						htmlFor="dnd-toggle"
 					>
-						<Moon className="h-4 w-4" />
+						<Moon className="size-4" />
 						Do Not Disturb
 					</Label>
 					<p className="text-sm text-muted-foreground">

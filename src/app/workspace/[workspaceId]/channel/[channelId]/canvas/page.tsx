@@ -337,7 +337,7 @@ const CanvasPage = () => {
 				)}
 
 				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-background">
-					<PaintBucket className="size-16 text-secondary" />
+					<PaintBucket className="size-16 text-primary" />
 					<h2 className="text-2xl font-semibold">Canvas</h2>
 					<p className="text-sm text-muted-foreground mb-2">
 						Create a new canvas to start drawing and collaborating
@@ -349,12 +349,12 @@ const CanvasPage = () => {
 					>
 						{isCreatingCanvas ? (
 							<>
-								<Loader2 className="h-4 w-4 animate-spin" />
+								<Loader2 className="size-4 animate-spin" />
 								Creating Canvas...
 							</>
 						) : (
 							<>
-								<PaintBucket className="h-4 w-4" />
+								<PaintBucket className="size-4" />
 								Create New Canvas
 							</>
 						)}

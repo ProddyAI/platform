@@ -289,7 +289,7 @@ export default function OutboxPage() {
 										<TooltipTrigger asChild>
 											<DropdownMenuTrigger asChild>
 												<Button size="iconSm" variant="outline">
-													<Filter className="h-4 w-4" />
+													<Filter className="size-4" />
 												</Button>
 											</DropdownMenuTrigger>
 										</TooltipTrigger>
@@ -305,21 +305,21 @@ export default function OutboxPage() {
 										checked={showTextMessages}
 										onCheckedChange={setShowTextMessages}
 									>
-										<FileText className="mr-2 h-4 w-4" />
+										<FileText className="mr-2 size-4" />
 										Text Messages
 									</DropdownMenuCheckboxItem>
 									<DropdownMenuCheckboxItem
 										checked={showCanvasMessages}
 										onCheckedChange={setShowCanvasMessages}
 									>
-										<Brush className="mr-2 h-4 w-4" />
+										<Brush className="mr-2 size-4" />
 										Canvas Messages
 									</DropdownMenuCheckboxItem>
 									<DropdownMenuCheckboxItem
 										checked={showNoteMessages}
 										onCheckedChange={setShowNoteMessages}
 									>
-										<FileText className="mr-2 h-4 w-4" />
+										<FileText className="mr-2 size-4" />
 										Note Messages
 									</DropdownMenuCheckboxItem>
 								</DropdownMenuContent>
@@ -331,7 +331,7 @@ export default function OutboxPage() {
 										<TooltipTrigger asChild>
 											<DropdownMenuTrigger asChild>
 												<Button size="iconSm" variant="outline">
-													<SortDesc className="h-4 w-4" />
+													<SortDesc className="size-4" />
 												</Button>
 											</DropdownMenuTrigger>
 										</TooltipTrigger>
@@ -375,7 +375,7 @@ export default function OutboxPage() {
 							{groupedMessages.today?.length > 0 && (
 								<div>
 									<div className="flex items-center gap-2 mb-3">
-										<Clock className="h-4 w-4 text-muted-foreground" />
+										<Clock className="size-4 text-muted-foreground" />
 										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 											Today
 										</h3>
@@ -392,7 +392,7 @@ export default function OutboxPage() {
 							{groupedMessages.yesterday?.length > 0 && (
 								<div>
 									<div className="flex items-center gap-2 mb-3">
-										<Clock className="h-4 w-4 text-muted-foreground" />
+										<Clock className="size-4 text-muted-foreground" />
 										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 											Yesterday
 										</h3>
@@ -409,7 +409,7 @@ export default function OutboxPage() {
 							{groupedMessages.thisWeek?.length > 0 && (
 								<div>
 									<div className="flex items-center gap-2 mb-3">
-										<Clock className="h-4 w-4 text-muted-foreground" />
+										<Clock className="size-4 text-muted-foreground" />
 										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 											This Week
 										</h3>
@@ -426,7 +426,7 @@ export default function OutboxPage() {
 							{groupedMessages.earlier?.length > 0 && (
 								<div>
 									<div className="flex items-center gap-2 mb-3">
-										<Clock className="h-4 w-4 text-muted-foreground" />
+										<Clock className="size-4 text-muted-foreground" />
 										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 											Earlier
 										</h3>
@@ -459,19 +459,19 @@ export default function OutboxPage() {
 						<Badge variant="outline">
 							{message.context.type === "channel" ? (
 								<span className="flex items-center">
-									<Hash className="mr-1 h-3 w-3" />
+									<Hash className="mr-1 size-3" />
 									{message.context.name}
 								</span>
 							) : (
 								<span className="flex items-center">
-									<User className="mr-1 h-3 w-3" />
+									<User className="mr-1 size-3" />
 									{message.context.name}
 								</span>
 							)}
 						</Badge>
 					</div>
 					<div className="flex items-center gap-1 text-xs text-muted-foreground">
-						<Clock className="h-3 w-3" />
+						<Clock className="size-3" />
 						<span>
 							{formatDistanceToNow(new Date(message._creationTime), {
 								addSuffix: true,
@@ -488,7 +488,7 @@ export default function OutboxPage() {
 									content.type === "canvas-live" ||
 									content.type === "canvas-export") && (
 									<div className="flex items-center gap-2 text-sm">
-										<Brush className="h-4 w-4 text-muted-foreground" />
+										<Brush className="size-4 text-muted-foreground" />
 										<span>
 											Canvas:{" "}
 											{content.canvasName ||
@@ -501,7 +501,7 @@ export default function OutboxPage() {
 									content.type === "note-live" ||
 									content.type === "note-export") && (
 									<div className="flex items-center gap-2 text-sm">
-										<FileText className="h-4 w-4 text-muted-foreground" />
+										<FileText className="size-4 text-muted-foreground" />
 										<span>Note: {content.noteTitle || "Untitled Note"}</span>
 									</div>
 								)}

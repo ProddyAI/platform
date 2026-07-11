@@ -60,7 +60,7 @@ function StressWidgetTitleRow({
 			controls={controls}
 			icon={
 				<div className={cn("p-2 rounded-lg bg-primary/10", config.text)}>
-					<Brain className="h-5 w-5" />
+					<Brain className="size-5" />
 				</div>
 			}
 			isEditMode={isEditMode}
@@ -73,7 +73,7 @@ function StressHighAlert() {
 	return (
 		<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
 			<div className="flex gap-2">
-				<AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+				<AlertTriangle className="size-4 text-destructive shrink-0" />
 				<p className="text-xs text-destructive font-medium leading-relaxed">
 					High workload detected. Consider rescheduling non-urgent tasks or
 					taking a short break.
@@ -95,7 +95,7 @@ function FocusTaskDueDate({
 	return (
 		<RelativeTime
 			className="text-[9px]"
-			iconClassName="h-2.5 w-2.5"
+			iconClassName="size-2.5"
 			overdue={isOverdue}
 			timestamp={due.getTime()}
 		/>
@@ -220,7 +220,7 @@ function FocusSectionHeader({ onAIGuide }: { onAIGuide: () => void }) {
 	return (
 		<div className="flex items-center justify-between">
 			<div className="flex items-center gap-2">
-				<Target className="h-4 w-4 text-primary" />
+				<Target className="size-4 text-primary" />
 				<h4 className="text-sm font-semibold">Daily Focus</h4>
 			</div>
 			<Button
@@ -229,7 +229,7 @@ function FocusSectionHeader({ onAIGuide }: { onAIGuide: () => void }) {
 				size="sm"
 				variant="ghost"
 			>
-				<Sparkles className="h-3 w-3 mr-1" />
+				<Sparkles className="size-3 mr-1" />
 				AI Guide
 			</Button>
 		</div>
@@ -239,7 +239,7 @@ function FocusSectionHeader({ onAIGuide }: { onAIGuide: () => void }) {
 function FocusSectionEmpty() {
 	return (
 		<div className="flex flex-col items-center justify-center py-8 text-center opacity-50">
-			<CheckCircle2 className="h-8 w-8 mb-2" />
+			<CheckCircle2 className="size-8 mb-2" />
 			<p className="text-xs font-medium">All clear for today!</p>
 		</div>
 	);
@@ -292,7 +292,7 @@ export const StressWidget = ({
 	if (loadingMetrics || loadingFocus) {
 		return (
 			<WidgetCard className="flex items-center justify-center h-[400px]">
-				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+				<Loader2 className="size-8 animate-spin text-muted-foreground" />
 			</WidgetCard>
 		);
 	}
@@ -364,7 +364,7 @@ export const StressWidget = ({
 						size="sm"
 						variant="outline"
 					>
-						<Brain className="h-3.5 w-3.5 mr-1.5" />
+						<Brain className="size-3.5 mr-1.5" />
 						Analyze
 					</Button>
 					<Button
@@ -380,7 +380,7 @@ export const StressWidget = ({
 						size="sm"
 						variant="outline"
 					>
-						<Zap className="h-3.5 w-3.5 mr-1.5" />
+						<Zap className="size-3.5 mr-1.5" />
 						Reschedule
 					</Button>
 				</div>

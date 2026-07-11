@@ -87,7 +87,7 @@ export const HeroSection = () => {
 							<div className="space-y-4 mb-8">
 								<div className="flex items-start">
 									<div className="flex-shrink-0 mt-1">
-										<Zap className="h-5 w-5 text-primary" />
+										<Zap className="size-5 text-primary" />
 									</div>
 									<div className="ml-4">
 										<h4 className="text-lg font-medium text-foreground">
@@ -102,7 +102,7 @@ export const HeroSection = () => {
 
 								<div className="flex items-start">
 									<div className="flex-shrink-0 mt-1">
-										<Lock className="h-5 w-5 text-primary" />
+										<Lock className="size-5 text-primary" />
 									</div>
 									<div className="ml-4">
 										<h4 className="text-lg font-medium text-foreground">
@@ -118,7 +118,7 @@ export const HeroSection = () => {
 
 								<div className="flex items-start">
 									<div className="flex-shrink-0 mt-1">
-										<MessageSquare className="h-5 w-5 text-primary" />
+										<MessageSquare className="size-5 text-primary" />
 									</div>
 									<div className="ml-4">
 										<h4 className="text-lg font-medium text-foreground">
@@ -141,10 +141,10 @@ export const HeroSection = () => {
 							initial={{ opacity: 0, x: 20 }}
 							transition={{ duration: 0.5, delay: 0.7 }}
 						>
-							<div className="bg-card rounded-xl shadow-lg overflow-hidden border border-border">
+							<div className="bg-card rounded-2xl shadow-lg overflow-hidden border border-border">
 								<div className="p-4 bg-primary/10 border-b border-border">
 									<div className="flex items-center gap-2">
-										<Bot className="h-5 w-5 text-primary" />
+										<Bot className="size-5 text-primary" />
 										<h3 className="font-semibold text-foreground">Proddy AI</h3>
 									</div>
 								</div>
@@ -234,7 +234,7 @@ export const HeroSection = () => {
 											disabled
 											size="sm"
 										>
-											<Send className="h-4 w-4" />
+											<Send className="size-4" />
 										</Button>
 									</div>
 								</div>

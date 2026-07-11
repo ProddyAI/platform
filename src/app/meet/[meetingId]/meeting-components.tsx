@@ -237,13 +237,13 @@ export const MeetingRecordButton = ({
 			{isRecording && <VoiceWaveform isRecording={isRecording} />}
 			<button
 				aria-pressed={isRecording}
-				className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-[#232529] hover:bg-[#2a2c32] text-white"}`}
+				className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-[#26282c] hover:bg-[#2f3136] text-white"}`}
 				onClick={isRecording ? stopRecording : startRecording}
 				title={isRecording ? "Stop Recording" : "Start Recording"}
 				type="button"
 			>
 				<div
-					className={`rounded-full ${isRecording ? "w-2.5 h-2.5 bg-white animate-pulse motion-reduce:animate-none" : "w-3 h-3 bg-red-500"}`}
+					className={`rounded-full ${isRecording ? "size-2.5 bg-white animate-pulse motion-reduce:animate-none" : "size-3 bg-red-500"}`}
 				/>
 				{isRecording ? "Stop" : "Record"}
 			</button>
@@ -341,10 +341,10 @@ export const MeetingReactions = () => {
 			{/* Reaction picker popover */}
 			<div className="relative" ref={pickerRef}>
 				{showPicker && (
-					<div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#232529] rounded-2xl px-3 py-2 flex gap-1.5 shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
+					<div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#26282c] rounded-2xl px-3 py-2 flex gap-1.5 shadow-2xl border border-[rgba(255,255,255,0.08)] z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
 						{emojis.map((emoji) => (
 							<button
-								className="text-2xl hover:scale-125 active:scale-95 transition-transform p-1 rounded-lg hover:bg-white/10"
+								className="text-2xl hover:scale-125 active:scale-95 transition-transform p-1 rounded-lg hover:bg-[#2f3136]"
 								key={emoji}
 								onClick={() => sendReaction(emoji)}
 								title={emoji}
@@ -358,7 +358,7 @@ export const MeetingReactions = () => {
 				<button
 					aria-expanded={showPicker}
 					aria-haspopup="true"
-					className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${showPicker ? "bg-secondary text-secondary-foreground" : "bg-[#232529] hover:bg-[#2a2c32] text-white"}`}
+					className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${showPicker ? "bg-primary text-primary-foreground" : "bg-[#26282c] hover:bg-[#2f3136] text-white"}`}
 					onClick={() => setShowPicker(!showPicker)}
 					title="Reactions"
 					type="button"
@@ -430,7 +430,7 @@ export const CaptionsOverlay = ({
 
 	return (
 		<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[85%] w-auto">
-			<div className="bg-[#232529]/80 backdrop-blur-3xl border border-white/10 text-white px-6 py-4 rounded-2xl text-base leading-relaxed shadow-2xl animate-in fade-in duration-300 motion-reduce:animate-none overflow-hidden">
+			<div className="bg-[#26282c]/80 backdrop-blur-3xl border border-[rgba(255,255,255,0.08)] text-white px-6 py-4 rounded-2xl text-base leading-relaxed shadow-2xl animate-in fade-in duration-300 motion-reduce:animate-none overflow-hidden">
 				<div className="relative flex flex-col gap-1">
 					{speaker && (
 						<span className="text-secondary font-bold text-xs mb-0.5 opacity-80">
@@ -473,11 +473,11 @@ export const CustomParticipantList = () => {
 					colors[p.sessionId.charCodeAt(0) % colors.length] || colors[0];
 				return (
 					<div
-						className="flex items-center gap-3 px-6 py-2.5 hover:bg-white/5 cursor-pointer"
+						className="flex items-center gap-3 px-6 py-2.5 hover:bg-[#2f3136] cursor-pointer"
 						key={p.sessionId}
 					>
 						<div
-							className={`w-9 h-9 rounded-full ${colorClass} text-white flex items-center justify-center text-sm font-medium shrink-0`}
+							className={`size-9 rounded-full ${colorClass} text-white flex items-center justify-center text-sm font-medium shrink-0`}
 						>
 							{p.name?.[0]?.toUpperCase() || "A"}
 						</div>
@@ -487,8 +487,8 @@ export const CustomParticipantList = () => {
 							</span>
 						</div>
 						{!p.audioStream && (
-							<div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
-								<MicOff className="w-3.5 h-3.5 text-red-500" />
+							<div className="size-7 rounded-full bg-[#26282c] flex items-center justify-center">
+								<MicOff className="size-3.5 text-red-500" />
 							</div>
 						)}
 					</div>
@@ -661,24 +661,24 @@ export const NotesSidebar = ({
 
 	return (
 		<>
-			<div className="flex items-center justify-between p-5 pb-3 border-b border-white/10">
+			<div className="flex items-center justify-between p-5 pb-3 border-b border-[rgba(255,255,255,0.08)]">
 				<div className="flex items-center gap-2.5">
-					<Sparkles className="w-5 h-5 text-secondary" />
+					<Sparkles className="size-5 text-secondary" />
 					<h2 className="text-base font-semibold text-white">AI Notemaker</h2>
 				</div>
 				<Button
 					aria-label="Close notes panel"
-					className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9"
+					className="text-gray-400 hover:text-white hover:bg-[#2f3136] rounded-full size-9"
 					onClick={onClose}
 					size="icon"
 					variant="ghost"
 				>
-					<X className="w-4 h-4" />
+					<X className="size-4" />
 				</Button>
 			</div>
 
 			{/* Generate & Export Buttons */}
-			<div className="px-5 py-3 border-b border-white/10 flex flex-col gap-2">
+			<div className="px-5 py-3 border-b border-[rgba(255,255,255,0.08)] flex flex-col gap-2">
 				<div className="flex items-center gap-2 w-full">
 					<Button
 						className="flex-1 bg-secondary hover:bg-secondary/90 text-white rounded-full h-9 text-xs font-medium gap-2 shadow-lg shadow-secondary/20"
@@ -691,11 +691,11 @@ export const NotesSidebar = ({
 					>
 						{isGenerating || savedNotes?.status === "generating" ? (
 							<>
-								<Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...
+								<Loader2 className="size-3.5 animate-spin" /> Generating...
 							</>
 						) : (
 							<>
-								<Brain className="w-3.5 h-3.5" /> Generate AI Notes
+								<Brain className="size-3.5" /> Generate AI Notes
 							</>
 						)}
 					</Button>
@@ -706,22 +706,22 @@ export const NotesSidebar = ({
 								aria-expanded={showHistoryDropdown}
 								aria-haspopup="true"
 								aria-label="Note generation history"
-								className="rounded-full h-9 text-xs gap-1 border-white/10 text-gray-300 hover:bg-white/10"
+								className="rounded-full h-9 text-xs gap-1 border-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[#2f3136]"
 								onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
 								size="sm"
 								variant="outline"
 							>
-								<Clock className="w-3.5 h-3.5" />
-								<ChevronDown className="w-3 h-3" />
+								<Clock className="size-3.5" />
+								<ChevronDown className="size-3" />
 							</Button>
 							{showHistoryDropdown && (
-								<div className="absolute right-0 top-11 bg-[#232529] border border-white/10 rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2 motion-reduce:animate-none">
+								<div className="absolute right-0 top-11 bg-[#26282c] border border-[rgba(255,255,255,0.08)] rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2 motion-reduce:animate-none">
 									<p className="px-3 py-2 text-[11px] font-semibold text-gray-500">
 										Note history
 									</p>
 									{generations.map((gen, idx) => (
 										<button
-											className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between ${selectedGenIdx === idx ? "bg-secondary/10 text-secondary" : "text-gray-300"}`}
+											className={`w-full text-left px-3 py-2 text-xs hover:bg-[#2f3136] flex items-center justify-between ${selectedGenIdx === idx ? "bg-secondary/10 text-secondary" : "text-gray-300"}`}
 											key={gen._id}
 											onClick={() => {
 												setSelectedGenIdx(idx);
@@ -748,18 +748,18 @@ export const NotesSidebar = ({
 				{currentGen && (
 					<div className="flex items-center gap-2">
 						<Button
-							className="flex-1 h-9 text-[11px] font-bold gap-2 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all shadow-sm"
+							className="flex-1 h-9 text-[11px] font-bold gap-2 border-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[#2f3136] hover:text-white rounded-xl transition-all shadow-sm"
 							onClick={() => handleExport("pdf")}
 							variant="outline"
 						>
-							<FileDown className="w-3.5 h-3.5" /> Export PDF
+							<FileDown className="size-3.5" /> Export PDF
 						</Button>
 						<Button
-							className="flex-1 h-9 text-[11px] font-bold gap-2 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all shadow-sm"
+							className="flex-1 h-9 text-[11px] font-bold gap-2 border-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[#2f3136] hover:text-white rounded-xl transition-all shadow-sm"
 							onClick={() => handleExport("word")}
 							variant="outline"
 						>
-							<Download className="w-3.5 h-3.5" /> Export Word
+							<Download className="size-3.5" /> Export Word
 						</Button>
 					</div>
 				)}
@@ -768,9 +768,9 @@ export const NotesSidebar = ({
 			{/* Recording indicator */}
 			{isRecording && (
 				<div className="px-5 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2">
-					<span className="relative flex h-2.5 w-2.5">
-						<span className="motion-reduce:hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-						<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+					<span className="relative flex size-2.5">
+						<span className="motion-reduce:hidden animate-ping absolute inline-flex size-full rounded-full bg-red-400 opacity-75" />
+						<span className="relative inline-flex rounded-full size-2.5 bg-red-500" />
 					</span>
 					<span className="text-xs font-medium text-red-400">
 						Recording & transcribing...
@@ -786,27 +786,27 @@ export const NotesSidebar = ({
 					value={activeTab}
 				>
 					<div className="px-5 pt-3 pb-1">
-						<TabsList className="bg-white/5 w-full p-1 h-10 rounded-xl grid grid-cols-4 border border-white/5">
+						<TabsList className="bg-[#26282c] w-full p-1 h-10 rounded-xl grid grid-cols-4 border border-[rgba(255,255,255,0.08)]">
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-[#2f3136] data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="transcript"
 							>
 								Transcript
 							</TabsTrigger>
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-[#2f3136] data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="summary"
 							>
 								Summary
 							</TabsTrigger>
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-[#2f3136] data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="tasks"
 							>
 								Tasks
 							</TabsTrigger>
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-[#2f3136] data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="decisions"
 							>
 								Decisions
@@ -822,17 +822,17 @@ export const NotesSidebar = ({
 									{/* Copy button */}
 									<div className="flex justify-end">
 										<button
-											className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-secondary transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg"
+											className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-secondary transition-colors bg-[#26282c] hover:bg-[#2f3136] px-3 py-1.5 rounded-lg"
 											onClick={handleCopyTranscript}
 											type="button"
 										>
 											{copied ? (
 												<>
-													<CheckSquare className="w-3 h-3" /> Copied
+													<CheckSquare className="size-3" /> Copied
 												</>
 											) : (
 												<>
-													<Copy className="w-3 h-3" /> Copy Transcript
+													<Copy className="size-3" /> Copy Transcript
 												</>
 											)}
 										</button>
@@ -869,7 +869,7 @@ export const NotesSidebar = ({
 														key={i}
 													>
 														<div
-															className={`w-7 h-7 rounded-full ${colorClass} text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5`}
+															className={`size-7 rounded-full ${colorClass} text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5`}
 														>
 															{speaker ? speaker[0]?.toUpperCase() : "?"}
 														</div>
@@ -890,7 +890,7 @@ export const NotesSidebar = ({
 								</div>
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
-									<MicOff className="w-8 h-8 opacity-30" />
+									<MicOff className="size-8 opacity-30" />
 									<p className="text-sm">
 										Press &quot;Record&quot; to start capturing the meeting
 										transcript.
@@ -904,7 +904,7 @@ export const NotesSidebar = ({
 							{currentGen ? (
 								<div className="space-y-3">
 									<div className="flex items-center gap-2 mb-1">
-										<FileText className="w-4 h-4 text-secondary" />
+										<FileText className="size-4 text-secondary" />
 										<h3 className="text-sm font-semibold text-white">
 											Executive Summary
 										</h3>
@@ -912,23 +912,23 @@ export const NotesSidebar = ({
 											Gen #{currentGen.generationNumber}
 										</span>
 									</div>
-									<p className="text-sm text-gray-300 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
+									<p className="text-sm text-gray-300 leading-relaxed bg-[#26282c] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
 										{currentGen.summary}
 									</p>
 								</div>
 							) : savedNotes?.summary ? (
 								<div className="space-y-3">
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<FileText className="w-4 h-4 text-secondary" /> Executive
+										<FileText className="size-4 text-secondary" /> Executive
 										Summary
 									</h3>
-									<p className="text-sm text-gray-300 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
+									<p className="text-sm text-gray-300 leading-relaxed bg-[#26282c] p-4 rounded-xl border border-[rgba(255,255,255,0.08)]">
 										{savedNotes.summary}
 									</p>
 								</div>
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
-									<Brain className="w-8 h-8 opacity-30" />
+									<Brain className="size-8 opacity-30" />
 									<p className="text-sm">
 										Generate AI notes to see the summary.
 									</p>
@@ -941,7 +941,7 @@ export const NotesSidebar = ({
 							{currentGen && currentGen.actionItems.length > 0 ? (
 								<>
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<CheckSquare className="w-4 h-4 text-orange-400" /> Action
+										<CheckSquare className="size-4 text-orange-400" /> Action
 										Items
 										<span className="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full font-medium">
 											{currentGen.actionItems.length}
@@ -949,11 +949,11 @@ export const NotesSidebar = ({
 									</h3>
 									{currentGen.actionItems.map((task) => (
 										<div
-											className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-1.5"
+											className="bg-[#26282c] p-3 rounded-xl border border-[rgba(255,255,255,0.08)] space-y-1.5"
 											key={task.title}
 										>
 											<div className="flex items-start gap-2.5">
-												<div className="mt-0.5 w-4 h-4 rounded border border-gray-600 flex-shrink-0" />
+												<div className="mt-0.5 size-4 rounded border border-gray-600 flex-shrink-0" />
 												<p className="text-[13px] text-gray-200 font-medium leading-relaxed">
 													{task.title}
 												</p>
@@ -987,7 +987,7 @@ export const NotesSidebar = ({
 								</>
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
-									<CheckSquare className="w-8 h-8 opacity-30" />
+									<CheckSquare className="size-8 opacity-30" />
 									<p className="text-sm">No action items yet.</p>
 								</div>
 							)}
@@ -998,7 +998,7 @@ export const NotesSidebar = ({
 							{currentGen && currentGen.decisions.length > 0 ? (
 								<>
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<Target className="w-4 h-4 text-emerald-400" /> Key
+										<Target className="size-4 text-emerald-400" /> Key
 										Decisions
 										<span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
 											{currentGen.decisions.length}
@@ -1006,17 +1006,17 @@ export const NotesSidebar = ({
 									</h3>
 									{currentGen.decisions.map((decision) => (
 										<div
-											className="text-sm text-gray-300 flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5"
+											className="text-sm text-gray-300 flex items-start gap-3 bg-[#26282c] p-3 rounded-xl border border-[rgba(255,255,255,0.08)]"
 											key={decision}
 										>
-											<div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+											<div className="size-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
 											<span className="leading-relaxed">{decision}</span>
 										</div>
 									))}
 								</>
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
-									<Target className="w-8 h-8 opacity-30" />
+									<Target className="size-8 opacity-30" />
 									<p className="text-sm">No decisions extracted yet.</p>
 								</div>
 							)}
@@ -1075,9 +1075,9 @@ const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 			variant="outline"
 		>
 			{pushing ? (
-				<Loader2 className="w-3.5 h-3.5 animate-spin" />
+				<Loader2 className="size-3.5 animate-spin" />
 			) : (
-				<ArrowUpRight className="w-3.5 h-3.5" />
+				<ArrowUpRight className="size-3.5" />
 			)}
 			Push All Tasks to Dashboard
 		</Button>
@@ -1140,19 +1140,19 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 
 	return (
 		<>
-			<div className="flex items-center justify-between p-5 pb-3 border-b border-white/5">
+			<div className="flex items-center justify-between p-5 pb-3 border-b border-[rgba(255,255,255,0.08)]">
 				<h2 className="text-lg font-semibold text-white">In-call messages</h2>
 				<Button
 					aria-label="Close chat"
-					className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9"
+					className="text-gray-400 hover:text-white hover:bg-[#2f3136] rounded-full size-9"
 					onClick={onClose}
 					size="icon"
 					variant="ghost"
 				>
-					<X className="w-4 h-4" />
+					<X className="size-4" />
 				</Button>
 			</div>
-			<div className="px-5 py-2 bg-white/5 border-b border-white/5">
+			<div className="px-5 py-2 bg-[#26282c] border-b border-[rgba(255,255,255,0.08)]">
 				<p className="text-[11px] text-gray-400">
 					Messages are only visible to people in the call.
 				</p>
@@ -1171,7 +1171,7 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 				shift position, so index is a safe key */}
 				{messages.map((msg, i) => (
 					<div className="flex gap-3" key={i}>
-						<div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center text-xs font-medium shrink-0">
+						<div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium shrink-0">
 							{msg.name[0]?.toUpperCase() || "A"}
 						</div>
 						<div className="flex-1 min-w-0">
@@ -1188,11 +1188,11 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 					</div>
 				))}
 			</div>
-			<div className="p-4 border-t border-white/5">
+			<div className="p-4 border-t border-[rgba(255,255,255,0.08)]">
 				<div className="flex items-center gap-2">
 					<input
 						aria-label="Send a message to everyone"
-						className="flex-1 text-sm bg-white/5 border-0 rounded-full px-4 py-2.5 focus:bg-white/10 focus:ring-1 focus:ring-secondary outline-none text-white placeholder:text-gray-500"
+						className="flex-1 text-sm bg-[#26282c] border-0 rounded-full px-4 py-2.5 focus:bg-[#2f3136] focus:ring-1 focus:ring-primary outline-none text-white placeholder:text-gray-500"
 						onChange={(e) => setInput(e.target.value)}
 						onKeyDown={(e) => {
 							if (e.key === "Enter") sendMessage();
@@ -1203,23 +1203,12 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 					/>
 					<Button
 						aria-label="Send message"
-						className="rounded-full h-9 w-9 bg-secondary hover:bg-secondary/90 shrink-0"
+						className="rounded-full size-9 bg-primary hover:bg-primary/90 shrink-0"
 						disabled={!input.trim()}
 						onClick={sendMessage}
 						size="icon"
 					>
-						<svg
-							aria-hidden="true"
-							fill="none"
-							height="16"
-							viewBox="0 0 24 24"
-							width="16"
-						>
-							<path
-								d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
-								fill="currentColor"
-							/>
-						</svg>
+						<Send aria-hidden="true" className="size-4" />
 					</Button>
 				</div>
 			</div>

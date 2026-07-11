@@ -45,7 +45,7 @@ export const HorizontalBarChart = ({
 	const maxValue = Math.max(...data.map((item) => item.value));
 
 	return (
-		<div className={cn("w-full h-full overflow-auto", className)}>
+		<div className={cn("size-full overflow-auto", className)}>
 			<div className="space-y-4 min-h-0">
 				{data.map((item, index) => {
 					const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;

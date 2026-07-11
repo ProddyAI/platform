@@ -155,7 +155,7 @@ export const MessageContent = ({
 											isAuthor ? "text-primary-foreground/80" : "text-primary"
 										)}
 									>
-										<CalendarIcon className="h-3 w-3" />
+										<CalendarIcon className="size-3" />
 										<span>
 											Calendar event:{" "}
 											{new Date(calendarEvent.date).toLocaleDateString()}

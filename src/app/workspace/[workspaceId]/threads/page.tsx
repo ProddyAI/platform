@@ -228,7 +228,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 				<CardContent className="p-4">
 					<div className="flex items-start justify-between mb-3">
 						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<Avatar className="h-8 w-8 flex-shrink-0">
+							<Avatar className="size-8 flex-shrink-0">
 								<AvatarImage src={thread.parentUser.image} />
 								<AvatarFallback>
 									{thread.parentUser.name.charAt(0)}
@@ -242,12 +242,12 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 									<Badge className="flex-shrink-0" variant="outline">
 										{thread.context.type === "channel" ? (
 											<span className="flex items-center gap-1">
-												<Hash className="h-3 w-3" />
+												<Hash className="size-3" />
 												{thread.context.name}
 											</span>
 										) : (
 											<span className="flex items-center gap-1">
-												<User className="h-3 w-3" />
+												<User className="size-3" />
 												{thread.context.name}
 											</span>
 										)}
@@ -266,9 +266,9 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 						{parsedParentBody.isSpecial ? (
 							<div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3 border border-border">
 								{parsedParentBody.type === "canvas" ? (
-									<PaintBucket className="h-5 w-5 text-primary flex-shrink-0" />
+									<PaintBucket className="size-5 text-primary flex-shrink-0" />
 								) : (
-									<FileText className="h-5 w-5 text-primary flex-shrink-0" />
+									<FileText className="size-5 text-primary flex-shrink-0" />
 								)}
 								<span className="font-semibold text-sm truncate">
 									{parsedParentBody.content}
@@ -283,7 +283,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 					</div>
 
 					<div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
-						<Avatar className="h-6 w-6 flex-shrink-0">
+						<Avatar className="size-6 flex-shrink-0">
 							<AvatarImage src={thread.currentUser.image} />
 							<AvatarFallback className="text-xs">
 								{thread.currentUser.name.charAt(0)}
@@ -301,7 +301,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 					<div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
 						<div className="flex items-center gap-1 text-xs text-muted-foreground">
-							<MessageCircle className="h-3.5 w-3.5" />
+							<MessageCircle className="size-3.5" />
 							<span>
 								{threadReplyCount}{" "}
 								{threadReplyCount === 1 ? "reply" : "replies"}
@@ -387,7 +387,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 								{groupedThreads.today?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
+											<Clock className="size-4 text-muted-foreground" />
 											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												Today
 											</h3>
@@ -403,7 +403,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 								{groupedThreads.yesterday?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
+											<Clock className="size-4 text-muted-foreground" />
 											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												Yesterday
 											</h3>
@@ -419,7 +419,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 								{groupedThreads.thisWeek?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
+											<Clock className="size-4 text-muted-foreground" />
 											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												This Week
 											</h3>
@@ -435,7 +435,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 								{groupedThreads.earlier?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
+											<Clock className="size-4 text-muted-foreground" />
 											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												Earlier
 											</h3>

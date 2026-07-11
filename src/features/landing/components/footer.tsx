@@ -23,7 +23,7 @@ export const Footer = () => {
 					{/* Logo and description */}
 					<div className="md:w-1/3 mb-8 md:mb-0 md:pr-8">
 						<Link className="flex items-center gap-2 mb-4 group" href="/home">
-							<div className="relative w-8 h-8 overflow-hidden transition-transform duration-300 group-hover:scale-110">
+							<div className="relative size-8 overflow-hidden">
 								<Image
 									alt="Proddy Logo"
 									className="object-contain"

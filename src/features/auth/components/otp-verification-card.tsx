@@ -26,7 +26,7 @@ interface OTPVerificationCardProps {
 }
 
 const otpSlotClassName =
-	"w-12 h-12 text-lg border-2 rounded-xl hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200";
+	"size-12 text-lg border-2 rounded-xl hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200";
 
 export const OTPVerificationCard = ({
 	email,
@@ -191,8 +191,8 @@ export const OTPVerificationCard = ({
 	return (
 		<Card className="size-full p-8 shadow-xl animate-slide-up">
 			<CardHeader className="px-0 pt-0 flex flex-col items-center text-center">
-				<div className="mb-6 flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
-					<Mail className="w-8 h-8 text-primary" />
+				<div className="mb-6 flex items-center justify-center size-16 rounded-2xl bg-primary/10">
+					<Mail className="size-8 text-primary" />
 				</div>
 				<CardTitle className="text-2xl font-semibold">
 					Check your email

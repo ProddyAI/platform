@@ -112,7 +112,7 @@ const ManagePage = () => {
 	if (memberLoading || workspaceLoading) {
 		return (
 			<div className="flex h-full items-center justify-center">
-				<Loader className="h-8 w-8 animate-spin text-primary" />
+				<Loader className="size-8 animate-spin text-primary" />
 			</div>
 		);
 	}
@@ -120,7 +120,7 @@ const ManagePage = () => {
 	if (!workspaceId || !member || !workspace) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center">
-				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
+				<Shield className="size-12 text-muted-foreground mb-4" />
 				<h2 className="text-2xl font-semibold tracking-tight">Access Denied</h2>
 				<p className="text-muted-foreground">
 					You don&apos;t have permission to access this page.
@@ -160,23 +160,23 @@ const ManagePage = () => {
 				>
 					<TabsList className="grid w-full grid-cols-5 mb-8">
 						<TabsTrigger value="workspace">
-							<Settings className="h-4 w-4 mr-2" />
+							<Settings className="size-4 mr-2" />
 							Workspace
 						</TabsTrigger>
 						<TabsTrigger value="members">
-							<Users className="h-4 w-4 mr-2" />
+							<Users className="size-4 mr-2" />
 							Members
 						</TabsTrigger>
 						<TabsTrigger value="billing">
-							<CreditCard className="h-4 w-4 mr-2" />
+							<CreditCard className="size-4 mr-2" />
 							Billing
 						</TabsTrigger>
 						<TabsTrigger value="integrations">
-							<Plug className="h-4 w-4 mr-2" />
+							<Plug className="size-4 mr-2" />
 							AI Integrations
 						</TabsTrigger>
 						<TabsTrigger value="import">
-							<Database className="h-4 w-4 mr-2" />
+							<Database className="size-4 mr-2" />
 							Import Data
 						</TabsTrigger>
 					</TabsList>

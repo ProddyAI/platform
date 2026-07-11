@@ -2,8 +2,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Loader, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { SiGithub } from "react-icons/si";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -203,7 +203,7 @@ export const SignUpCard = ({
 						size="lg"
 						variant="outline"
 					>
-						<FaGithub className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
+						<SiGithub className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
 						Continue with GitHub
 					</Button>
 				</div>

@@ -61,7 +61,7 @@ const ResetPasswordContent = () => {
 		return (
 			<div className="flex h-full items-center justify-center bg-background">
 				<div className="flex flex-col items-center gap-4 text-foreground">
-					<Loader2 className="h-8 w-8 animate-spin text-primary" />
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-lg">Redirecting...</p>
 				</div>
 			</div>
@@ -123,7 +123,7 @@ const ResetPasswordContent = () => {
 		return (
 			<div className="flex h-full items-center justify-center bg-background">
 				<div className="flex flex-col items-center gap-4 text-foreground">
-					<Loader2 className="h-8 w-8 animate-spin text-primary" />
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-lg">Password reset successful!</p>
 					<p className="text-sm">Redirecting to sign in...</p>
 				</div>
@@ -136,7 +136,7 @@ const ResetPasswordContent = () => {
 		return (
 			<div className="flex h-full items-center justify-center bg-background">
 				<div className="flex flex-col items-center gap-4 text-foreground">
-					<Loader2 className="h-8 w-8 animate-spin text-primary" />
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-lg">Verifying reset link...</p>
 				</div>
 			</div>
@@ -176,7 +176,7 @@ const ResetPasswordContent = () => {
 				<Card className="size-full p-8 shadow-xl animate-slide-up">
 					<CardHeader className="px-0 pt-0">
 						<div className="flex items-center gap-2 mb-2">
-							<Lock className="h-6 w-6 text-primary" />
+							<Lock className="size-6 text-primary" />
 							<CardTitle>Reset Your Password</CardTitle>
 						</div>
 						<CardDescription>
@@ -245,7 +245,7 @@ const ResetPasswordPage = () => {
 		<Suspense
 			fallback={
 				<div className="flex h-full items-center justify-center bg-background">
-					<Loader2 className="h-8 w-8 animate-spin text-primary" />
+					<Loader2 className="size-8 animate-spin text-primary" />
 				</div>
 			}
 		>

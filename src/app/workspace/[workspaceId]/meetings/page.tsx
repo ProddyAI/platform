@@ -17,6 +17,7 @@ import {
 	Sparkles,
 	Target,
 	Upload,
+	Video,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NewMeetingModal } from "@/features/audio/components/new-meeting-modal";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
 import {
@@ -36,14 +38,15 @@ import {
 	WorkspaceTitle,
 } from "../workspace-title-context";
 
-export default function MeetingNotesPage() {
-	useSetWorkspaceTitle(<WorkspaceTitle icon={Brain} label="Meeting Notes" />);
+export default function MeetingsPage() {
+	useSetWorkspaceTitle(<WorkspaceTitle icon={Brain} label="Meetings" />);
 
 	const workspaceId = useWorkspaceId();
 	const allNotes = useQuery(api.content.meetingNotes.getByWorkspace, {
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const [expandedNote, setExpandedNote] = useState<string | null>(null);
+	const [startMeetingOpen, setStartMeetingOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sourceFilter, setSourceFilter] = useState<
 		"all" | "live" | "upload" | "chat"
@@ -89,7 +92,7 @@ export default function MeetingNotesPage() {
 				</div>
 				<div className="flex-1">
 					<h1 className="text-2xl font-semibold tracking-tight text-foreground">
-						Meeting Notes
+						Meetings
 					</h1>
 					<p className="text-sm text-muted-foreground">
 						{allNotes
@@ -98,12 +101,20 @@ export default function MeetingNotesPage() {
 						— All your AI-generated meeting notes
 					</p>
 				</div>
+				<Button className="gap-1.5" onClick={() => setStartMeetingOpen(true)}>
+					<Video className="size-4" /> Start Meeting
+				</Button>
 			</div>
+
+			<NewMeetingModal
+				onOpenChange={setStartMeetingOpen}
+				open={startMeetingOpen}
+			/>
 
 			{/* Search + Filters */}
 			<div className="flex items-center gap-3">
 				<div className="relative flex-1 max-w-md">
-					<Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+					<Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
 						onChange={(e) => setSearchQuery(e.target.value)}
@@ -140,7 +151,12 @@ export default function MeetingNotesPage() {
 				</div>
 			) : sortedNotes.length === 0 ? (
 				<EmptyState
-					description="Start a meeting and record it, or upload a recording to generate AI notes."
+					action={{
+						label: "Start Meeting",
+						onClick: () => setStartMeetingOpen(true),
+						icon: Video,
+					}}
+					description="Start a meeting with a channel or teammate and record it, or upload a recording to generate AI notes."
 					icon={Sparkles}
 					title="No meeting notes yet"
 				/>
@@ -293,7 +309,7 @@ function NoteCard({
 						</span>
 						<span className="text-muted-foreground/50">·</span>
 						<span className="text-xs text-muted-foreground flex items-center gap-1">
-							<Clock className="w-3 h-3" />
+							<Clock className="size-3" />
 							{date.toLocaleDateString()} at{" "}
 							{date.toLocaleTimeString([], {
 								hour: "2-digit",
@@ -312,9 +328,9 @@ function NoteCard({
 					</div>
 				</div>
 				{isExpanded ? (
-					<ChevronDown className="w-4 h-4 text-muted-foreground" />
+					<ChevronDown className="size-4 text-muted-foreground" />
 				) : (
-					<ChevronRight className="w-4 h-4 text-muted-foreground" />
+					<ChevronRight className="size-4 text-muted-foreground" />
 				)}
 			</button>
 
@@ -327,7 +343,7 @@ function NoteCard({
 						size="sm"
 						variant="outline"
 					>
-						<FileDown className="w-3.5 h-3.5 text-destructive" /> Export PDF
+						<FileDown className="size-3.5 text-destructive" /> Export PDF
 					</Button>
 					<Button
 						className="h-8 text-[11px] gap-1.5"
@@ -335,7 +351,7 @@ function NoteCard({
 						size="sm"
 						variant="outline"
 					>
-						<Download className="w-3.5 h-3.5 text-primary" /> Export Word
+						<Download className="size-3.5 text-primary" /> Export Word
 					</Button>
 					<div className="flex-1" />
 					<Button
@@ -390,9 +406,9 @@ function NoteCard({
 						variant="outline"
 					>
 						{isSavingNote ? (
-							<div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+							<div className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
 						) : (
-							<Sparkles className="w-3.5 h-3.5" />
+							<Sparkles className="size-3.5" />
 						)}
 						Save to Note Library
 					</Button>
@@ -425,16 +441,16 @@ function NoteCard({
 						<div className="px-5 pt-3">
 							<TabsList className="grid w-full grid-cols-4">
 								<TabsTrigger className="gap-1.5" value="summary">
-									<FileText className="w-3.5 h-3.5" /> Summary
+									<FileText className="size-3.5" /> Summary
 								</TabsTrigger>
 								<TabsTrigger className="gap-1.5" value="tasks">
-									<CheckSquare className="w-3.5 h-3.5" /> Tasks
+									<CheckSquare className="size-3.5" /> Tasks
 								</TabsTrigger>
 								<TabsTrigger className="gap-1.5" value="decisions">
-									<Target className="w-3.5 h-3.5" /> Decisions
+									<Target className="size-3.5" /> Decisions
 								</TabsTrigger>
 								<TabsTrigger className="gap-1.5" value="transcript">
-									<MessageSquare className="w-3.5 h-3.5" /> Transcript
+									<MessageSquare className="size-3.5" /> Transcript
 								</TabsTrigger>
 							</TabsList>
 						</div>
@@ -445,7 +461,7 @@ function NoteCard({
 								{currentGen?.summary || note.summary ? (
 									<div className="space-y-3">
 										<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-											<FileText className="w-3.5 h-3.5 text-primary" />{" "}
+											<FileText className="size-3.5 text-primary" />{" "}
 											Executive Summary
 										</h4>
 										<div className="bg-muted/40 p-5 rounded-2xl border border-border">
@@ -456,7 +472,7 @@ function NoteCard({
 									</div>
 								) : (
 									<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-										<FileText className="w-8 h-8 opacity-30" />
+										<FileText className="size-8 opacity-30" />
 										<p className="text-sm font-medium">
 											No summary generated yet
 										</p>
@@ -477,7 +493,7 @@ function NoteCard({
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
 													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-														<CheckSquare className="w-3.5 h-3.5 text-success" />{" "}
+														<CheckSquare className="size-3.5 text-success" />{" "}
 														Action Items
 													</h4>
 													<div className="flex items-center gap-2">
@@ -511,9 +527,9 @@ function NoteCard({
 															variant="outline"
 														>
 															{isPushingTasks ? (
-																<div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+																<div className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
 															) : (
-																<Target className="w-3 h-3" />
+																<Target className="size-3" />
 															)}
 															Push to Dashboard
 														</Button>
@@ -532,7 +548,7 @@ function NoteCard({
 															key={i}
 														>
 															<div className="flex items-start gap-3">
-																<div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+																<div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
 																	<span className="text-[11px] font-bold text-primary">
 																		{i + 1}
 																	</span>
@@ -544,7 +560,7 @@ function NoteCard({
 																	<div className="flex items-center gap-2 mt-2 flex-wrap">
 																		{task.assignee && (
 																			<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
-																				<span className="w-3 h-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
+																				<span className="size-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
 																					{task.assignee[0]?.toUpperCase()}
 																				</span>
 																				{task.assignee}
@@ -563,7 +579,7 @@ function NoteCard({
 																		)}
 																		{task.dueDate && (
 																			<span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-																				<Clock className="w-3 h-3" />{" "}
+																				<Clock className="size-3" />{" "}
 																				{task.dueDate}
 																			</span>
 																		)}
@@ -580,7 +596,7 @@ function NoteCard({
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
 													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-														<CheckSquare className="w-3.5 h-3.5 text-success" />{" "}
+														<CheckSquare className="size-3.5 text-success" />{" "}
 														Action Items
 													</h4>
 													<Badge
@@ -618,7 +634,7 @@ function NoteCard({
 																key={i}
 															>
 																<div className="flex items-start gap-3">
-																	<div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+																	<div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
 																		<span className="text-[11px] font-bold text-primary">
 																			{i + 1}
 																		</span>
@@ -631,7 +647,7 @@ function NoteCard({
 																			<div className="flex items-center gap-2 mt-2 flex-wrap">
 																				{assignee && (
 																					<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
-																						<span className="w-3 h-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
+																						<span className="size-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
 																							{assignee[0]?.toUpperCase()}
 																						</span>
 																						{assignee}
@@ -661,7 +677,7 @@ function NoteCard({
 									} else {
 										return (
 											<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-												<CheckSquare className="w-8 h-8 opacity-30" />
+												<CheckSquare className="size-8 opacity-30" />
 												<p className="text-sm font-medium">
 													No action items found
 												</p>
@@ -686,7 +702,7 @@ function NoteCard({
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
 													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-														<Target className="w-3.5 h-3.5 text-primary" /> Key
+														<Target className="size-3.5 text-primary" /> Key
 														Decisions
 													</h4>
 													<Badge
@@ -703,7 +719,7 @@ function NoteCard({
 															key={i}
 														>
 															<div className="flex items-start gap-3">
-																<div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+																<div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
 																	<span className="text-[11px] font-bold text-primary">
 																		{i + 1}
 																	</span>
@@ -720,7 +736,7 @@ function NoteCard({
 									} else {
 										return (
 											<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-												<Target className="w-8 h-8 opacity-30" />
+												<Target className="size-8 opacity-30" />
 												<p className="text-sm font-medium">
 													No decisions recorded
 												</p>
@@ -736,7 +752,7 @@ function NoteCard({
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
 											<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-												<MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+												<MessageSquare className="size-3.5 text-muted-foreground" />{" "}
 												Full Transcript
 											</h4>
 											<span className="text-[10px] font-medium text-muted-foreground">
@@ -749,7 +765,7 @@ function NoteCard({
 									</div>
 								) : (
 									<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-										<MessageSquare className="w-8 h-8 opacity-30" />
+										<MessageSquare className="size-8 opacity-30" />
 										<p className="text-sm font-medium">
 											No transcript available
 										</p>

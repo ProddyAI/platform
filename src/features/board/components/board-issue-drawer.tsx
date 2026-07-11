@@ -171,23 +171,23 @@ const DrawerHeader = ({
 		<div className="flex items-center gap-1.5 text-xs text-muted-foreground overflow-hidden">
 			{parentIssue && onBackToParent && (
 				<Button
-					className="h-6 w-6 p-0 flex-shrink-0 hover:bg-muted/60"
+					className="size-6 p-0 flex-shrink-0 hover:bg-muted/60"
 					onClick={onBackToParent}
 					size="icon"
 					title="Back to parent issue"
 					variant="ghost"
 				>
-					<ChevronRight className="w-3.5 h-3.5 rotate-180" />
+					<ChevronRight className="size-3.5 rotate-180" />
 				</Button>
 			)}
 			{currentStatus && (
 				<>
 					<span
-						className="w-2 h-2 rounded-full flex-shrink-0"
+						className="size-2 rounded-full flex-shrink-0"
 						style={{ backgroundColor: currentStatus.color }}
 					/>
 					<span className="truncate max-w-[120px]">{currentStatus.name}</span>
-					<ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+					<ChevronRight className="size-3 flex-shrink-0 opacity-50" />
 				</>
 			)}
 			<span className="font-mono text-muted-foreground flex-shrink-0">
@@ -195,7 +195,7 @@ const DrawerHeader = ({
 			</span>
 			{parentIssue && (
 				<>
-					<ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+					<ChevronRight className="size-3 flex-shrink-0 opacity-50" />
 					<span className="truncate max-w-[150px] text-muted-foreground">
 						{formatIssueId(parentIssue._id)}
 					</span>
@@ -205,22 +205,22 @@ const DrawerHeader = ({
 
 		<div className="flex items-center gap-0.5 shrink-0">
 			<Button
-				className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+				className="size-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
 				onClick={onDeleteClick}
 				size="icon"
 				title="Delete issue"
 				variant="ghost"
 			>
-				<Trash2 className="w-3.5 h-3.5" />
+				<Trash2 className="size-3.5" />
 			</Button>
 			<Button
-				className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
+				className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
 				onClick={onClose}
 				size="icon"
 				title="Close"
 				variant="ghost"
 			>
-				<X className="w-4 h-4" />
+				<X className="size-4" />
 			</Button>
 		</div>
 	</div>
@@ -316,7 +316,7 @@ const IssueContent = ({
 								{currentStatus && (
 									<span className="flex items-center gap-2">
 										<span
-											className="w-2 h-2 rounded-full flex-shrink-0"
+											className="size-2 rounded-full flex-shrink-0"
 											style={{ backgroundColor: currentStatus.color }}
 										/>
 										{currentStatus.name}
@@ -329,7 +329,7 @@ const IssueContent = ({
 								<SelectItem className="text-xs" key={s._id} value={s._id}>
 									<span className="flex items-center gap-2">
 										<span
-											className="w-2 h-2 rounded-full flex-shrink-0"
+											className="size-2 rounded-full flex-shrink-0"
 											style={{ backgroundColor: s.color }}
 										/>
 										{s.name}
@@ -345,7 +345,7 @@ const IssueContent = ({
 						<SelectTrigger className="h-8 rounded-full px-3 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
 							<SelectValue placeholder="Set priority">
 								<span className="flex items-center gap-2">
-									{priorityIcon(priority, "w-3.5 h-3.5")}
+									{priorityIcon(priority, "size-3.5")}
 									{priorityLabel(priority)}
 								</span>
 							</SelectValue>
@@ -354,7 +354,7 @@ const IssueContent = ({
 							{PRIORITIES.map((p) => (
 								<SelectItem className="text-xs" key={p} value={p}>
 									<span className="flex items-center gap-2">
-										{priorityIcon(p, "w-3.5 h-3.5")}
+										{priorityIcon(p, "size-3.5")}
 										{priorityLabel(p)}
 									</span>
 								</SelectItem>
@@ -382,7 +382,7 @@ const IssueContent = ({
 								)}
 								variant="ghost"
 							>
-								<CalendarIcon className="mr-2 h-3.5 w-3.5 opacity-60" />
+								<CalendarIcon className="mr-2 size-3.5 opacity-60" />
 								{dueDate ? format(dueDate, "PPP") : "Set due date"}
 							</Button>
 						</PopoverTrigger>
@@ -419,7 +419,7 @@ const IssueContent = ({
 										type="button"
 									>
 										{label}
-										<X className="w-2.5 h-2.5" />
+										<X className="size-2.5" />
 									</button>
 								))}
 							</div>
@@ -454,11 +454,11 @@ const IssueContent = ({
 
 			<div className="space-y-1.5 text-[11px] text-muted-foreground">
 				<div className="flex items-center gap-2">
-					<Calendar className="w-3 h-3" />
+					<Calendar className="size-3" />
 					<span>Created {format(new Date(createdAt), "PPP 'at' p")}</span>
 				</div>
 				<div className="flex items-center gap-2">
-					<Calendar className="w-3 h-3" />
+					<Calendar className="size-3" />
 					<span>Updated {format(new Date(updatedAt), "PPP 'at' p")}</span>
 				</div>
 			</div>
@@ -588,7 +588,7 @@ const SubIssuesSection = ({
 					size="sm"
 					variant="ghost"
 				>
-					<Plus className="w-3.5 h-3.5 mr-1" />
+					<Plus className="size-3.5 mr-1" />
 					Add sub-issue
 				</Button>
 			</div>
@@ -625,7 +625,7 @@ const SubIssuesSection = ({
 						>
 							<div
 								className={cn(
-									"w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center",
+									"size-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center",
 									isCompleted
 										? !status?.color && "border-success bg-success"
 										: "border-border bg-transparent"
@@ -640,7 +640,7 @@ const SubIssuesSection = ({
 								}
 							>
 								{isCompleted && (
-									<Check className="w-3 h-3 text-white" strokeWidth={3} />
+									<Check className="size-3 text-white" strokeWidth={3} />
 								)}
 							</div>
 							<span
@@ -660,7 +660,7 @@ const SubIssuesSection = ({
 
 										return (
 											<Avatar
-												className="h-4 w-4 border border-background"
+												className="size-4 border border-background"
 												key={assigneeId}
 											>
 												<AvatarImage
@@ -678,7 +678,7 @@ const SubIssuesSection = ({
 							<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
 								<Button
 									className={cn(
-										"h-6 w-6",
+										"size-6",
 										isCompleted
 											? "text-success hover:bg-success/10"
 											: "text-muted-foreground hover:bg-muted/60"
@@ -694,10 +694,10 @@ const SubIssuesSection = ({
 									}
 									variant="ghost"
 								>
-									<Check className="w-3.5 h-3.5" />
+									<Check className="size-3.5" />
 								</Button>
 								<Button
-									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									className="size-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 									onClick={(e) => {
 										e.stopPropagation();
 										setPendingDeleteId(subIssue._id);
@@ -707,7 +707,7 @@ const SubIssuesSection = ({
 									title="Delete sub-issue"
 									variant="ghost"
 								>
-									<X className="w-3 h-3" />
+									<X className="size-3" />
 								</Button>
 							</div>
 						</div>
@@ -739,7 +739,7 @@ const SubIssuesSection = ({
 						size="sm"
 						variant="ghost"
 					>
-						<Plus className="w-3.5 h-3.5" />
+						<Plus className="size-3.5" />
 					</Button>
 					<Button
 						aria-label="Cancel adding sub-issue"
@@ -750,7 +750,7 @@ const SubIssuesSection = ({
 						size="sm"
 						variant="ghost"
 					>
-						<X className="w-3.5 h-3.5" />
+						<X className="size-3.5" />
 					</Button>
 				</div>
 			)}
@@ -917,13 +917,13 @@ const BlockingSection = ({
 						onClick={() => onClickIssue(blockedIssue)}
 					>
 						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<div className="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0" />
+							<div className="size-1.5 rounded-full bg-warning flex-shrink-0" />
 							<span className="text-sm truncate">
 								{formatIssueId(blockedIssue._id)} - {blockedIssue.title}
 							</span>
 						</div>
 						<Button
-							className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+							className="size-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 							onClick={(e) => {
 								e.stopPropagation();
 								handleRemoveBlocking(blockedIssue._id);
@@ -932,7 +932,7 @@ const BlockingSection = ({
 							title="Remove blocking relationship"
 							variant="ghost"
 						>
-							<Minus className="w-3 h-3" />
+							<Minus className="size-3" />
 						</Button>
 					</div>
 				))}
@@ -964,7 +964,7 @@ const BlockingSection = ({
 						>
 							<div className="flex items-start justify-between gap-2">
 								<div className="flex items-start gap-2 flex-1 min-w-0">
-									<div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-2" />
+									<div className="size-1.5 rounded-full bg-primary flex-shrink-0 mt-2" />
 									<div className="min-w-0">
 										<div className="text-sm truncate">
 											{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
@@ -994,7 +994,7 @@ const BlockingSection = ({
 									</div>
 								</div>
 								<Button
-									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									className="size-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 									onClick={(e) => {
 										e.stopPropagation();
 										handleRemoveBlockedBy(blockingIssue._id);
@@ -1003,7 +1003,7 @@ const BlockingSection = ({
 									title="Remove blocked by relationship"
 									variant="ghost"
 								>
-									<Minus className="w-3 h-3" />
+									<Minus className="size-3" />
 								</Button>
 							</div>
 						</div>
@@ -1018,7 +1018,7 @@ const BlockingSection = ({
 			<div>
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
-						<Shield className="w-4 h-4 text-warning" />
+						<Shield className="size-4 text-warning" />
 						<h3 className="text-sm font-semibold">Blocking</h3>
 						{blockingIssues && blockingIssues.length > 0 && (
 							<span className="text-xs text-muted-foreground">
@@ -1051,7 +1051,7 @@ const BlockingSection = ({
 			<div>
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
-						<Shield className="w-4 h-4 text-primary rotate-180" />
+						<Shield className="size-4 text-primary rotate-180" />
 						<h3 className="text-sm font-semibold">Blocked By</h3>
 						{blockedByIssuesDetailed && blockedByIssuesDetailed.length > 0 && (
 							<span className="text-xs text-muted-foreground">
@@ -1143,7 +1143,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 
 						return (
 							<div className="flex gap-2 group" key={comment._id}>
-								<Avatar className="h-7 w-7 flex-shrink-0">
+								<Avatar className="size-7 flex-shrink-0">
 									<AvatarImage
 										alt={member?.user?.name}
 										src={member?.user?.image}
@@ -1169,12 +1169,12 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 									</p>
 								</div>
 								<Button
-									className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity h-6 w-6"
+									className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity size-6"
 									onClick={() => handleDelete(comment._id)}
 									size="icon"
 									variant="ghost"
 								>
-									<X className="w-3 h-3" />
+									<X className="size-3" />
 								</Button>
 							</div>
 						);
@@ -1202,7 +1202,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 					size="sm"
 					variant="default"
 				>
-					<Send className="w-3.5 h-3.5" />
+					<Send className="size-3.5" />
 				</Button>
 			</div>
 		</div>
@@ -1225,7 +1225,7 @@ const DrawerFooter = ({ issueId, justSaved }: DrawerFooterProps) => (
 				justSaved ? "opacity-100" : "opacity-0"
 			)}
 		>
-			<Check className="w-3 h-3" />
+			<Check className="size-3" />
 			Saved
 		</span>
 	</div>

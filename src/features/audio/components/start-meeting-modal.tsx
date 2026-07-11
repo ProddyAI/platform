@@ -154,14 +154,14 @@ export const StartMeetingModal = ({
 						onClick={() => setMeetingType("instant")}
 						variant={meetingType === "instant" ? "default" : "outline"}
 					>
-						<Video className="w-4 h-4" /> Instant
+						<Video className="size-4" /> Instant
 					</Button>
 					<Button
 						className="flex-1 gap-2"
 						onClick={() => setMeetingType("schedule")}
 						variant={meetingType === "schedule" ? "default" : "outline"}
 					>
-						<CalendarIcon className="w-4 h-4" /> Schedule
+						<CalendarIcon className="size-4" /> Schedule
 					</Button>
 				</div>
 
@@ -186,7 +186,7 @@ export const StartMeetingModal = ({
 				<div className="space-y-4">
 					<h3 className="text-sm font-medium">Invite Participants</h3>
 					<div className="relative">
-						<Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+						<Search className="size-4 absolute left-3 top-3 text-muted-foreground" />
 						<Input
 							className="pl-9"
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -212,7 +212,7 @@ export const StartMeetingModal = ({
 						</label>
 					</div>
 
-					<ScrollArea className="h-[200px] border rounded-md p-2">
+					<ScrollArea className="h-[200px] border rounded-lg p-2">
 						{members === undefined ? (
 							<div className="flex items-center justify-center h-full">
 								<p className="text-sm text-muted-foreground">
@@ -230,7 +230,7 @@ export const StartMeetingModal = ({
 								if (!member.user) return null;
 								return (
 									<div
-										className="flex items-center gap-3 p-2 hover:bg-muted rounded-md"
+										className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg"
 										key={member._id}
 									>
 										<Checkbox

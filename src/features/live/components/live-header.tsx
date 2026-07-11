@@ -167,7 +167,7 @@ export const LiveHeader = ({
 											{title ||
 												`Untitled ${type === "notes" ? "Note" : "Canvas"}`}
 										</span>
-										<Pencil className="h-3.5 w-3.5 flex-shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" />
+										<Pencil className="size-3.5 flex-shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" />
 									</button>
 								)}
 
@@ -180,7 +180,7 @@ export const LiveHeader = ({
 													className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-help flex-shrink-0"
 													type="button"
 												>
-													<Info className="h-4 w-4" />
+													<Info className="size-4" />
 												</button>
 											</TooltipTrigger>
 											<TooltipContent className="max-w-xs" side="bottom">
@@ -226,17 +226,17 @@ export const LiveHeader = ({
 							{autoSaveStatus && (
 								<div className="flex items-center gap-1 text-xs text-muted-foreground">
 									{autoSaveStatus === "saving" && (
-										<Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" />
+										<Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
 									)}
 									{autoSaveStatus === "saved" && (
-										<Check className="h-3 w-3 text-green-600" />
+										<Check className="size-3 text-success" />
 									)}
 									<span>{formatAutoSaveStatus()}</span>
 								</div>
 							)}
 
 							{hasUnsavedChanges && !autoSaveStatus && (
-								<Badge className="text-xs" variant="secondary">
+								<Badge className="text-xs" variant="warning">
 									Unsaved
 								</Badge>
 							)}
@@ -254,7 +254,7 @@ export const LiveHeader = ({
 							size="sm"
 							variant="outline"
 						>
-							<Plus className="h-4 w-4 mr-2" />
+							<Plus className="size-4 mr-2" />
 							New {type === "notes" ? "Note" : "Canvas"}
 						</Button>
 					)}
@@ -270,7 +270,7 @@ export const LiveHeader = ({
 											onClick={onSave}
 											size="sm"
 										>
-											<Save className="h-4 w-4 mr-2" />
+											<Save className="size-4 mr-2" />
 											Save
 										</Button>
 									</span>
@@ -287,7 +287,7 @@ export const LiveHeader = ({
 					{/* Share Button */}
 					{onShare && (
 						<Button onClick={onShare} size="sm" variant="outline">
-							<Share className="h-4 w-4 md:mr-2" />
+							<Share className="size-4 md:mr-2" />
 							<span className="hidden md:inline">Share</span>
 						</Button>
 					)}
@@ -295,7 +295,7 @@ export const LiveHeader = ({
 					{/* Export Button */}
 					{onExport && (
 						<Button onClick={onExport} size="sm" variant="outline">
-							<Download className="h-4 w-4 md:mr-2" />
+							<Download className="size-4 md:mr-2" />
 							<span className="hidden md:inline">Export</span>
 						</Button>
 					)}
@@ -304,9 +304,9 @@ export const LiveHeader = ({
 					{showFullScreenToggle && toggleFullScreen && (
 						<Button onClick={toggleFullScreen} size="sm" variant="outline">
 							{isFullScreen ? (
-								<Minimize2 className="h-4 w-4" />
+								<Minimize2 className="size-4" />
 							) : (
-								<Maximize2 className="h-4 w-4" />
+								<Maximize2 className="size-4" />
 							)}
 						</Button>
 					)}
@@ -330,7 +330,7 @@ export const LiveHeader = ({
 						{/* Tags for both notes and canvas */}
 						{showTags && onTagsChange && (
 							<div className="flex items-center gap-2">
-								<Tag className="h-4 w-4 text-muted-foreground" />
+								<Tag className="size-4 text-muted-foreground" />
 								<TagInput
 									className="max-w-md"
 									onTagsChange={onTagsChange}
@@ -344,7 +344,7 @@ export const LiveHeader = ({
 						{showSearch && onSearchChange && (
 							<div className="flex items-center gap-2 max-w-sm">
 								<div className="relative">
-									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
 									<Input
 										className="pl-9"
 										onChange={(e) => onSearchChange(e.target.value)}

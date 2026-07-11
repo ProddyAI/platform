@@ -123,7 +123,7 @@ export const ThreadRepliesWidget = ({
 				}
 				badge={threadMessages.length > 0 ? threadMessages.length : undefined}
 				controls={controls}
-				icon={<MessageSquareText className="h-5 w-5 text-primary" />}
+				icon={<MessageSquareText className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Thread Replies"
 			/>
@@ -141,7 +141,7 @@ export const ThreadRepliesWidget = ({
 								<WidgetCard key={thread.message._id.toString()}>
 									<div className="flex items-start gap-3">
 										<div className="relative">
-											<Avatar className="h-8 w-8">
+											<Avatar className="size-8">
 												<AvatarImage
 													alt={thread.currentUser.name || "User avatar"}
 													src={thread.currentUser.image}
@@ -167,7 +167,7 @@ export const ThreadRepliesWidget = ({
 															className="flex items-center gap-1 border-2"
 															variant="outline"
 														>
-															<Hash className="h-3 w-3" />
+															<Hash className="size-3" />
 															{thread.context.name}
 														</Badge>
 													)}

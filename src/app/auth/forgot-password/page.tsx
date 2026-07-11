@@ -144,7 +144,7 @@ const ForgotPasswordPage = () => {
 				<Card className="size-full p-8 shadow-xl animate-slide-up">
 					<CardHeader className="px-0 pt-0">
 						<div className="flex items-center gap-2 mb-2">
-							<Mail className="h-6 w-6 text-primary" />
+							<Mail className="size-6 text-primary" />
 							<CardTitle>Forgot Password?</CardTitle>
 						</div>
 						<CardDescription>
@@ -215,7 +215,7 @@ const ForgotPasswordPage = () => {
 								className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors justify-center"
 								href="/auth/signin"
 							>
-								<ArrowLeft className="h-4 w-4" />
+								<ArrowLeft className="size-4" />
 								Back to Sign In
 							</Link>
 						</div>

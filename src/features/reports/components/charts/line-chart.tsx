@@ -201,7 +201,7 @@ export const LineChart = ({
 
 	return (
 		<div
-			className={cn("w-full h-full flex flex-col overflow-hidden", className)}
+			className={cn("size-full flex flex-col overflow-hidden", className)}
 			ref={containerRef}
 		>
 			<p className="sr-only">
@@ -217,7 +217,7 @@ export const LineChart = ({
 				}}
 			>
 				<svg
-					className="w-full h-full"
+					className="size-full"
 					preserveAspectRatio="xMidYMid meet"
 					viewBox="0 0 100 100"
 				>

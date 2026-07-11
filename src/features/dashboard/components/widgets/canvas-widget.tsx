@@ -169,7 +169,7 @@ export const CanvasWidget = ({
 					sortedCanvasItems.length > 0 ? sortedCanvasItems.length : undefined
 				}
 				controls={controls}
-				icon={<PenTool className="h-5 w-5 text-primary" />}
+				icon={<PenTool className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title={
 					firstChannel ? `Canvases in #${firstChannel.name}` : "Recent Canvases"
@@ -188,7 +188,7 @@ export const CanvasWidget = ({
 										</h5>
 										<RelativeTime
 											className="text-[10px]"
-											iconClassName="h-2.5 w-2.5"
+											iconClassName="size-2.5"
 											timestamp={item.updatedAt}
 										/>
 									</div>

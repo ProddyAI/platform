@@ -79,7 +79,7 @@ export const LiveCursor = memo(
 				width={240}
 			>
 				<MousePointer2
-					className="h-5 w-5"
+					className="size-5"
 					style={{
 						fill: cursorColor,
 						color: cursorColor,

@@ -243,8 +243,8 @@ export const NotesContent = ({
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">
 								<div className="text-center space-y-4 max-w-sm px-4">
-									<div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-										<FileText className="h-8 w-8 text-primary" />
+									<div className="mx-auto size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+										<FileText className="size-8 text-primary" />
 									</div>
 									<div>
 										<h3 className="text-lg font-semibold mb-1">
@@ -265,7 +265,7 @@ export const NotesContent = ({
 										}}
 										variant="primary"
 									>
-										<Brain className="h-4 w-4" />
+										<Brain className="size-4" />
 										Start AI Meeting Note
 									</Button>
 								</div>

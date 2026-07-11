@@ -99,7 +99,7 @@ export const MentionPicker = ({
 
 	return (
 		<div
-			className="fixed bottom-[120px] left-0 right-0 z-50 mx-auto w-[90%] max-w-[500px] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg"
+			className="fixed bottom-[120px] left-0 right-0 z-50 mx-auto w-[90%] max-w-[500px] overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg"
 			onClick={(e) => e.stopPropagation()}
 			onKeyDown={(e) => {
 				// Let cmdk handle Arrow/Enter navigation; only intercept Escape to close.
@@ -112,7 +112,7 @@ export const MentionPicker = ({
 			<Command label="Mention a user">
 				{/* Header */}
 				<div className="flex items-center gap-2 border-b px-3 py-2">
-					<User className="h-4 w-4 shrink-0 text-muted-foreground" />
+					<User className="size-4 shrink-0 text-muted-foreground" />
 					<span className="text-sm font-medium">Mention a user</span>
 				</div>
 
@@ -137,7 +137,7 @@ export const MentionPicker = ({
 									value={`${member.user.name} ${member._id}`}
 								>
 									<div className="relative">
-										<Avatar className="h-8 w-8">
+										<Avatar className="size-8">
 											<AvatarImage
 												alt={member.user.name}
 												src={member.user.image}

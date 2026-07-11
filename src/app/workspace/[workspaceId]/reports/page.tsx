@@ -187,7 +187,7 @@ const ReportsPage = () => {
 	if (memberLoading) {
 		return (
 			<div className="flex h-full items-center justify-center">
-				<Loader className="h-8 w-8 animate-spin text-primary" />
+				<Loader className="size-8 animate-spin text-primary" />
 			</div>
 		);
 	}
@@ -196,7 +196,7 @@ const ReportsPage = () => {
 	if (!member) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center">
-				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
+				<Shield className="size-12 text-muted-foreground mb-4" />
 				<h2 className="text-2xl font-bold">Access Denied</h2>
 				<p className="text-muted-foreground">
 					You don&apos;t have permission to access this page.
@@ -262,9 +262,9 @@ const ReportsPage = () => {
 									variant="outline"
 								>
 									{isExporting ? (
-										<Loader className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />
+										<Loader className="mr-1 md:mr-2 size-3 md:h-4 md:w-4 animate-spin" />
 									) : (
-										<Download className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+										<Download className="mr-1 md:mr-2 size-3 md:h-4 md:w-4" />
 									)}
 									<span className="hidden sm:inline">
 										Export {exportFormat.toUpperCase()}
@@ -279,7 +279,7 @@ const ReportsPage = () => {
 											size="sm"
 											variant="outline"
 										>
-											<ChevronDown className="h-4 w-4" />
+											<ChevronDown className="size-4" />
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent className="w-40 p-2">
@@ -290,7 +290,7 @@ const ReportsPage = () => {
 												size="sm"
 												variant={exportFormat === "pdf" ? "default" : "ghost"}
 											>
-												<FileText className="mr-2 h-4 w-4" />
+												<FileText className="mr-2 size-4" />
 												PDF
 											</Button>
 											<Button
@@ -299,7 +299,7 @@ const ReportsPage = () => {
 												size="sm"
 												variant={exportFormat === "json" ? "default" : "ghost"}
 											>
-												<Download className="mr-2 h-4 w-4" />
+												<Download className="mr-2 size-4" />
 												JSON
 											</Button>
 										</div>
@@ -335,7 +335,7 @@ const ReportsPage = () => {
 									onClick={() => setActiveTab("overview")}
 									value="overview"
 								>
-									<BarChart className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<BarChart className="size-3 md:h-4 md:w-4 md:mr-2" />
 									<span className="hidden md:inline">Overview</span>
 								</TabsTrigger>
 								<TabsTrigger
@@ -344,7 +344,7 @@ const ReportsPage = () => {
 									onClick={() => setActiveTab("people")}
 									value="people"
 								>
-									<Users className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<Users className="size-3 md:h-4 md:w-4 md:mr-2" />
 									<span className="hidden md:inline">People</span>
 								</TabsTrigger>
 								<TabsTrigger
@@ -353,7 +353,7 @@ const ReportsPage = () => {
 									onClick={() => setActiveTab("content")}
 									value="content"
 								>
-									<FileText className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<FileText className="size-3 md:h-4 md:w-4 md:mr-2" />
 									<span className="hidden md:inline">Content</span>
 								</TabsTrigger>
 								<TabsTrigger
@@ -362,7 +362,7 @@ const ReportsPage = () => {
 									onClick={() => setActiveTab("performance")}
 									value="performance"
 								>
-									<Activity className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<Activity className="size-3 md:h-4 md:w-4 md:mr-2" />
 									<span className="hidden md:inline">Performance</span>
 								</TabsTrigger>
 							</TabsList>
@@ -377,7 +377,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-primary" />
+									<Loader className="size-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>
@@ -389,11 +389,11 @@ const ReportsPage = () => {
 								<Tabs className="space-y-4" defaultValue="users">
 									<TabsList>
 										<TabsTrigger value="users">
-											<Users className="h-4 w-4 mr-2" />
+											<Users className="size-4 mr-2" />
 											Users
 										</TabsTrigger>
 										<TabsTrigger value="channels">
-											<Hash className="h-4 w-4 mr-2" />
+											<Hash className="size-4 mr-2" />
 											Channels
 										</TabsTrigger>
 									</TabsList>
@@ -414,7 +414,7 @@ const ReportsPage = () => {
 								</Tabs>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-primary" />
+									<Loader className="size-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>
@@ -429,7 +429,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-primary" />
+									<Loader className="size-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>
@@ -444,7 +444,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-primary" />
+									<Loader className="size-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>

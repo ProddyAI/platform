@@ -292,7 +292,7 @@ export const OverviewDashboard = ({
 	if (!stableOverviewData) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg">
-				<BarChartIcon className="h-12 w-12 text-muted-foreground mb-2" />
+				<BarChartIcon className="size-12 text-muted-foreground mb-2" />
 				<h3 className="text-lg font-medium">No Overview Data</h3>
 				<p className="text-sm text-muted-foreground">
 					There is no data available for the selected time period.
@@ -424,7 +424,7 @@ export const OverviewDashboard = ({
 				<Card className="flex flex-col">
 					<CardHeader className="pb-4 flex-shrink-0">
 						<CardTitle className="flex items-center gap-2">
-							<Activity className="h-5 w-5 text-muted-foreground" />
+							<Activity className="size-5 text-muted-foreground" />
 							Activity Trend
 						</CardTitle>
 						<CardDescription>
@@ -435,7 +435,7 @@ export const OverviewDashboard = ({
 						{activityTrendData.length > 0 ? (
 							<div className="flex-1 flex items-center justify-center h-[400px] max-h-[400px] overflow-hidden">
 								<LineChart
-									className="w-full h-full"
+									className="size-full"
 									data={activityTrendData}
 									formatValue={(value) => `${value} messages`}
 									height={350}
@@ -444,7 +444,7 @@ export const OverviewDashboard = ({
 						) : (
 							<div className="flex-1 flex items-center justify-center h-[400px]">
 								<div className="text-center p-8 bg-muted/20 rounded-lg w-full">
-									<Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+									<Activity className="size-12 text-muted-foreground mx-auto mb-4" />
 									<h3 className="text-lg font-medium text-muted-foreground mb-2">
 										No activity data available
 									</h3>
@@ -462,7 +462,7 @@ export const OverviewDashboard = ({
 				<Card className="flex flex-col">
 					<CardHeader className="pb-4 flex-shrink-0">
 						<CardTitle className="flex items-center gap-2">
-							<CheckSquare className="h-5 w-5 text-muted-foreground" />
+							<CheckSquare className="size-5 text-muted-foreground" />
 							Task Completion
 						</CardTitle>
 						<CardDescription>
@@ -525,7 +525,7 @@ export const OverviewDashboard = ({
 						) : (
 							<div className="flex-1 flex items-center justify-center h-[400px]">
 								<div className="text-center p-8 bg-muted/20 rounded-lg w-full">
-									<CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+									<CheckSquare className="size-12 text-muted-foreground mx-auto mb-4" />
 									<h3 className="text-lg font-medium text-muted-foreground mb-2">
 										No task data available
 									</h3>

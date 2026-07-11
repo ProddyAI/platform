@@ -27,7 +27,7 @@ export default function OfflinePage() {
 	return (
 		<div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-primary/10 to-white p-4 text-center">
 			<div className="mb-8 flex items-center justify-center">
-				<div className="relative h-20 w-20">
+				<div className="relative size-20">
 					<Image
 						alt="Proddy Logo"
 						className="object-contain"
@@ -39,7 +39,7 @@ export default function OfflinePage() {
 			</div>
 
 			<div className="mb-6 flex items-center justify-center gap-3">
-				<WifiOff className="h-8 w-8 text-primary" />
+				<WifiOff className="size-8 text-primary" />
 				<h1 className="text-3xl font-bold text-primary">You&apos;re Offline</h1>
 			</div>
 
@@ -50,12 +50,12 @@ export default function OfflinePage() {
 
 			<div className="mb-8 flex flex-col gap-4 sm:flex-row">
 				<Button className="flex items-center gap-2" onClick={handleRefresh}>
-					<RefreshCw className="h-4 w-4" />
+					<RefreshCw className="size-4" />
 					Refresh Page
 				</Button>
 				<Link href="/" passHref>
 					<Button className="flex items-center gap-2" variant="outline">
-						<Wifi className="h-4 w-4" />
+						<Wifi className="size-4" />
 						Try Again
 					</Button>
 				</Link>

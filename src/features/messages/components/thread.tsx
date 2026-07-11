@@ -302,7 +302,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 								/>
 								<Button
 									aria-label="Save thread title"
-									className="h-6 w-6"
+									className="size-6"
 									onClick={handleSaveTitle}
 									size="iconSm"
 									variant="ghost"
@@ -311,7 +311,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 								</Button>
 								<Button
 									aria-label="Cancel editing thread title"
-									className="h-6 w-6"
+									className="size-6"
 									onClick={handleCancelEditTitle}
 									size="iconSm"
 									variant="ghost"
@@ -324,7 +324,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 								<p className="text-lg font-bold">{savedTitle || "Thread"}</p>
 								<Button
 									aria-label="Edit thread title"
-									className="h-6 w-6"
+									className="size-6"
 									onClick={handleEditTitle}
 									size="iconSm"
 									variant="ghost"

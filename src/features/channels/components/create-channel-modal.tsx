@@ -210,7 +210,7 @@ export const CreateChannelModal = () => {
 
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					{maxReached && (
-						<div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+						<div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
 							<span>
 								You have reached the channel limit for your plan. Upgrade to
 								create channels.
@@ -240,7 +240,7 @@ export const CreateChannelModal = () => {
 										/>
 										<button
 											aria-label="Upload channel icon"
-											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+											className="relative flex size-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all disabled:cursor-not-allowed disabled:opacity-50"
 											disabled={isUploading || maxReached}
 											onClick={() =>
 												!isUploading &&
@@ -270,7 +270,7 @@ export const CreateChannelModal = () => {
 													)}
 													<button
 														aria-label="Remove icon"
-														className="absolute -top-2 -right-2 h-6 w-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+														className="absolute -top-2 -right-2 size-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
 														onClick={(e) => {
 															e.stopPropagation();
 															if (iconPreview || iconImage) {
@@ -282,12 +282,12 @@ export const CreateChannelModal = () => {
 														}}
 														type="button"
 													>
-														<X className="h-3.5 w-3.5" />
+														<X className="size-3.5" />
 													</button>
 												</>
 											) : (
 												<div className="flex flex-col items-center gap-1">
-													<Upload className="h-6 w-6 text-muted-foreground" />
+													<Upload className="size-6 text-muted-foreground" />
 													<span className="text-xs text-muted-foreground text-center">
 														{isUploading ? "Uploading..." : "Upload"}
 													</span>
@@ -300,11 +300,11 @@ export const CreateChannelModal = () => {
 										>
 											<button
 												aria-label="Select emoji icon"
-												className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50 disabled:opacity-50 disabled:cursor-not-allowed"
+												className="absolute -bottom-1 -right-1 size-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50 disabled:opacity-50 disabled:cursor-not-allowed"
 												disabled={maxReached}
 												type="button"
 											>
-												<Smile className="h-4 w-4" />
+												<Smile className="size-4" />
 											</button>
 										</EmojiPopover>
 									</div>

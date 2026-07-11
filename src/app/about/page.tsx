@@ -110,14 +110,14 @@ const AboutPage = () => {
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 						{/* Value 1 */}
 						<motion.div
-							className="bg-card rounded-xl p-8 border border-border"
+							className="bg-card rounded-2xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5 }}
 							viewport={{ once: true }}
 							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
-								<Users className="text-primary h-6 w-6" />
+								<Users className="text-primary size-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Team First</h3>
 							<p className="text-foreground">
@@ -129,14 +129,14 @@ const AboutPage = () => {
 
 						{/* Value 2 */}
 						<motion.div
-							className="bg-card rounded-xl p-8 border border-border"
+							className="bg-card rounded-2xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 							viewport={{ once: true }}
 							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
-								<Lightbulb className="text-primary h-6 w-6" />
+								<Lightbulb className="text-primary size-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Innovation</h3>
 							<p className="text-foreground">
@@ -148,14 +148,14 @@ const AboutPage = () => {
 
 						{/* Value 3 */}
 						<motion.div
-							className="bg-card rounded-xl p-8 border border-border"
+							className="bg-card rounded-2xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.2 }}
 							viewport={{ once: true }}
 							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
-								<Target className="text-primary h-6 w-6" />
+								<Target className="text-primary size-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Customer Focus</h3>
 							<p className="text-foreground">
@@ -167,14 +167,14 @@ const AboutPage = () => {
 
 						{/* Value 4 */}
 						<motion.div
-							className="bg-card rounded-xl p-8 border border-border"
+							className="bg-card rounded-2xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.3 }}
 							viewport={{ once: true }}
 							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
-								<Clock className="text-primary h-6 w-6" />
+								<Clock className="text-primary size-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Time Respect</h3>
 							<p className="text-foreground">
@@ -185,14 +185,14 @@ const AboutPage = () => {
 
 						{/* Value 5 */}
 						<motion.div
-							className="bg-card rounded-xl p-8 border border-border"
+							className="bg-card rounded-2xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
 							viewport={{ once: true }}
 							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
-								<Zap className="text-primary h-6 w-6" />
+								<Zap className="text-primary size-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Simplicity</h3>
 							<p className="text-foreground">
@@ -204,14 +204,14 @@ const AboutPage = () => {
 
 						{/* Value 6 */}
 						<motion.div
-							className="bg-card rounded-xl p-8 border border-border"
+							className="bg-card rounded-2xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.5 }}
 							viewport={{ once: true }}
 							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
-								<Heart className="text-primary h-6 w-6" />
+								<Heart className="text-primary size-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Passion</h3>
 							<p className="text-foreground">

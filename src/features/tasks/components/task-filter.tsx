@@ -70,17 +70,17 @@ export const TaskFilter = ({
 					placeholder="Search tasks..."
 					value={searchQuery}
 				/>
-				<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+				<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 			</div>
 			<div className="flex gap-2">
 				<DropdownMenu onOpenChange={setIsFiltersOpen} open={isFiltersOpen}>
 					<DropdownMenuTrigger asChild>
 						<Button className="flex items-center gap-1.5" variant="outline">
-							<Filter className="h-4 w-4" />
+							<Filter className="size-4" />
 							<span>Filter</span>
 							{activeFiltersCount > 0 && (
 								<Badge
-									className="ml-1 flex h-5 w-5 items-center justify-center p-0 font-medium text-[10px]"
+									className="ml-1 flex size-5 items-center justify-center p-0 font-medium text-[10px]"
 									variant="outline"
 								>
 									{activeFiltersCount}
@@ -111,14 +111,14 @@ export const TaskFilter = ({
 									className="cursor-pointer"
 									value="active"
 								>
-									<Circle className="mr-2 h-4 w-4" />
+									<Circle className="mr-2 size-4" />
 									Active
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="completed"
 								>
-									<CheckCircle2 className="mr-2 h-4 w-4" />
+									<CheckCircle2 className="mr-2 size-4" />
 									Completed
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>
@@ -142,18 +142,18 @@ export const TaskFilter = ({
 									All
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="high">
-									<div className="mr-2 h-3 w-3 rounded-full bg-warning" />
+									<div className="mr-2 size-3 rounded-full bg-warning" />
 									High
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="medium"
 								>
-									<div className="mr-2 h-3 w-3 rounded-full bg-primary" />
+									<div className="mr-2 size-3 rounded-full bg-primary" />
 									Medium
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="low">
-									<div className="mr-2 h-3 w-3 rounded-full bg-muted-foreground/60" />
+									<div className="mr-2 size-3 rounded-full bg-muted-foreground/60" />
 									Low
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>
@@ -180,25 +180,25 @@ export const TaskFilter = ({
 									className="cursor-pointer"
 									value="overdue"
 								>
-									<Clock className="mr-2 h-4 w-4 text-destructive" />
+									<Clock className="mr-2 size-4 text-destructive" />
 									Overdue
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="today">
-									<Clock className="mr-2 h-4 w-4 text-warning" />
+									<Clock className="mr-2 size-4 text-warning" />
 									Today
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="upcoming"
 								>
-									<Clock className="mr-2 h-4 w-4 text-primary" />
+									<Clock className="mr-2 size-4 text-primary" />
 									Upcoming
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="no-date"
 								>
-									<Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+									<Clock className="mr-2 size-4 text-muted-foreground" />
 									No due date
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>
@@ -227,9 +227,9 @@ export const TaskFilter = ({
 					<DropdownMenuTrigger asChild>
 						<Button className="flex items-center gap-1.5" variant="outline">
 							{filterOptions.sortDirection === "asc" ? (
-								<SortAsc className="h-4 w-4" />
+								<SortAsc className="size-4" />
 							) : (
-								<SortDesc className="h-4 w-4" />
+								<SortDesc className="size-4" />
 							)}
 							<span>Sort</span>
 						</Button>
@@ -284,11 +284,11 @@ export const TaskFilter = ({
 								value={filterOptions.sortDirection}
 							>
 								<DropdownMenuRadioItem className="cursor-pointer" value="asc">
-									<SortAsc className="mr-2 h-4 w-4" />
+									<SortAsc className="mr-2 size-4" />
 									Ascending
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="desc">
-									<SortDesc className="mr-2 h-4 w-4" />
+									<SortDesc className="mr-2 size-4" />
 									Descending
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>

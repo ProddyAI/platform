@@ -99,7 +99,7 @@ export const CalendarFilter = ({
 						)}
 						variant="outline"
 					>
-						<Filter className="h-4 w-4" />
+						<Filter className="size-4" />
 						<span>Filter</span>
 						{filterOptions.eventTypes.length > 0 &&
 							filterOptions.eventTypes.length < 3 && (
@@ -112,7 +112,7 @@ export const CalendarFilter = ({
 										filterOptions.eventTypes.includes(type)
 									).map((type) => (
 										<div
-											className="w-2 h-2 rounded-full bg-primary"
+											className="size-2 rounded-full bg-primary"
 											key={type}
 										/>
 									))}
@@ -150,7 +150,7 @@ export const CalendarFilter = ({
 									key={type}
 								>
 									<div className="flex items-center space-x-2">
-										<Icon className="h-4 w-4 text-muted-foreground" />
+										<Icon className="size-4 text-muted-foreground" />
 										<Label className="cursor-pointer" htmlFor={id}>
 											{meta.label}
 										</Label>

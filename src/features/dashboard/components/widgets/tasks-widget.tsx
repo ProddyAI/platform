@@ -151,7 +151,7 @@ export const TasksWidget = ({
 				}
 				badge={sortedTasks.length > 0 ? sortedTasks.length : undefined}
 				controls={controls}
-				icon={<CheckSquare className="h-5 w-5 text-primary" />}
+				icon={<CheckSquare className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Your Tasks"
 			/>
@@ -170,7 +170,7 @@ export const TasksWidget = ({
 										aria-label={
 											task.completed ? "Mark as incomplete" : "Mark as complete"
 										}
-										className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
+										className="size-6 rounded-full flex-shrink-0 mt-0.5"
 										disabled={updatingTaskId === task._id}
 										onClick={() =>
 											handleToggleTaskCompletion(task._id, task.completed)
@@ -179,11 +179,11 @@ export const TasksWidget = ({
 										variant="ghost"
 									>
 										{updatingTaskId === task._id ? (
-											<Loader className="h-4 w-4 animate-spin" />
+											<Loader className="size-4 animate-spin" />
 										) : task.completed ? (
-											<CheckCircle2 className="h-5 w-5 text-success" />
+											<CheckCircle2 className="size-5 text-success" />
 										) : (
-											<div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+											<div className="size-5 rounded-full border-2 border-muted-foreground" />
 										)}
 									</Button>
 									<div className="flex-1 min-w-0 space-y-1.5">
@@ -203,7 +203,7 @@ export const TasksWidget = ({
 											{task.dueDate && (
 												<RelativeTime
 													className="text-[10px]"
-													iconClassName="h-2.5 w-2.5 flex-shrink-0"
+													iconClassName="size-2.5 flex-shrink-0"
 													overdue={isOverdue(task.dueDate, task.completed)}
 													timestamp={task.dueDate}
 												/>

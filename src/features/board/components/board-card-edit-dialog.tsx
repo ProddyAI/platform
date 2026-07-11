@@ -77,7 +77,7 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 								aria-label={`Select color ${c}`}
 								aria-pressed={color === c}
 								className={cn(
-									"w-7 h-7 rounded-full border-2 transition-all",
+									"size-7 rounded-full border-2 transition-all",
 									color === c
 										? "border-foreground scale-110"
 										: "border-transparent hover:scale-105"
@@ -92,7 +92,7 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 					<div className="flex items-center gap-2">
 						<span className="text-xs text-muted-foreground">Custom:</span>
 						<input
-							className="w-8 h-8 rounded cursor-pointer border border-border"
+							className="size-8 rounded cursor-pointer border border-border"
 							onChange={(e) => setColor(e.target.value)}
 							type="color"
 							value={color}
@@ -163,7 +163,7 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 								aria-label={`Select color ${c}`}
 								aria-pressed={color === c}
 								className={cn(
-									"w-7 h-7 rounded-full border-2 transition-all",
+									"size-7 rounded-full border-2 transition-all",
 									color === c
 										? "border-foreground scale-110"
 										: "border-transparent hover:scale-105"
@@ -178,7 +178,7 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 					<div className="flex items-center gap-2">
 						<span className="text-xs text-muted-foreground">Custom:</span>
 						<input
-							className="w-8 h-8 rounded cursor-pointer border border-border"
+							className="size-8 rounded cursor-pointer border border-border"
 							onChange={(e) => setColor(e.target.value)}
 							type="color"
 							value={color}

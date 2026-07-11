@@ -20,39 +20,39 @@ export const HeroSection = () => {
 		visible: {
 			opacity: 1,
 			transition: {
-				staggerChildren: 0.2,
-				delayChildren: 0.3,
+				staggerChildren: 0.12,
+				delayChildren: 0.15,
 			},
 		},
 	};
 
 	const itemVariants = {
-		hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 20 },
+		hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 12 },
 		visible: {
 			opacity: 1,
 			y: 0,
 			transition: {
-				duration: 0.5,
+				duration: 0.35,
 				ease: [0.25, 0.1, 0.25, 1.0] as const,
 			},
 		},
 	};
 
 	const imageVariants = {
-		hidden: { opacity: 0, scale: shouldReduceMotion ? 1 : 0.95 },
+		hidden: { opacity: 0, scale: shouldReduceMotion ? 1 : 0.98 },
 		visible: {
 			opacity: 1,
 			scale: 1,
 			transition: {
-				duration: 0.7,
+				duration: 0.4,
 				ease: [0.25, 0.1, 0.25, 1.0] as const,
-				delay: 0.6,
+				delay: 0.3,
 			},
 		},
 	};
 
 	return (
-		<section className="relative w-full pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-gradient-to-b from-background via-muted/50 to-muted">
+		<section className="relative w-full pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-muted/30">
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
 				<motion.div
 					animate={isVisible ? "visible" : "hidden"}
@@ -103,7 +103,7 @@ export const HeroSection = () => {
 						className="relative w-full max-w-[1600px]"
 						variants={imageVariants}
 					>
-						<div className="rounded-2xl overflow-hidden shadow-xl bg-card p-1">
+						<div className="rounded-2xl overflow-hidden border bg-card shadow-lg p-1">
 							<div className="relative rounded-xl overflow-hidden">
 								<div
 									style={{

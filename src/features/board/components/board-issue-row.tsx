@@ -52,7 +52,7 @@ interface IssueRowProps {
 	dependencyIndicators?: { blockedByCount: number; blockingCount: number };
 }
 
-export function priorityIcon(priority?: IssuePriority, size = "w-3.5 h-3.5") {
+export function priorityIcon(priority?: IssuePriority, size = "size-3.5") {
 	switch (priority) {
 		case "urgent":
 			return <Flame className={cn(size, "text-destructive")} />;
@@ -159,7 +159,7 @@ const DueDateDisplay = ({ dueDate }: DueDateDisplayProps) => {
 							overdue ? "text-destructive" : "text-muted-foreground"
 						)}
 					>
-						<Calendar className="w-3 h-3" />
+						<Calendar className="size-3" />
 						{format(new Date(dueDate), "MMM d")}
 					</span>
 				</TooltipTrigger>
@@ -188,7 +188,7 @@ const AssigneeAvatar = ({ memberId, member }: AssigneeAvatarProps) => (
 	<TooltipProvider key={memberId}>
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Avatar className="w-5 h-5 border-2 border-card">
+				<Avatar className="size-5 border-2 border-card">
 					<AvatarImage alt={member?.name} src={member?.image} />
 					<AvatarFallback className="text-[9px]">
 						{member?.name?.charAt(0).toUpperCase() || "?"}
@@ -208,7 +208,7 @@ const AssigneesDisplay = ({
 }: AssigneesDisplayProps) => {
 	if (!assignees || assignees.length === 0) {
 		return (
-			<div className="w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/20" />
+			<div className="size-5 rounded-full border-2 border-dashed border-muted-foreground/20" />
 		);
 	}
 
@@ -221,7 +221,7 @@ const AssigneesDisplay = ({
 				);
 			})}
 			{assignees.length > 3 && (
-				<Avatar className="w-5 h-5 border-2 border-card bg-muted">
+				<Avatar className="size-5 border-2 border-card bg-muted">
 					<AvatarFallback className="text-[9px]">
 						+{assignees.length - 3}
 					</AvatarFallback>
@@ -251,7 +251,7 @@ const BoardIssueRowContent = ({
 
 		<span
 			aria-hidden="true"
-			className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
+			className="flex-shrink-0 size-2 rounded-full ring-1 ring-inset ring-black/10"
 			style={{ backgroundColor: statusColor }}
 		/>
 
@@ -264,7 +264,7 @@ const BoardIssueRowContent = ({
 							className="flex-shrink-0 flex items-center justify-center text-warning"
 							role="img"
 						>
-							<Lock className="w-2.5 h-2.5" />
+							<Lock className="size-2.5" />
 						</span>
 					</TooltipTrigger>
 					<TooltipContent side="top">
@@ -281,7 +281,7 @@ const BoardIssueRowContent = ({
 					<TooltipTrigger asChild>
 						<span
 							aria-label={`Blocking ${dependencyIndicators?.blockingCount} issue${dependencyIndicators?.blockingCount === 1 ? "" : "s"}`}
-							className="flex-shrink-0 w-2 h-2 rounded-full bg-destructive ring-1 ring-inset ring-black/10"
+							className="flex-shrink-0 size-2 rounded-full bg-destructive ring-1 ring-inset ring-black/10"
 							role="img"
 						/>
 					</TooltipTrigger>
@@ -303,7 +303,7 @@ const BoardIssueRowContent = ({
 			</span>
 			{subIssueStats && subIssueStats.total > 0 && (
 				<div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-					<ListChecks className="w-3 h-3" />
+					<ListChecks className="size-3" />
 					<span>
 						{subIssueStats.completed}/{subIssueStats.total} sub-issues
 					</span>
@@ -381,7 +381,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 					{...attributes}
 					{...listeners}
 				>
-					<GripVertical className="w-3.5 h-3.5" />
+					<GripVertical className="size-3.5" />
 				</button>
 			)}
 

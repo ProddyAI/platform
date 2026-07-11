@@ -314,7 +314,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	}, [activeItem, statuses]);
 
 	return (
-		<div className="h-full w-full min-w-0 max-w-full flex flex-col overflow-hidden">
+		<div className="size-full min-w-0 max-w-full flex flex-col overflow-hidden">
 			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
@@ -359,7 +359,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 										size="sm"
 										variant="outline"
 									>
-										<Plus className="w-3.5 h-3.5" />
+										<Plus className="size-3.5" />
 										Add status
 									</Button>
 								)}
@@ -408,7 +408,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 							<div className="bg-card border border-primary/40 rounded-2xl shadow-lg opacity-90 p-3">
 								<div className="flex items-center gap-2">
 									<span
-										className="w-2.5 h-2.5 rounded-full"
+										className="size-2.5 rounded-full"
 										style={{ backgroundColor: activeItem.item.color }}
 									/>
 									<span className="text-sm font-semibold">

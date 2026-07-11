@@ -141,7 +141,7 @@ function MetricRow({ item }: { item: UsageItem }) {
 				</div>
 				{unlimited ? (
 					<div className="h-2 rounded-full bg-muted">
-						<div className="h-full w-full rounded-full bg-muted-foreground/30" />
+						<div className="size-full rounded-full bg-muted-foreground/30" />
 					</div>
 				) : (
 					<div className="h-2 overflow-hidden rounded-full bg-muted">

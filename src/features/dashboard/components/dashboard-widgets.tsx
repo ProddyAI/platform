@@ -154,7 +154,7 @@ const SortableWidget = ({
 			<div className="flex items-center gap-1 rounded-full border border-border bg-card p-0.5 shadow-sm">
 				<Button
 					aria-label="Small size"
-					className="h-6 w-6 p-0 text-xs"
+					className="size-6 p-0 text-xs"
 					onClick={() => onResize("small")}
 					size="sm"
 					variant={size === "small" ? "default" : "ghost"}
@@ -163,7 +163,7 @@ const SortableWidget = ({
 				</Button>
 				<Button
 					aria-label="Medium size"
-					className="h-6 w-6 p-0 text-xs"
+					className="size-6 p-0 text-xs"
 					onClick={() => onResize("medium")}
 					size="sm"
 					variant={size === "medium" ? "default" : "ghost"}
@@ -172,7 +172,7 @@ const SortableWidget = ({
 				</Button>
 				<Button
 					aria-label="Large size"
-					className="h-6 w-6 p-0 text-xs"
+					className="size-6 p-0 text-xs"
 					onClick={() => onResize("large")}
 					size="sm"
 					variant={size === "large" ? "default" : "ghost"}
@@ -184,12 +184,12 @@ const SortableWidget = ({
 			{/* Delete Button */}
 			<Button
 				aria-label="Remove widget"
-				className="h-8 w-8 border border-border bg-card p-0 shadow-sm hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+				className="size-8 border border-border bg-card p-0 shadow-sm hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
 				onClick={onDelete}
 				size="sm"
 				variant="ghost"
 			>
-				<X className="h-4 w-4" />
+				<X className="size-4" />
 			</Button>
 
 			{/* Drag Handle */}
@@ -200,7 +200,7 @@ const SortableWidget = ({
 				{...attributes}
 				{...listeners}
 			>
-				<GripVertical className="h-4 w-4 text-muted-foreground" />
+				<GripVertical className="size-4 text-muted-foreground" />
 			</button>
 		</div>
 	) : null;
@@ -434,7 +434,7 @@ export const DashboardWidgets = ({
 								size="sm"
 								variant="outline"
 							>
-								<Plus className="h-4 w-4" />
+								<Plus className="size-4" />
 								<span className="hidden sm:inline">Add Widget</span>
 							</Button>
 						)}
@@ -448,12 +448,12 @@ export const DashboardWidgets = ({
 						>
 							{isEditMode ? (
 								<>
-									<Check className="h-4 w-4" />
+									<Check className="size-4" />
 									<span className="hidden sm:inline">Done</span>
 								</>
 							) : (
 								<>
-									<Edit3 className="h-4 w-4" />
+									<Edit3 className="size-4" />
 									<span className="hidden sm:inline">Edit</span>
 								</>
 							)}
@@ -556,14 +556,14 @@ export const DashboardWidgets = ({
 											</div>
 											<div
 												className={cn(
-													"mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-fast",
+													"mt-0.5 flex size-5 flex-shrink-0 items-center justify-center rounded border transition-fast",
 													isSelected
 														? "border-primary bg-primary"
 														: "border-muted-foreground"
 												)}
 											>
 												{isSelected && (
-													<Check className="h-3.5 w-3.5 text-primary-foreground" />
+													<Check className="size-3.5 text-primary-foreground" />
 												)}
 											</div>
 										</button>

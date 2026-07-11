@@ -32,23 +32,23 @@ const FeatureCard = ({
 			animate={
 				isCardInView
 					? { opacity: 1, y: 0 }
-					: { opacity: 0, y: shouldReduceMotion ? 0 : 30 }
+					: { opacity: 0, y: shouldReduceMotion ? 0 : 12 }
 			}
 			className={`
-        group bg-card rounded-2xl shadow-lg hover:shadow-xl overflow-hidden
-        transition-all duration-500 ease-in-out ring-offset-background
+        group rounded-2xl border bg-card shadow-sm hover:shadow-md overflow-hidden
+        transition-shadow duration-200 ring-offset-background
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
         ${isExpanded ? "flex-[3]" : "flex-1"}
         mb-6 lg:mb-0
       `}
-			initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 30 }}
+			initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
 			onBlur={onLeave}
 			onFocus={onHover}
 			onMouseEnter={onHover}
 			onMouseLeave={onLeave}
 			ref={cardRef}
 			tabIndex={0}
-			transition={{ duration: 0.6, delay: delay * 0.1 }}
+			transition={{ duration: 0.35, delay: delay * 0.06 }}
 		>
 			{/* Mobile Layout - Always show full content */}
 			<div className="lg:hidden">
@@ -56,7 +56,7 @@ const FeatureCard = ({
 				<div className="relative h-48 bg-muted overflow-hidden rounded-t-2xl">
 					<Image
 						alt={title}
-						className="object-cover object-center w-full h-full"
+						className="object-cover object-center size-full"
 						fill
 						sizes="(max-width: 1024px) 100vw, 25vw"
 						src={imageSrc}
@@ -178,11 +178,11 @@ export const AIFeaturesSection = () => {
 						animate={
 							isSectionInView
 								? { opacity: 1, y: 0 }
-								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
+								: { opacity: 0, y: shouldReduceMotion ? 0 : 12 }
 						}
 						className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
+						transition={{ duration: 0.35, delay: 0.05 }}
 					>
 						AI Tools That{" "}
 						<span className="text-primary">Handle the Busywork</span>

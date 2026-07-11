@@ -338,35 +338,35 @@ export const ImportDataManagement = ({
 		> = {
 			active: {
 				variant: "success",
-				icon: <CheckCircle2 className="h-3 w-3" />,
+				icon: <CheckCircle2 className="size-3" />,
 			},
 			expired: {
 				variant: "warning",
-				icon: <AlertCircle className="h-3 w-3" />,
+				icon: <AlertCircle className="size-3" />,
 			},
 			revoked: {
 				variant: "destructiveSoft",
-				icon: <Trash2 className="h-3 w-3" />,
+				icon: <Trash2 className="size-3" />,
 			},
 			pending: {
 				variant: "outline",
-				icon: <Loader2 className="h-3 w-3 animate-spin" />,
+				icon: <Loader2 className="size-3 animate-spin" />,
 			},
 			in_progress: {
 				variant: "outline",
-				icon: <Loader2 className="h-3 w-3 animate-spin" />,
+				icon: <Loader2 className="size-3 animate-spin" />,
 			},
 			completed: {
 				variant: "success",
-				icon: <CheckCircle2 className="h-3 w-3" />,
+				icon: <CheckCircle2 className="size-3" />,
 			},
 			failed: {
 				variant: "destructiveSoft",
-				icon: <AlertCircle className="h-3 w-3" />,
+				icon: <AlertCircle className="size-3" />,
 			},
 			cancelled: {
 				variant: "outline",
-				icon: <AlertCircle className="h-3 w-3" />,
+				icon: <AlertCircle className="size-3" />,
 			},
 		};
 
@@ -410,7 +410,7 @@ export const ImportDataManagement = ({
 										<div
 											className={`p-2 rounded-lg border ${PLATFORM_ICON_CLASS}`}
 										>
-											<platform.icon className="h-6 w-6" />
+											<platform.icon className="size-6" />
 										</div>
 										<div>
 											<CardTitle className="text-base">
@@ -453,7 +453,7 @@ export const ImportDataManagement = ({
 												onClick={() => handleStartImport(platform.id)}
 												size="sm"
 											>
-												<Upload className="h-4 w-4 mr-2" />
+												<Upload className="size-4 mr-2" />
 												Start Import
 											</Button>
 											<Button
@@ -462,7 +462,7 @@ export const ImportDataManagement = ({
 												size="sm"
 												variant="outline"
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className="size-4" />
 											</Button>
 										</div>
 									</>
@@ -473,7 +473,7 @@ export const ImportDataManagement = ({
 										onClick={() => handleConnect(platform.id)}
 										size="sm"
 									>
-										<ExternalLink className="h-4 w-4 mr-2" />
+										<ExternalLink className="size-4 mr-2" />
 										Connect {platform.name}
 									</Button>
 								)}
@@ -641,7 +641,7 @@ export const ImportDataManagement = ({
 														size="sm"
 														variant="ghost"
 													>
-														<RefreshCw className="h-4 w-4 mr-1" />
+														<RefreshCw className="size-4 mr-1" />
 														Retry
 													</Button>
 												)}
@@ -832,7 +832,7 @@ export const ImportDataManagement = ({
 							}
 							onClick={handleConfirmImport}
 						>
-							<Download className="h-4 w-4 mr-2" />
+							<Download className="size-4 mr-2" />
 							Start Import
 						</Button>
 					</DialogFooter>

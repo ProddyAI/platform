@@ -19,7 +19,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { cn } from "@/lib/utils";
@@ -147,19 +147,17 @@ export const Header = () => {
 		<header
 			className={cn(
 				"fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-				isScrolled
-					? "bg-background/95 backdrop-blur-md shadow-sm py-3"
-					: "bg-transparent py-5"
+				isScrolled ? "bg-background shadow-sm py-3" : "bg-transparent py-5"
 			)}
 		>
 			<div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between h-full">
 					{/* Logo */}
 					<Link className="flex items-center gap-2 group" href="/home">
-						<div className="relative w-10 h-10 overflow-hidden">
+						<div className="relative size-10 overflow-hidden">
 							<Image
 								alt="Proddy Logo"
-								className="object-contain transition-transform duration-300 group-hover:scale-110"
+								className="object-contain"
 								fill
 								src="/logo-nobg.png"
 							/>
@@ -198,7 +196,7 @@ export const Header = () => {
 								<span>Features</span>
 								<ChevronDown
 									className={cn(
-										"w-4 h-4 transition-transform duration-200",
+										"size-4 transition-transform duration-200",
 										isModulesOpen && "rotate-180"
 									)}
 								/>
@@ -219,11 +217,11 @@ export const Header = () => {
 											<div className="grid grid-cols-2 gap-4 mb-4">
 												{modules.map((module) => (
 													<Link
-														className="flex items-start p-3 rounded-lg hover:bg-muted transition-all duration-200 hover:translate-x-1"
+														className="flex items-start p-3 rounded-lg hover:bg-muted transition-colors duration-150"
 														href={module.href}
 														key={module.name}
 													>
-														<div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-md bg-primary/5">
+														<div className="flex-shrink-0 flex items-center justify-center size-10 rounded-md bg-primary/5">
 															<module.icon className="size-5 text-primary" />
 														</div>
 														<div className="ml-4">
@@ -244,7 +242,7 @@ export const Header = () => {
 													className="flex items-start p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-all duration-200"
 													href="/assistant"
 												>
-													<div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-md bg-primary/20 text-2xl">
+													<div className="flex-shrink-0 flex items-center justify-center size-12 rounded-md bg-primary/20 text-2xl">
 														🤖
 													</div>
 													<div className="ml-4">
@@ -252,9 +250,7 @@ export const Header = () => {
 															<p className="text-base font-medium text-foreground">
 																Proddy AI Assistant
 															</p>
-															<span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-																New
-															</span>
+															<Badge variant="primarySoft">New</Badge>
 														</div>
 														<p className="mt-1 text-sm text-muted-foreground">
 															Your intelligent workspace companion powered by AI
@@ -281,9 +277,7 @@ export const Header = () => {
 							href="/assistant"
 						>
 							<span>AI Assistant</span>
-							<span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-								New
-							</span>
+							<Badge variant="primarySoft">New</Badge>
 						</Link>
 						<Link
 							className="text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary"
@@ -355,7 +349,7 @@ export const Header = () => {
 							onClick={toggleMenu}
 							type="button"
 						>
-							{isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+							{isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
 						</button>
 					</div>
 				</div>
@@ -407,9 +401,9 @@ export const Header = () => {
 											<span className="text-lg">🤖</span>
 											<div>
 												<span>Proddy AI Assistant</span>
-												<span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+												<Badge className="ml-2" variant="primarySoft">
 													New
-												</span>
+												</Badge>
 											</div>
 										</Link>
 									</div>

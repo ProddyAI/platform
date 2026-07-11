@@ -299,7 +299,7 @@ const CalendarContent = ({
 			<div className="flex-1 overflow-auto p-4">
 				{isLoading ? (
 					<div className="flex h-full items-center justify-center">
-						<Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+						<Loader className="size-6 animate-spin text-muted-foreground" />
 					</div>
 				) : (
 					<div className="h-full overflow-hidden rounded-2xl border bg-card">
@@ -335,7 +335,7 @@ const CalendarContent = ({
 													new Date().getDate() === dayObj.day &&
 													new Date().getMonth() === currentDate.getMonth() &&
 													new Date().getFullYear() === currentDate.getFullYear()
-														? "h-5 w-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground -mt-0.5 -mr-0.5"
+														? "size-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground -mt-0.5 -mr-0.5"
 														: ""
 												}`}
 											>

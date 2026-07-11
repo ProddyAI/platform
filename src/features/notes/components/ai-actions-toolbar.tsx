@@ -39,7 +39,7 @@ const AI_ACTIONS: AIActionConfig[] = [
 		id: "clean",
 		label: "Clean Up",
 		description: "Fix grammar & improve clarity",
-		icon: <Wand2 className="h-4 w-4" />,
+		icon: <Wand2 className="size-4" />,
 		endpoint: "/api/notes/ai/clean",
 		insertMode: "replace",
 	},
@@ -47,7 +47,7 @@ const AI_ACTIONS: AIActionConfig[] = [
 		id: "tasks",
 		label: "Convert to Tasks",
 		description: "Extract actionable checklist",
-		icon: <CheckSquare className="h-4 w-4" />,
+		icon: <CheckSquare className="size-4" />,
 		endpoint: "/api/notes/ai/tasks",
 		insertMode: "append",
 	},
@@ -55,7 +55,7 @@ const AI_ACTIONS: AIActionConfig[] = [
 		id: "summarize",
 		label: "Summarize",
 		description: "Create a concise summary",
-		icon: <FileText className="h-4 w-4" />,
+		icon: <FileText className="size-4" />,
 		endpoint: "/api/notes/ai/summarize",
 		insertMode: "append",
 	},
@@ -63,7 +63,7 @@ const AI_ACTIONS: AIActionConfig[] = [
 		id: "expand",
 		label: "Expand",
 		description: "Add more detail & examples",
-		icon: <Maximize2 className="h-4 w-4" />,
+		icon: <Maximize2 className="size-4" />,
 		endpoint: "/api/notes/ai/expand",
 		insertMode: "replace",
 	},
@@ -285,8 +285,8 @@ export const AIActionsToolbar = ({
 		>
 			{/* AI Label */}
 			<div className="flex items-center gap-1.5 mr-1">
-				<div className="flex items-center justify-center w-6 h-6 rounded-md bg-secondary/10 border border-secondary/20 shadow-sm">
-					<Sparkles className="h-3.5 w-3.5 text-secondary" />
+				<div className="flex items-center justify-center size-6 rounded-md bg-secondary/10 border border-secondary/20 shadow-sm">
+					<Sparkles className="size-3.5 text-secondary" />
 				</div>
 				<span className="text-xs font-semibold text-secondary hidden sm:block">
 					AI Actions
@@ -311,7 +311,7 @@ export const AIActionsToolbar = ({
 						variant="ghost"
 					>
 						{activeAction === action.id ? (
-							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							<Loader2 className="size-3.5 animate-spin" />
 						) : (
 							action.icon
 						)}
@@ -330,12 +330,12 @@ export const AIActionsToolbar = ({
 							variant="ghost"
 						>
 							{isStreaming ? (
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								<Loader2 className="size-3.5 animate-spin" />
 							) : (
-								<Sparkles className="h-3.5 w-3.5" />
+								<Sparkles className="size-3.5" />
 							)}
 							AI
-							<ChevronDown className="h-3 w-3" />
+							<ChevronDown className="size-3" />
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
@@ -348,7 +348,7 @@ export const AIActionsToolbar = ({
 									onClick={() => runAIAction(action)}
 								>
 									{activeAction === action.id ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
+										<Loader2 className="size-4 animate-spin" />
 									) : (
 										action.icon
 									)}
@@ -371,15 +371,15 @@ export const AIActionsToolbar = ({
 					<div className="flex items-center gap-1.5 text-xs text-secondary">
 						<div className="flex gap-0.5">
 							<span
-								className="w-1 h-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
+								className="size-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
 								style={{ animationDelay: "0ms" }}
 							/>
 							<span
-								className="w-1 h-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
+								className="size-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
 								style={{ animationDelay: "150ms" }}
 							/>
 							<span
-								className="w-1 h-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
+								className="size-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
 								style={{ animationDelay: "300ms" }}
 							/>
 						</div>
@@ -388,13 +388,13 @@ export const AIActionsToolbar = ({
 						</span>
 					</div>
 					<Button
-						className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+						className="size-6 p-0 text-muted-foreground hover:text-destructive"
 						onClick={handleCancel}
 						size="sm"
 						title="Cancel"
 						variant="ghost"
 					>
-						<X className="h-3.5 w-3.5" />
+						<X className="size-3.5" />
 					</Button>
 				</div>
 			)}

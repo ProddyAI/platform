@@ -102,9 +102,9 @@ export const TaskItem = ({
 
 	const getStatusIcon = (completed: boolean) => {
 		return completed ? (
-			<CheckCircle2 className="h-5 w-5 text-success" />
+			<CheckCircle2 className="size-5 text-success" />
 		) : (
-			<Circle className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+			<Circle className="size-5 text-muted-foreground transition-colors group-hover:text-primary" />
 		);
 	};
 
@@ -162,7 +162,7 @@ export const TaskItem = ({
 											size="iconSm"
 											variant="ghost"
 										>
-											<Edit className="h-3.5 w-3.5 text-muted-foreground" />
+											<Edit className="size-3.5 text-muted-foreground" />
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
@@ -181,7 +181,7 @@ export const TaskItem = ({
 											size="iconSm"
 											variant="ghost"
 										>
-											<Trash className="h-3.5 w-3.5" />
+											<Trash className="size-3.5" />
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
@@ -232,7 +232,7 @@ export const TaskItem = ({
 							>
 								<span
 									className={cn(
-										"h-2 w-2 rounded-full",
+										"size-2 rounded-full",
 										PRIORITY_CONFIG[priority].dotClassName
 									)}
 								/>
@@ -251,7 +251,7 @@ export const TaskItem = ({
 										: "text-muted-foreground bg-muted"
 								)}
 							>
-								<Clock className="h-3 w-3" />
+								<Clock className="size-3" />
 								<span>{format(new Date(dueDate), "MMM d, yyyy")}</span>
 							</div>
 						)}

@@ -160,17 +160,17 @@ export const SavedCanvasesDropdown = () => {
 			<DropdownMenuTrigger asChild>
 				<Button
 					aria-label="Saved canvases"
-					className="h-6 w-6"
+					className="size-6"
 					size="icon"
 					variant="ghost"
 				>
-					<FolderOpen className="h-3.5 w-3.5" />
+					<FolderOpen className="size-3.5" />
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-56">
 				{isLoading ? (
 					<div className="p-4 flex items-center justify-center">
-						<Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+						<Loader className="size-4 animate-spin text-muted-foreground" />
 					</div>
 				) : savedCanvases.length > 0 ? (
 					savedCanvases.map((canvas, index) => (
@@ -183,7 +183,7 @@ export const SavedCanvasesDropdown = () => {
 									}
 								>
 									<div className="flex items-center gap-2 min-w-0">
-										<PaintBucket className="h-4 w-4 shrink-0" />
+										<PaintBucket className="size-4 shrink-0" />
 										<span className="truncate">{canvas.canvasName}</span>
 									</div>
 								</DropdownMenuItem>
@@ -199,7 +199,7 @@ export const SavedCanvasesDropdown = () => {
 										);
 									}}
 								>
-									<Trash2 className="h-4 w-4" />
+									<Trash2 className="size-4" />
 								</DropdownMenuItem>
 							</div>
 							{index < savedCanvases.length - 1 && <DropdownMenuSeparator />}

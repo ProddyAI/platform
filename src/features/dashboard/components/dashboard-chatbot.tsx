@@ -270,9 +270,9 @@ function formatRelativeTime(timestamp: number): string {
 
 function ProddyChatAvatar() {
 	return (
-		<Avatar className="h-9 w-9 bg-primary/10 ring-2 ring-primary/20">
+		<Avatar className="size-9 bg-primary/10 ring-2 ring-primary/20">
 			<AvatarFallback>
-				<Bot className="h-5 w-5 text-primary" />
+				<Bot className="size-5 text-primary" />
 			</AvatarFallback>
 		</Avatar>
 	);
@@ -290,11 +290,11 @@ function ChatLoadingIndicator() {
 	return (
 		<div className="flex justify-start">
 			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3 flex items-start gap-2">
-				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-					<Zap className="h-4 w-4 animate-pulse text-primary" />
+				<div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+					<Zap className="size-4 animate-pulse text-primary" />
 				</div>
 				<ChatLoadingBody />
-				<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+				<Loader className="size-4 shrink-0 animate-spin text-muted-foreground" />
 			</div>
 		</div>
 	);
@@ -306,7 +306,7 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 	return (
 		<div className="flex items-center gap-3 rounded-lg border border-success/20 bg-success/10 p-2">
 			<Icon
-				className={`h-4 w-4 ${metadata?.iconClassName ?? "text-success"}`}
+				className={`size-4 ${metadata?.iconClassName ?? "text-success"}`}
 			/>
 			<div className="flex-1">
 				<div className="font-medium text-sm">{metadata?.name ?? app.app}</div>
@@ -315,7 +315,7 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 						"Connected and available for assistant actions"}
 				</div>
 			</div>
-			<CheckCircle className="h-4 w-4 text-success" />
+			<CheckCircle className="size-4 text-success" />
 		</div>
 	);
 }
@@ -335,7 +335,7 @@ function ConnectedIntegrationsPopover({
 					size="sm"
 					variant="ghost"
 				>
-					<Zap className="h-3 w-3 mr-1 text-success" />
+					<Zap className="size-3 mr-1 text-success" />
 					<span className="text-success font-medium">
 						{connected.length} connected
 					</span>
@@ -344,7 +344,7 @@ function ConnectedIntegrationsPopover({
 			<PopoverContent className="w-80 p-3">
 				<div className="space-y-3">
 					<h4 className="font-medium text-sm flex items-center gap-2">
-						<CheckCircle className="h-4 w-4 text-success" />
+						<CheckCircle className="size-4 text-success" />
 						Connected Integrations
 					</h4>
 					<div className="space-y-2">
@@ -373,7 +373,7 @@ function IntegrationStatusBlock({
 	if (status.loading) {
 		return (
 			<div className="flex items-center gap-1">
-				<Loader className="h-3 w-3 animate-spin text-muted-foreground" />
+				<Loader className="size-3 animate-spin text-muted-foreground" />
 				<span className="text-xs text-muted-foreground">
 					Checking integrations...
 				</span>
@@ -456,16 +456,16 @@ function ChatHeaderActions({
 				size="sm"
 				variant="default"
 			>
-				<Plus className="h-4 w-4 mr-1.5" />
+				<Plus className="size-4 mr-1.5" />
 				New Chat
 			</Button>
 
 			<DropdownMenu onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
 				<DropdownMenuTrigger asChild>
 					<Button className="h-8 px-3" size="sm" variant="outline">
-						<History className="h-4 w-4 mr-1.5" />
+						<History className="size-4 mr-1.5" />
 						Recent Chats
-						<ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
+						<ChevronDown className="size-3 ml-1.5 opacity-50" />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
@@ -562,7 +562,7 @@ function ChatHistoryItem({
 				onSelect();
 			}}
 		>
-			<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+			<MessageSquare className="size-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
 			<div className="flex-1 min-w-0">
 				<p
 					className={`text-sm font-medium truncate transition-all duration-500 ${
@@ -575,7 +575,7 @@ function ChatHistoryItem({
 					{conv.titleSource === "ai_generated" &&
 						conv.title &&
 						conv.title !== "New Chat" && (
-							<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
+							<Sparkles className="inline-block ml-1 size-3 text-primary/40" />
 						)}
 				</p>
 				<p className="text-xs text-muted-foreground mt-0.5">
@@ -585,7 +585,7 @@ function ChatHistoryItem({
 			<div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
 				<Button
 					aria-label="Rename chat"
-					className="h-6 w-6 p-0"
+					className="size-6 p-0"
 					onClick={(e) => {
 						e.stopPropagation();
 						onStartEdit();
@@ -593,11 +593,11 @@ function ChatHistoryItem({
 					size="sm"
 					variant="ghost"
 				>
-					<Edit2 className="h-3 w-3" />
+					<Edit2 className="size-3" />
 				</Button>
 				<Button
 					aria-label="Delete chat"
-					className="h-6 w-6 p-0 hover:text-destructive"
+					className="size-6 p-0 hover:text-destructive"
 					onClick={(e) => {
 						e.stopPropagation();
 						onDelete();
@@ -605,7 +605,7 @@ function ChatHistoryItem({
 					size="sm"
 					variant="ghost"
 				>
-					<Trash2 className="h-3 w-3" />
+					<Trash2 className="size-3" />
 				</Button>
 			</div>
 		</DropdownMenuItem>
@@ -768,7 +768,7 @@ function ConversationTitleEditor({
 }) {
 	return (
 		<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
-			<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+			<MessageSquare className="size-4 flex-shrink-0 text-muted-foreground" />
 			<Input
 				aria-label="Chat title"
 				className="h-8 text-sm flex-1"
@@ -785,21 +785,21 @@ function ConversationTitleEditor({
 			/>
 			<Button
 				aria-label="Save title"
-				className="h-8 w-8 p-0"
+				className="size-8 p-0"
 				onClick={onSave}
 				size="sm"
 				variant="ghost"
 			>
-				<Check className="h-4 w-4 text-success" />
+				<Check className="size-4 text-success" />
 			</Button>
 			<Button
 				aria-label="Cancel"
-				className="h-8 w-8 p-0"
+				className="size-8 p-0"
 				onClick={onCancel}
 				size="sm"
 				variant="ghost"
 			>
-				<X className="h-4 w-4" />
+				<X className="size-4" />
 			</Button>
 		</div>
 	);
@@ -1015,7 +1015,7 @@ function ChatComposer({
 						size="icon"
 						variant="secondary"
 					>
-						<Square className="h-4 w-4" />
+						<Square className="size-4" />
 					</Button>
 				) : (
 					<Button
@@ -1024,7 +1024,7 @@ function ChatComposer({
 						onClick={onSend}
 						size="icon"
 					>
-						<Send className="h-4 w-4" />
+						<Send className="size-4" />
 					</Button>
 				)}
 			</div>
@@ -1722,22 +1722,22 @@ Try asking me things like:`;
 	const getActionIcon = (type: string) => {
 		switch (type) {
 			case "calendar":
-				return <Calendar className="h-4 w-4" />;
+				return <Calendar className="size-4" />;
 			case "note":
-				return <FileText className="h-4 w-4" />;
+				return <FileText className="size-4" />;
 			case "board":
-				return <Kanban className="h-4 w-4" />;
+				return <Kanban className="size-4" />;
 			case "task":
-				return <CheckSquare className="h-4 w-4" />;
+				return <CheckSquare className="size-4" />;
 			case "message":
-				return <MessageSquare className="h-4 w-4" />;
+				return <MessageSquare className="size-4" />;
 			case "github":
-				return <Github className="h-4 w-4" />;
+				return <Github className="size-4" />;
 			case "gmail":
 			case "email":
-				return <Mail className="h-4 w-4" />;
+				return <Mail className="size-4" />;
 			default:
-				return <ExternalLink className="h-4 w-4" />;
+				return <ExternalLink className="size-4" />;
 		}
 	};
 

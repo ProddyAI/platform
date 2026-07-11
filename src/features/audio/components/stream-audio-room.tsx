@@ -150,12 +150,12 @@ export const StreamAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 right-4 z-50">
 				<Button
-					className="bg-background hover:bg-accent flex items-center gap-2"
+					className="flex items-center gap-2"
 					disabled
 					size="sm"
 					variant="outline"
 				>
-					<div className="animate-spin h-3 w-3 border-2 border-secondary border-t-transparent rounded-full" />
+					<div className="animate-spin size-3 border-2 border-primary border-t-transparent rounded-full" />
 					{canvasName
 						? `Connecting to ${canvasName}...`
 						: "Connecting to audio..."}
@@ -169,7 +169,7 @@ export const StreamAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 right-4 z-50">
 				<Button
-					className="bg-background hover:bg-accent flex items-center gap-2"
+					className="flex items-center gap-2"
 					onClick={() => setShowFallbackUI(false)}
 					size="sm"
 					variant="outline"
@@ -186,14 +186,14 @@ export const StreamAudioRoom = ({
 			typeof error === "string" && error.includes("WS connection");
 
 		return (
-			<div className="fixed bottom-4 right-4 z-50 bg-card p-3 rounded-md shadow-md max-w-xs">
-				<h4 className="text-sm font-medium text-red-500 mb-1">
+			<div className="fixed bottom-4 right-4 z-50 bg-card p-3 rounded-2xl border border-border shadow-md max-w-xs">
+				<h4 className="text-sm font-medium text-destructive mb-1">
 					{isWSError ? "Network Connection Failed" : "Audio Connection Failed"}
 				</h4>
-				<p className="text-xs text-gray-600 mb-2">{error}</p>
+				<p className="text-xs text-muted-foreground mb-2">{error}</p>
 
 				{isWSError && (
-					<p className="text-xs text-gray-600 mb-2">
+					<p className="text-xs text-muted-foreground mb-2">
 						This may be due to network issues or firewall settings. Try using a
 						different network or check your firewall settings.
 					</p>
@@ -201,7 +201,7 @@ export const StreamAudioRoom = ({
 
 				<div className="flex gap-2">
 					<Button
-						className="flex-1 bg-background hover:bg-accent text-secondary flex items-center justify-center"
+						className="flex-1 flex items-center justify-center"
 						onClick={handleRetry}
 						size="sm"
 						variant="outline"
@@ -211,7 +211,7 @@ export const StreamAudioRoom = ({
 
 					{isWSError && (
 						<Button
-							className="flex-1 bg-background hover:bg-accent text-gray-600 flex items-center justify-center"
+							className="flex-1 flex items-center justify-center"
 							onClick={handleShowFallback}
 							size="sm"
 							variant="outline"
@@ -221,7 +221,7 @@ export const StreamAudioRoom = ({
 					)}
 				</div>
 
-				<div className="mt-2 text-xs text-gray-500">
+				<div className="mt-2 text-xs text-muted-foreground">
 					{isWSError
 						? "Audio rooms require a stable network connection."
 						: "Each canvas has its own audio room for collaboration."}
@@ -293,7 +293,7 @@ export const StreamAudioRoom = ({
 							onClick={confirmLeaveAudio}
 						>
 							{isLeavingConfirmed && (
-								<Loader2 className="h-4 w-4 animate-spin" />
+								<Loader2 className="size-4 animate-spin" />
 							)}
 							{isLeavingConfirmed ? "Leaving..." : "Leave"}
 						</AlertDialogAction>
@@ -365,7 +365,7 @@ const AudioRoomUI = ({
 						<AudioControlButton
 							className={
 								showNotesPanel
-									? "bg-indigo-100 text-indigo-700 border-indigo-200"
+									? "bg-primary/10 text-primary border-primary/20"
 									: ""
 							}
 							icon={FileText}

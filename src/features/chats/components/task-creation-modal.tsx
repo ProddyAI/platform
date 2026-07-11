@@ -63,7 +63,7 @@ export const TaskCreationModal = ({
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
-						<CalendarIcon className="h-5 w-5" />
+						<CalendarIcon className="size-5" />
 						Create Task from Message
 					</DialogTitle>
 				</DialogHeader>
@@ -100,7 +100,7 @@ export const TaskCreationModal = ({
 									type="button"
 									variant="outline"
 								>
-									<CalendarIcon className="mr-2 h-4 w-4" />
+									<CalendarIcon className="mr-2 size-4" />
 									{selectedDueDate ? (
 										format(selectedDueDate, "PPP")
 									) : (

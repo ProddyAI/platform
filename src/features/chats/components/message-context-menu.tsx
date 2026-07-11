@@ -54,7 +54,7 @@ export const MessageContextMenu = ({
 				 * portaled, focus-trapped, keyboard-navigable DropdownMenuContent below. */}
 				<button
 					aria-hidden="true"
-					className="fixed h-0 w-0"
+					className="fixed size-0"
 					style={{ left: contextMenu.x, top: contextMenu.y }}
 					tabIndex={-1}
 					type="button"
@@ -80,7 +80,7 @@ export const MessageContextMenu = ({
 				<DropdownMenuSeparator />
 
 				<DropdownMenuItem onClick={() => handleAction("addToTask")}>
-					<Plus className="mr-2 h-4 w-4" />
+					<Plus className="mr-2 size-4" />
 					Add as Task
 				</DropdownMenuItem>
 

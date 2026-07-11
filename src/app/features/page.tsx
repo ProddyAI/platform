@@ -92,7 +92,7 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-blue-700",
 			activeRing: "data-[state=active]:ring-blue-300",
 			indicatorBg: "bg-blue-500",
-			cardGradient: "bg-gradient-to-r from-blue-50 to-blue-100",
+			cardGradient: "bg-blue-50",
 			cardAccent: "bg-blue-400",
 			cardArrow: "text-blue-500",
 			cardHoverBorder: "hover:border-blue-200",
@@ -108,7 +108,7 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-green-700",
 			activeRing: "data-[state=active]:ring-green-300",
 			indicatorBg: "bg-green-500",
-			cardGradient: "bg-gradient-to-r from-green-50 to-green-100",
+			cardGradient: "bg-green-50",
 			cardAccent: "bg-green-400",
 			cardArrow: "text-green-500",
 			cardHoverBorder: "hover:border-green-200",
@@ -124,7 +124,7 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-purple-700",
 			activeRing: "data-[state=active]:ring-purple-300",
 			indicatorBg: "bg-purple-500",
-			cardGradient: "bg-gradient-to-r from-purple-50 to-purple-100",
+			cardGradient: "bg-purple-50",
 			cardAccent: "bg-purple-400",
 			cardArrow: "text-purple-500",
 			cardHoverBorder: "hover:border-purple-200",
@@ -140,7 +140,7 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-indigo-700",
 			activeRing: "data-[state=active]:ring-indigo-300",
 			indicatorBg: "bg-indigo-500",
-			cardGradient: "bg-gradient-to-r from-indigo-50 to-indigo-100",
+			cardGradient: "bg-indigo-50",
 			cardAccent: "bg-indigo-400",
 			cardArrow: "text-indigo-500",
 			cardHoverBorder: "hover:border-indigo-200",
@@ -286,7 +286,7 @@ const FeaturesPage = () => {
 				id={feature.id}
 				key={feature.id}
 				{...fadeInAnimation}
-				className={`bg-card rounded-xl shadow-md overflow-hidden border border-border hover:shadow-xl ${cardHoverBorder} transition-all duration-300`}
+				className={`bg-card rounded-2xl shadow-md overflow-hidden border border-border hover:shadow-xl ${cardHoverBorder} transition-all duration-300`}
 				transition={{ duration: 0.5, delay: index * 0.1 }}
 			>
 				<div className="grid grid-cols-1 lg:grid-cols-2 h-full">
@@ -334,11 +334,6 @@ const FeaturesPage = () => {
 				id="hero"
 				ref={heroRef}
 			>
-				<div className="absolute inset-0 overflow-hidden">
-					<div className="absolute -top-[30%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-3xl" />
-					<div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-secondary/5 blur-3xl" />
-				</div>
-
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
 						<div className="text-left lg:pr-6">
@@ -396,7 +391,7 @@ const FeaturesPage = () => {
 						>
 							<div className="absolute inset-0 bg-gradient-to-br from-background/80 via-transparent to-transparent z-10" />
 							<div className="absolute inset-0">
-								<div className="grid grid-cols-2 gap-3 p-4 w-full h-full">
+								<div className="grid grid-cols-2 gap-3 p-4 size-full">
 									<div className="flex flex-col gap-3 h-full">
 										<div className="h-1/2">
 											<HeroFeatureImage

@@ -369,48 +369,48 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				<div className="flex items-center gap-2">
 					<div className="flex items-center border border-border rounded-md overflow-hidden">
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							onClick={goToPreviousWeek}
 							size="sm"
 							variant="ghost"
 						>
-							<ArrowLeft className="h-4 w-4" />
+							<ArrowLeft className="size-4" />
 						</Button>
 						<div className="px-2 text-xs font-medium border-l border-r border-border">
 							{format(currentStartDate, "MMM d")} -{" "}
 							{format(addDays(currentStartDate, zoomLevel - 1), "MMM d, yyyy")}
 						</div>
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							onClick={goToNextWeek}
 							size="sm"
 							variant="ghost"
 						>
-							<ArrowRight className="h-4 w-4" />
+							<ArrowRight className="size-4" />
 						</Button>
 					</div>
 
 					<div className="flex items-center border border-border rounded-md overflow-hidden ml-2">
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							disabled={zoomLevel >= 28}
 							onClick={zoomOut}
 							size="sm"
 							variant="ghost"
 						>
-							<ZoomOut className="h-4 w-4" />
+							<ZoomOut className="size-4" />
 						</Button>
 						<div className="px-2 text-xs font-medium border-l border-r border-border">
 							{zoomLevel} days
 						</div>
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							disabled={zoomLevel <= 7}
 							onClick={zoomIn}
 							size="sm"
 							variant="ghost"
 						>
-							<ZoomIn className="h-4 w-4" />
+							<ZoomIn className="size-4" />
 						</Button>
 					</div>
 
@@ -420,7 +420,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 						size="sm"
 						variant="outline"
 					>
-						<Calendar className="h-3.5 w-3.5" />
+						<Calendar className="size-3.5" />
 						<span className="text-xs">Today</span>
 					</Button>
 				</div>
@@ -491,7 +491,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										<div className="p-3 border-b border-border">
 											<div className="font-medium truncate flex items-center gap-2">
 												<span
-													className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+													className="size-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
 													style={{ backgroundColor: status.color }}
 												/>
 												<span className="truncate">{status.name}</span>
@@ -604,12 +604,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 							</span>
 							<Button
 								aria-label="Close task details"
-								className="h-7 w-7 p-0 flex-shrink-0 hover:bg-muted"
+								className="size-7 p-0 flex-shrink-0 hover:bg-muted"
 								onClick={() => setSelectedTask(null)}
 								size="sm"
 								variant="ghost"
 							>
-								<X className="h-4 w-4 text-muted-foreground" />
+								<X className="size-4 text-muted-foreground" />
 							</Button>
 						</div>
 						<h3 className="text-lg font-semibold text-foreground">
@@ -623,7 +623,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 								<div className="text-xs text-muted-foreground mb-1">Status</div>
 								<div className="flex items-center gap-2 text-sm font-medium">
 									<span
-										className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+										className="size-2 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
 										style={{ backgroundColor: selectedTask.statusColor }}
 									/>
 									{selectedTask.statusTitle}
@@ -654,7 +654,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									>
 										<div
 											className={cn(
-												"w-2 h-2 rounded-full mr-1",
+												"size-2 rounded-full mr-1",
 												getPriorityColor(selectedTask.priority)
 											)}
 										/>
@@ -707,7 +707,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			{tasks.length === 0 && (
 				<div className="flex-1 flex items-center justify-center flex-col p-8">
 					<div className="bg-muted rounded-full p-3 mb-3">
-						<Calendar className="h-6 w-6 text-muted-foreground" />
+						<Calendar className="size-6 text-muted-foreground" />
 					</div>
 					<h3 className="text-lg font-medium mb-1">No tasks with due dates</h3>
 					<p className="text-sm text-muted-foreground text-center max-w-md">

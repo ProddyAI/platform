@@ -115,7 +115,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<WorkspacePresenceTracker
 						workspaceId={workspaceId as Id<"workspaces">}
 					>
-						<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
+						<div className="size-full min-w-0 flex flex-col overflow-hidden">
 							<div className="flex h-full min-w-0 overflow-hidden">
 								{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
 								<div

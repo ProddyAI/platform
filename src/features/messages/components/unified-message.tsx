@@ -192,7 +192,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 		if (isMeeting) {
 			if (meetingStatus?.ended) {
 				// Go to the meetings page (notes for ended meetings live there)
-				router.push(`/workspace/${workspaceId}/meeting`);
+				router.push(`/workspace/${workspaceId}/meetings`);
 				return;
 			}
 			const meetUrl = `/meet/${data.meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}`;
@@ -236,11 +236,11 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						}`}
 					>
 						{meetingEnded ? (
-							<PhoneOff className="h-4 w-4 text-muted-foreground" />
+							<PhoneOff className="size-4 text-muted-foreground" />
 						) : (
 							<div className="relative">
-								<Icon className="h-4 w-4 text-primary" />
-								<span className="absolute -right-1 -top-1 h-2 w-2 rounded-full border-2 border-card bg-success motion-safe:animate-pulse" />
+								<Icon className="size-4 text-primary" />
+								<span className="absolute -right-1 -top-1 size-2 rounded-full border-2 border-card bg-success motion-safe:animate-pulse" />
 							</div>
 						)}
 					</div>
@@ -258,7 +258,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						{isMeeting && meetingEnded && (
 							<div className="mt-1.5 flex flex-col gap-0.5">
 								<div className="flex items-center gap-2 text-xs text-muted-foreground">
-									<Clock className="h-3.5 w-3.5" />
+									<Clock className="size-3.5" />
 									{formatDuration(meetingStatus?.duration ?? null)}
 								</div>
 								<div className="text-xs text-muted-foreground">
@@ -276,13 +276,13 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						{/* Active meeting status */}
 						{isMeeting && !meetingEnded && data.meetingType === "schedule" && (
 							<div className="mt-1 flex items-center gap-2 truncate text-xs text-muted-foreground">
-								<Clock className="h-3.5 w-3.5" />
+								<Clock className="size-3.5" />
 								{data.meetingDate} at {data.meetingTime}
 							</div>
 						)}
 						{isMeeting && !meetingEnded && data.meetingType === "instant" && (
 							<div className="mt-1 flex items-center gap-2 truncate text-xs font-medium text-success">
-								<span className="h-2 w-2 rounded-full bg-success motion-safe:animate-pulse" />
+								<span className="size-2 rounded-full bg-success motion-safe:animate-pulse" />
 								Meeting Active
 							</div>
 						)}
@@ -290,7 +290,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						{/* Show participants for live sessions */}
 						{(isLive || (isMeeting && !meetingEnded)) && (
 							<div className="mt-1 flex items-center text-xs text-muted-foreground">
-								<Users className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+								<Users className="mr-2 size-3.5 flex-shrink-0" />
 								<span className="truncate">{getParticipantText()}</span>
 							</div>
 						)}
@@ -303,7 +303,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 					size="sm"
 					variant={meetingEnded ? "outline" : "default"}
 				>
-					{isFile && <Download className="mr-2 h-3.5 w-3.5" />}
+					{isFile && <Download className="mr-2 size-3.5" />}
 					{getButtonText()}
 				</Button>
 			</div>

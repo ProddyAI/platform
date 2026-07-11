@@ -144,10 +144,10 @@ const AudioControlsInner = () => {
 				<Popover>
 					<PopoverTrigger
 						aria-label="Microphone permission denied"
-						className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-destructive bg-destructive text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						className="inline-flex size-10 items-center justify-center rounded-full border-2 border-destructive bg-destructive text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 						title="Microphone permission denied"
 					>
-						<AlertCircle className="h-5 w-5" />
+						<AlertCircle className="size-5" />
 					</PopoverTrigger>
 					<PopoverContent className="text-sm">
 						<p className="font-medium text-foreground">

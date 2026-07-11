@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -139,7 +140,7 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 
 	const pillClass = (status: Doc<"sprints">["status"]) =>
 		cn(
-			"flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+			"flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs transition-standard hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 			filter === status && "border-primary/50 bg-primary/10"
 		);
 
@@ -172,7 +173,7 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 						onClick={() => setFilter(filter === "active" ? "all" : "active")}
 						type="button"
 					>
-						<Zap className="size-3 text-blue-500" />
+						<Zap className="size-3 text-primary" />
 						<span className="font-medium">{countOf("active")}</span>
 						<span className="text-muted-foreground">active</span>
 					</button>
@@ -196,7 +197,7 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 						}
 						type="button"
 					>
-						<CheckCircle className="size-3 text-emerald-500" />
+						<CheckCircle className="size-3 text-success" />
 						<span className="font-medium">{countOf("completed")}</span>
 						<span className="text-muted-foreground">completed</span>
 					</button>
@@ -224,33 +225,32 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 					<div className="space-y-3">
 						{/* Fixed-size decorative placeholders with no underlying data (JS-0437 exemption) — index is a safe key here */}
 						{Array.from({ length: 3 }).map((_, index) => (
-							<Skeleton className="h-36 w-full rounded-lg" key={index} />
+							<Skeleton className="h-36 w-full rounded-2xl" key={index} />
 						))}
 					</div>
 				) : !filtered || filtered.length === 0 ? (
-					<div className="flex h-full flex-col items-center justify-center py-16 text-center">
-						<div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
-							<Clock className="size-6 text-muted-foreground" />
-						</div>
-						<h3 className="font-medium text-sm">
-							{filter === "all" ? "No sprints yet" : `No ${filter} sprints`}
-						</h3>
-						<p className="mt-1 max-w-xs text-muted-foreground text-xs">
-							{filter === "all"
-								? "Create your first sprint to start planning."
-								: `No sprints with status “${filter}” found.`}
-						</p>
-						{filter === "all" && (
-							<Button
-								className="mt-4"
-								onClick={() => setCreateOpen(true)}
-								size="sm"
-								variant="outline"
-							>
-								<Plus className="mr-1 size-4" />
-								Create sprint
-							</Button>
-						)}
+					<div className="flex h-full items-center justify-center">
+						<EmptyState
+							action={
+								filter === "all"
+									? {
+											label: "Create sprint",
+											icon: Plus,
+											onClick: () => setCreateOpen(true),
+										}
+									: undefined
+							}
+							description={
+								filter === "all"
+									? "Create your first sprint to start planning."
+									: `No sprints with status “${filter}” found.`
+							}
+							icon={Clock}
+							size="sm"
+							title={
+								filter === "all" ? "No sprints yet" : `No ${filter} sprints`
+							}
+						/>
 					</div>
 				) : (
 					<div className="space-y-3">

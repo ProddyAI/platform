@@ -419,7 +419,7 @@ const ChannelBoardPage = () => {
 	if (!channelId) return <div className="p-4">No channel selected.</div>;
 
 	return (
-		<div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
+		<div className="size-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
 			{view === "kanban" ? (
 				statuses === undefined ? (
 					<div className="flex items-center justify-center gap-2 h-full text-sm text-muted-foreground">

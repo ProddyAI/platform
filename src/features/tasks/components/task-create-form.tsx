@@ -103,25 +103,25 @@ export const TaskCreateForm = ({
 		switch (value) {
 			case "high":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-warning mr-2" />,
+					icon: <div className="size-3 rounded-full bg-warning mr-2" />,
 					label: "High Priority",
 				};
 			case "medium":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-primary mr-2" />,
+					icon: <div className="size-3 rounded-full bg-primary mr-2" />,
 					label: "Medium Priority",
 				};
 			case "low":
 				return {
 					icon: (
-						<div className="h-3 w-3 rounded-full bg-muted-foreground/60 mr-2" />
+						<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
 					),
 					label: "Low Priority",
 				};
 			default:
 				return {
 					icon: (
-						<div className="h-3 w-3 rounded-full border-2 border-dashed border-border mr-2" />
+						<div className="size-3 rounded-full border-2 border-dashed border-border mr-2" />
 					),
 					label: "Set priority (optional)",
 				};
@@ -150,7 +150,7 @@ export const TaskCreateForm = ({
 					}}
 					variant="default"
 				>
-					<Plus className="h-5 w-5" />
+					<Plus className="size-5" />
 					<span className="font-semibold text-base">
 						{maxReached ? "Task limit reached" : "Add new task"}
 					</span>
@@ -175,7 +175,7 @@ export const TaskCreateForm = ({
 					type="button"
 					variant="ghost"
 				>
-					<X className="h-4 w-4" />
+					<X className="size-4" />
 				</Button>
 			</div>
 
@@ -207,7 +207,7 @@ export const TaskCreateForm = ({
 									type="button"
 									variant="outline"
 								>
-									<CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+									<CalendarIcon className="mr-2 size-4 text-muted-foreground" />
 									{dueDate ? (
 										format(dueDate, "PPP")
 									) : (
@@ -256,19 +256,19 @@ export const TaskCreateForm = ({
 							<SelectContent>
 								<SelectItem value="high">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-warning mr-2" />
+										<div className="size-3 rounded-full bg-warning mr-2" />
 										High Priority
 									</div>
 								</SelectItem>
 								<SelectItem value="medium">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-primary mr-2" />
+										<div className="size-3 rounded-full bg-primary mr-2" />
 										Medium Priority
 									</div>
 								</SelectItem>
 								<SelectItem value="low">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-muted-foreground/60 mr-2" />
+										<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
 										Low Priority
 									</div>
 								</SelectItem>

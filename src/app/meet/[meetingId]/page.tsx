@@ -264,8 +264,8 @@ export default function MeetingPage({
 		return (
 			<div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
 				<div className="bg-card border border-border rounded-3xl p-10 max-w-md w-full text-center space-y-8 shadow-xl animate-in fade-in zoom-in duration-300">
-					<div className="mx-auto w-20 h-20 bg-muted rounded-full flex items-center justify-center border border-border">
-						<PhoneOff className="w-8 h-8 text-muted-foreground" />
+					<div className="mx-auto size-20 bg-muted rounded-full flex items-center justify-center border border-border">
+						<PhoneOff className="size-8 text-muted-foreground" />
 					</div>
 					<div className="space-y-2">
 						<h2 className="text-3xl font-bold tracking-tight">Meeting Ended</h2>
@@ -305,7 +305,7 @@ export default function MeetingPage({
 				<div className="flex flex-col items-center gap-4">
 					<div className="relative">
 						<div className="absolute inset-0 rounded-full bg-secondary/20 motion-safe:animate-ping" />
-						<Loader2 className="h-8 w-8 animate-spin text-secondary relative" />
+						<Loader2 className="size-8 animate-spin text-secondary relative" />
 					</div>
 					<p className="text-muted-foreground font-medium">
 						Joining meeting room...
@@ -322,7 +322,7 @@ export default function MeetingPage({
 			<div className="relative flex h-screen w-full bg-[#1c1e21] overflow-hidden text-white font-sans flex-col">
 				{handRaised && (
 					<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-amber-500/25 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
-						<Hand className="w-4 h-4" /> Your hand is raised
+						<Hand className="size-4" /> Your hand is raised
 					</div>
 				)}
 
@@ -337,42 +337,42 @@ export default function MeetingPage({
 						<div className="flex -space-x-2">
 							{[user].map((u, i) => (
 								<div
-									className="w-8 h-8 rounded-full border-2 border-[#1c1e21] bg-secondary flex items-center justify-center text-[10px] font-bold shadow-lg"
+									className="size-8 rounded-full border-2 border-[#1c1e21] bg-primary flex items-center justify-center text-[10px] font-bold shadow-lg"
 									key={i}
 								>
 									{u.name?.[0]?.toUpperCase() || "A"}
 								</div>
 							))}
 						</div>
-						<div className="h-4 w-px bg-white/20 mx-1" />
+						<div className="h-4 w-px bg-[rgba(255,255,255,0.08)] mx-1" />
 						<div className="flex flex-col min-w-0">
 							<span className="text-[13px] font-semibold tracking-tight truncate max-w-[220px]">
 								{meetingTitle}
 							</span>
-							<span className="text-[10px] text-secondary font-medium tracking-wider uppercase">
+							<span className="text-[10px] text-primary font-medium tracking-wider uppercase">
 								{elapsed}
 							</span>
 						</div>
 					</div>
 
-					<div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+					<div className="flex items-center gap-2 bg-[#26282c] backdrop-blur-md px-3 py-1.5 rounded-full border border-[rgba(255,255,255,0.08)]">
 						<div className="flex items-center gap-1.5 px-2">
-							<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+							<div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
 							<span className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest">
 								Live
 							</span>
 						</div>
-						<div className="h-3 w-px bg-white/10" />
+						<div className="h-3 w-px bg-[rgba(255,255,255,0.08)]" />
 						<Button
-							className="h-7 text-[10px] gap-1.5 bg-white/10 hover:bg-white/20 text-white border-none rounded-full px-3"
+							className="h-7 text-[10px] gap-1.5 bg-[#26282c] hover:bg-[#2f3136] text-white border-none rounded-full px-3"
 							onClick={handleCopyLink}
 							size="sm"
 							variant="outline"
 						>
 							{linkCopied ? (
-								<Check className="w-3 h-3" />
+								<Check className="size-3" />
 							) : (
-								<Copy className="w-3 h-3" />
+								<Copy className="size-3" />
 							)}
 							Copy Link
 						</Button>
@@ -384,8 +384,8 @@ export default function MeetingPage({
 						<StreamVideo client={client}>
 							<StreamCall call={call}>
 								<StreamTheme>
-									<div className="h-full w-full p-4 flex flex-col">
-										<div className="flex-1 min-h-0 relative rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+									<div className="size-full p-4 flex flex-col">
+										<div className="flex-1 min-h-0 relative rounded-3xl overflow-hidden border border-[rgba(255,255,255,0.08)] shadow-2xl">
 											{viewMode === "speaker" ? (
 												<SpeakerLayout />
 											) : (
@@ -406,7 +406,7 @@ export default function MeetingPage({
 					</div>
 
 					{sidebarOpen && (
-						<div className="w-[380px] bg-[#1c1e21] border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+						<div className="w-[380px] bg-[#1c1e21] border-l border-[rgba(255,255,255,0.08)] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
 							{showNotes && (
 								<NotesSidebar
 									isRecording={isRecording}
@@ -418,14 +418,14 @@ export default function MeetingPage({
 							)}
 							{showParticipants && (
 								<>
-									<div className="p-5 border-b border-white/10 flex items-center justify-between">
+									<div className="p-5 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
 										<h2 className="text-base font-semibold">Participants</h2>
 										<Button
 											onClick={() => setShowParticipants(false)}
 											size="icon"
 											variant="ghost"
 										>
-											<X className="w-4 h-4" />
+											<X className="size-4" />
 										</Button>
 									</div>
 									<CustomParticipantList />
@@ -433,14 +433,14 @@ export default function MeetingPage({
 							)}
 							{showChat && (
 								<>
-									<div className="p-5 border-b border-white/10 flex items-center justify-between">
+									<div className="p-5 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
 										<h2 className="text-base font-semibold">Chat</h2>
 										<Button
 											onClick={() => setShowChat(false)}
 											size="icon"
 											variant="ghost"
 										>
-											<X className="w-4 h-4" />
+											<X className="size-4" />
 										</Button>
 									</div>
 									<MeetingChat onClose={() => setShowChat(false)} />
@@ -450,10 +450,10 @@ export default function MeetingPage({
 					)}
 				</div>
 
-				<div className="h-20 bg-[#1c1e21] border-t border-white/10 flex items-center justify-between px-8 z-40">
+				<div className="h-20 bg-[#1c1e21] border-t border-[rgba(255,255,255,0.08)] flex items-center justify-between px-8 z-40">
 					<div className="flex items-center gap-4 w-1/3">
-						<div className="bg-white/5 rounded-2xl px-4 py-2 border border-white/5 flex items-center gap-3">
-							<Presentation className="w-4 h-4 text-secondary" />
+						<div className="bg-[#26282c] rounded-2xl px-4 py-2 border border-[rgba(255,255,255,0.08)] flex items-center gap-3">
+							<Presentation className="size-4 text-primary" />
 							<div className="flex flex-col min-w-0">
 								<span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
 									Meeting
@@ -485,7 +485,7 @@ export default function MeetingPage({
 
 					<div className="flex items-center justify-end gap-2 w-1/3">
 						<Button
-							className={`w-11 h-11 rounded-2xl border-none transition-all ${showChat ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
+							className={`size-11 rounded-full border-none transition-all ${showChat ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-[#26282c] hover:bg-[#2f3136] text-gray-400"}`}
 							onClick={() => {
 								setShowChat(!showChat);
 								setShowNotes(false);
@@ -494,10 +494,10 @@ export default function MeetingPage({
 							size="icon"
 							variant="outline"
 						>
-							<MessageSquare className="w-5 h-5" />
+							<MessageSquare className="size-5" />
 						</Button>
 						<Button
-							className={`w-11 h-11 rounded-2xl border-none transition-all ${showParticipants ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
+							className={`size-11 rounded-full border-none transition-all ${showParticipants ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-[#26282c] hover:bg-[#2f3136] text-gray-400"}`}
 							onClick={() => {
 								setShowParticipants(!showParticipants);
 								setShowNotes(false);
@@ -506,11 +506,11 @@ export default function MeetingPage({
 							size="icon"
 							variant="outline"
 						>
-							<Users className="w-5 h-5" />
+							<Users className="size-5" />
 						</Button>
-						<div className="w-px h-6 bg-white/10 mx-1" />
+						<div className="w-px h-6 bg-[rgba(255,255,255,0.08)] mx-1" />
 						<Button
-							className={`px-5 h-11 rounded-2xl border-none transition-all gap-2 font-semibold ${showNotes ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-secondary/10 hover:bg-secondary/20 text-secondary"}`}
+							className={`px-5 h-11 rounded-full border-none transition-all gap-2 font-semibold ${showNotes ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-secondary/10 hover:bg-secondary/20 text-secondary"}`}
 							onClick={() => {
 								setShowNotes(!showNotes);
 								setShowChat(false);
@@ -518,7 +518,7 @@ export default function MeetingPage({
 							}}
 							variant="outline"
 						>
-							<Sparkles className="w-4 h-4" />
+							<Sparkles className="size-4" />
 							AI Notes
 						</Button>
 					</div>
@@ -558,49 +558,49 @@ function BottomBarControls({
 	const { isEnabled: isScreenSharing, screenShare } = useScreenShareState();
 
 	return (
-		<div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-full border border-white/10 shadow-inner">
+		<div className="flex items-center gap-3 bg-[#26282c] p-1.5 rounded-full border border-[rgba(255,255,255,0.08)] shadow-inner">
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${micMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#232529] hover:bg-[#2a2c32]"} text-white`}
+				className={`size-11 rounded-full border-none transition-all ${micMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#26282c] hover:bg-[#2f3136]"} text-white`}
 				onClick={() => microphone.toggle()}
 				size="icon"
 				variant="outline"
 			>
 				{micMuted ? (
-					<MicOff className="w-5 h-5" />
+					<MicOff className="size-5" />
 				) : (
-					<Mic className="w-5 h-5" />
+					<Mic className="size-5" />
 				)}
 			</Button>
 
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${camMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#232529] hover:bg-[#2a2c32]"} text-white`}
+				className={`size-11 rounded-full border-none transition-all ${camMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#26282c] hover:bg-[#2f3136]"} text-white`}
 				onClick={() => camera.toggle()}
 				size="icon"
 				variant="outline"
 			>
 				{camMuted ? (
-					<VideoOff className="w-5 h-5" />
+					<VideoOff className="size-5" />
 				) : (
-					<Video className="w-5 h-5" />
+					<Video className="size-5" />
 				)}
 			</Button>
 
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${isScreenSharing ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20" : "bg-[#232529] hover:bg-[#2a2c32]"} text-white`}
+				className={`size-11 rounded-full border-none transition-all ${isScreenSharing ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20" : "bg-[#26282c] hover:bg-[#2f3136]"} text-white`}
 				onClick={() => screenShare.toggle()}
 				size="icon"
 				variant="outline"
 			>
-				<MonitorUp className="w-5 h-5" />
+				<MonitorUp className="size-5" />
 			</Button>
 
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-[#232529] hover:bg-[#2a2c32] text-white"}`}
+				className={`size-11 rounded-full border-none transition-all ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-[#26282c] hover:bg-[#2f3136] text-white"}`}
 				onClick={toggleHandRaise}
 				size="icon"
 				variant="outline"
 			>
-				<Hand className="w-5 h-5" />
+				<Hand className="size-5" />
 			</Button>
 
 			<MeetingRecordButton
@@ -616,7 +616,7 @@ function BottomBarControls({
 				onClick={handleLeave}
 				size="icon"
 			>
-				<PhoneOff className="w-5 h-5" />
+				<PhoneOff className="size-5" />
 			</Button>
 
 			<style global jsx>{`
