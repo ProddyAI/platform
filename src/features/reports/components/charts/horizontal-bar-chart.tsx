@@ -71,7 +71,7 @@ export const HorizontalBarChart = ({
 							>
 								<div
 									className={cn(
-										"h-full rounded-full transition-all duration-500",
+										"h-full rounded-full transition-[width,opacity] duration-slow ease-out",
 										item.color || "bg-primary",
 										isHovered ? "opacity-80" : "opacity-100",
 										animate &&
@@ -88,9 +88,11 @@ export const HorizontalBarChart = ({
 						return (
 							<button
 								aria-label={`${item.label}: ${formatValue(item.value)}`}
-								className="w-full space-y-1 text-left"
+								className="w-full space-y-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 								key={item.id ?? item.label}
+								onBlur={() => setHoveredIndex(null)}
 								onClick={() => onBarClick(item.label, item.value, index)}
+								onFocus={() => setHoveredIndex(index)}
 								onKeyDown={(event) => {
 									if (event.key === "Enter" || event.key === " ") {
 										event.preventDefault();

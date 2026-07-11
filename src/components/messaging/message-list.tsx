@@ -167,7 +167,7 @@ export const MessageList = ({
 
 	return (
 		<ContextMenuProvider>
-			<div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4 px-1 md:px-4">
+			<div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4 px-1 md:px-5">
 				{recapData && (
 					<DailyRecapModal
 						date={recapData.date}
@@ -198,7 +198,7 @@ export const MessageList = ({
 										size="iconSm"
 										variant="ghost"
 									>
-										<Sparkles className="size-3 text-warning" />
+										<Sparkles className="size-3 text-secondary" />
 									</Button>
 								</Hint>
 							</div>

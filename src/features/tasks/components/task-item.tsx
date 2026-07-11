@@ -3,6 +3,7 @@
 import { format, isBefore, startOfDay } from "date-fns";
 import { CheckCircle2, Circle, Clock, Edit, Trash } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
 	AlertDialog,
@@ -86,7 +87,10 @@ export const TaskItem = ({
 		try {
 			await toggleCompletion({ id });
 		} catch (error) {
-			console.error("Failed to toggle task completion:", error);
+			toast.error("Couldn't update task", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
 		}
 	};
 
@@ -95,7 +99,10 @@ export const TaskItem = ({
 			setIsDeleting(true);
 			await deleteTask({ id });
 		} catch (error) {
-			console.error("Failed to delete task:", error);
+			toast.error("Couldn't delete task", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
 			setIsDeleting(false);
 		}
 	};
@@ -104,7 +111,7 @@ export const TaskItem = ({
 		return completed ? (
 			<CheckCircle2 className="size-5 text-success" />
 		) : (
-			<Circle className="size-5 text-muted-foreground transition-colors group-hover:text-primary" />
+			<Circle className="size-5 text-muted-foreground transition-colors duration-fast group-hover:text-primary" />
 		);
 	};
 
@@ -134,7 +141,7 @@ export const TaskItem = ({
 			<div className="flex items-start gap-4">
 				<button
 					aria-label={completed ? "Mark as incomplete" : "Mark as complete"}
-					className="mt-0.5 flex-shrink-0 focus:outline-none group/checkbox"
+					className="mt-0.5 flex-shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 					onClick={handleToggleCompletion}
 					type="button"
 				>
@@ -152,7 +159,7 @@ export const TaskItem = ({
 						>
 							{title}
 						</h3>
-						<div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+						<div className="flex items-center gap-1.5 opacity-0 transition-opacity duration-fast group-hover:opacity-100 group-focus-within:opacity-100">
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -209,7 +216,6 @@ export const TaskItem = ({
 						{/* Category badge */}
 						{category && (
 							<Badge
-								className="text-xs font-medium px-2 py-0.5 rounded-full border-2"
 								style={{
 									borderColor: category.color,
 									color: category.color,

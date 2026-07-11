@@ -8,7 +8,7 @@ interface ChannelHeroProps {
 export const ChannelHero = ({ name, creationTime }: ChannelHeroProps) => {
 	return (
 		<div className="mx-2 md:mx-5 mb-4 mt-[88px]">
-			<p className="mb-2 flex items-center text-xl md:text-2xl font-bold">
+			<p className="mb-2 flex items-center text-xl md:text-2xl font-semibold">
 				# {name}
 			</p>
 

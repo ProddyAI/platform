@@ -1,6 +1,6 @@
 "use client";
 
-import { Hash, Loader, MessageSquareText } from "lucide-react";
+import { Hash, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -15,6 +15,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 interface ThreadRepliesWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -101,11 +102,7 @@ export const ThreadRepliesWidget = ({
 	};
 
 	if (!threadMessages) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (

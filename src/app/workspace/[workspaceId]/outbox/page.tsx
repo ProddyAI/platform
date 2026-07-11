@@ -7,8 +7,8 @@ import {
 	FileText,
 	Filter,
 	Hash,
-	Loader,
 	Mail,
+	MessageSquareText,
 	Search,
 	SortDesc,
 	User,
@@ -32,6 +32,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Tooltip,
@@ -68,8 +69,67 @@ interface Message {
 	context: MessageContext;
 }
 
+const isCanvasType = (type?: string) =>
+	type === "canvas" || type === "canvas-live" || type === "canvas-export";
+
+const isNoteType = (type?: string) =>
+	type === "note" || type === "note-live" || type === "note-export";
+
+// Render order for the date-grouped sections; matches the Threads page.
+const MESSAGE_GROUPS = [
+	{ key: "today", label: "Today" },
+	{ key: "yesterday", label: "Yesterday" },
+	{ key: "thisWeek", label: "This Week" },
+	{ key: "earlier", label: "Earlier" },
+] as const;
+
+const SkeletonMessageCard = () => (
+	<div className="rounded-2xl border bg-card p-4">
+		<div className="mb-3 flex items-center justify-between">
+			<Skeleton className="h-5 w-32 rounded-full" />
+			<Skeleton className="h-4 w-24" />
+		</div>
+		<Skeleton className="h-4 w-3/4" />
+	</div>
+);
+
+// Skeleton mirror of the loaded layout (search row + grouped cards) so the
+// page doesn't jump when data arrives.
+const OutboxSkeleton = () => (
+	<div className="space-y-6" role="status">
+		<span className="sr-only">Loading sent messages</span>
+		<div
+			aria-hidden="true"
+			className="flex flex-col gap-3 sm:flex-row sm:items-center"
+		>
+			<Skeleton className="h-10 flex-1 rounded-full" />
+			<div className="flex items-center gap-2">
+				<Skeleton className="h-10 w-[300px] max-w-full rounded-full" />
+				<Skeleton className="size-8 shrink-0 rounded-full" />
+				<Skeleton className="size-8 shrink-0 rounded-full" />
+			</div>
+		</div>
+		<div aria-hidden="true" className="space-y-6">
+			<div>
+				<Skeleton className="mb-4 h-4 w-24" />
+				<div className="space-y-3">
+					<SkeletonMessageCard />
+					<SkeletonMessageCard />
+					<SkeletonMessageCard />
+				</div>
+			</div>
+			<div>
+				<Skeleton className="mb-4 h-4 w-24" />
+				<div className="space-y-3">
+					<SkeletonMessageCard />
+					<SkeletonMessageCard />
+				</div>
+			</div>
+		</div>
+	</div>
+);
+
 export default function OutboxPage() {
-	// Set document title
 	useDocumentTitle("Sent");
 
 	useSetWorkspaceTitle(<WorkspaceTitle icon={Mail} label="Sent" />);
@@ -77,7 +137,9 @@ export default function OutboxPage() {
 	const workspaceId = useWorkspaceId();
 	const messages = useGetUserMessages() as Message[] | undefined;
 	const [searchQuery, setSearchQuery] = useState("");
-	const [activeFilter, setActiveFilter] = useState("all");
+	const [activeFilter, setActiveFilter] = useState<
+		"all" | "channels" | "direct"
+	>("all");
 
 	// Filter states
 	const [showTextMessages, setShowTextMessages] = useState(true);
@@ -90,20 +152,13 @@ export default function OutboxPage() {
 	const parseMessageBody = useCallback((body: string) => {
 		try {
 			const parsed = JSON.parse(body);
-			if (
-				parsed.type === "canvas" ||
-				parsed.type === "canvas-live" ||
-				parsed.type === "canvas-export" ||
-				parsed.type === "note" ||
-				parsed.type === "note-live" ||
-				parsed.type === "note-export"
-			) {
+			if (isCanvasType(parsed.type) || isNoteType(parsed.type)) {
 				return parsed;
 			}
 			if (parsed.ops?.[0]?.insert) {
 				return parsed.ops[0].insert.trim();
 			}
-		} catch (_e) {
+		} catch {
 			return body;
 		}
 		return body;
@@ -111,28 +166,16 @@ export default function OutboxPage() {
 
 	const getMessageUrl = (message: Message) => {
 		const parsedBody = parseMessageBody(message.body);
-		if (
-			typeof parsedBody === "object" &&
-			(parsedBody.type === "canvas" ||
-				parsedBody.type === "canvas-live" ||
-				parsedBody.type === "canvas-export")
-		) {
+		if (typeof parsedBody === "object" && isCanvasType(parsedBody.type)) {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/canvas?roomId=${parsedBody.roomId}`;
 		}
-		if (
-			typeof parsedBody === "object" &&
-			(parsedBody.type === "note" ||
-				parsedBody.type === "note-live" ||
-				parsedBody.type === "note-export")
-		) {
+		if (typeof parsedBody === "object" && isNoteType(parsedBody.type)) {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/notes?noteId=${parsedBody.noteId}`;
 		}
 		if (message.context.type === "channel") {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/chats`;
-		} else if (
-			message.context.type === "conversation" &&
-			message.context.memberId
-		) {
+		}
+		if (message.context.type === "conversation" && message.context.memberId) {
 			return `/workspace/${workspaceId}/member/${message.context.memberId}`;
 		}
 		return "#";
@@ -164,39 +207,25 @@ export default function OutboxPage() {
 			// Message type filter
 			const messageType =
 				typeof parsedBody === "object" ? parsedBody.type : "text";
-			const matchesTypeFilter =
-				((messageType === "canvas" ||
-					messageType === "canvas-live" ||
-					messageType === "canvas-export") &&
-					showCanvasMessages) ||
-				((messageType === "note" ||
-					messageType === "note-live" ||
-					messageType === "note-export") &&
-					showNoteMessages) ||
-				(messageType !== "canvas" &&
-					messageType !== "canvas-live" &&
-					messageType !== "canvas-export" &&
-					messageType !== "note" &&
-					messageType !== "note-live" &&
-					messageType !== "note-export" &&
-					showTextMessages);
+			const matchesTypeFilter = isCanvasType(messageType)
+				? showCanvasMessages
+				: isNoteType(messageType)
+					? showNoteMessages
+					: showTextMessages;
 
 			return matchesSearch && matchesFilter && matchesTypeFilter;
 		});
 
 		// Sort messages
-		const sorted = [...filtered].sort((a, b) => {
+		return [...filtered].sort((a, b) => {
 			if (sortBy === "newest") {
 				return b._creationTime - a._creationTime;
-			} else if (sortBy === "oldest") {
-				return a._creationTime - b._creationTime;
-			} else if (sortBy === "name") {
-				return a.context.name.localeCompare(b.context.name);
 			}
-			return 0;
+			if (sortBy === "oldest") {
+				return a._creationTime - b._creationTime;
+			}
+			return a.context.name.localeCompare(b.context.name);
 		});
-
-		return sorted;
 	}, [
 		messages,
 		searchQuery,
@@ -214,19 +243,19 @@ export default function OutboxPage() {
 			(groups, message) => {
 				const date = new Date(message._creationTime);
 				const now = new Date();
-				const isToday = date.toDateString() === now.toDateString();
-				const isYesterday =
-					new Date(now.setDate(now.getDate() - 1)).toDateString() ===
-					date.toDateString();
-				const isThisWeek = date > new Date(now.setDate(now.getDate() - 6));
+				const yesterday = new Date(now);
+				yesterday.setDate(yesterday.getDate() - 1);
+				const weekAgo = new Date(now);
+				weekAgo.setDate(weekAgo.getDate() - 6);
 
-				const group = isToday
-					? "today"
-					: isYesterday
-						? "yesterday"
-						: isThisWeek
-							? "thisWeek"
-							: "earlier";
+				const group =
+					date.toDateString() === now.toDateString()
+						? "today"
+						: date.toDateString() === yesterday.toDateString()
+							? "yesterday"
+							: date > weekAgo
+								? "thisWeek"
+								: "earlier";
 
 				if (!groups[group]) {
 					groups[group] = [];
@@ -238,30 +267,90 @@ export default function OutboxPage() {
 			{} as Record<string, Message[]>
 		) || {};
 
+	function renderMessageCard(message: Message) {
+		const content = parseMessageBody(message.body);
+		const sentAt = new Date(message._creationTime);
+
+		return (
+			<Link
+				className="flex flex-col rounded-2xl border bg-card p-4 shadow-sm transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+				href={getMessageUrl(message)}
+				key={message._id}
+			>
+				<div className="mb-3 flex items-center justify-between gap-2">
+					<Badge className="min-w-0" variant="outline">
+						{message.context.type === "channel" ? (
+							<Hash aria-hidden="true" className="size-3 shrink-0" />
+						) : (
+							<User aria-hidden="true" className="size-3 shrink-0" />
+						)}
+						<span className="truncate">{message.context.name}</span>
+					</Badge>
+					<time
+						className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
+						dateTime={sentAt.toISOString()}
+						title={format(sentAt, "MMM d, yyyy, h:mm a")}
+					>
+						<Clock aria-hidden="true" className="size-3" />
+						{formatDistanceToNow(sentAt, { addSuffix: true })}
+					</time>
+				</div>
+
+				{typeof content === "object" ? (
+					<div className="flex items-center gap-2 text-sm text-card-foreground">
+						{isCanvasType(content.type) ? (
+							<>
+								<Brush
+									aria-hidden="true"
+									className="size-4 shrink-0 text-muted-foreground"
+								/>
+								<span className="truncate">
+									Canvas:{" "}
+									{content.canvasName ||
+										content.roomId?.split("-").slice(1, -1).join("-") ||
+										"Untitled Canvas"}
+								</span>
+							</>
+						) : (
+							<>
+								<FileText
+									aria-hidden="true"
+									className="size-4 shrink-0 text-muted-foreground"
+								/>
+								<span className="truncate">
+									Note: {content.noteTitle || "Untitled Note"}
+								</span>
+							</>
+						)}
+					</div>
+				) : (
+					<p className="line-clamp-2 text-sm text-card-foreground">{content}</p>
+				)}
+			</Link>
+		);
+	}
+
 	// Always render the same outer structure to maintain toolbar visibility
 	return (
 		<PageShell>
-			{/* Content area - changes based on state */}
 			{!messages ? (
-				// Loading state
-				<div className="flex flex-col items-center justify-center gap-y-2 py-24">
-					<Loader className="size-8 animate-spin text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">Loading messages...</p>
-				</div>
+				<OutboxSkeleton />
 			) : !messages.length ? (
-				// Empty state
 				<EmptyState
-					description="Messages you send across channels and DMs will show up here."
+					description="Messages you send in channels and direct messages will show up here."
 					icon={Mail}
 					title="No messages sent yet"
 				/>
 			) : (
-				// Messages loaded state
 				<div className="space-y-6">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 						<div className="relative flex-1">
-							<Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Search
+								aria-hidden="true"
+								className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+							/>
 							<Input
+								aria-label="Search sent messages"
 								className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="Search messages..."
@@ -272,8 +361,10 @@ export default function OutboxPage() {
 
 						<div className="flex items-center gap-2">
 							<Tabs
-								className="w-[300px]"
-								onValueChange={setActiveFilter}
+								className="min-w-0 flex-1 sm:w-[300px] sm:flex-none"
+								onValueChange={(value) =>
+									setActiveFilter(value as typeof activeFilter)
+								}
 								value={activeFilter}
 							>
 								<TabsList className="grid w-full grid-cols-3">
@@ -288,7 +379,11 @@ export default function OutboxPage() {
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<DropdownMenuTrigger asChild>
-												<Button size="iconSm" variant="outline">
+												<Button
+													aria-label="Filter messages"
+													size="iconSm"
+													variant="outline"
+												>
 													<Filter className="size-4" />
 												</Button>
 											</DropdownMenuTrigger>
@@ -305,22 +400,22 @@ export default function OutboxPage() {
 										checked={showTextMessages}
 										onCheckedChange={setShowTextMessages}
 									>
-										<FileText className="mr-2 size-4" />
-										Text Messages
+										<MessageSquareText className="mr-2 size-4" />
+										Text messages
 									</DropdownMenuCheckboxItem>
 									<DropdownMenuCheckboxItem
 										checked={showCanvasMessages}
 										onCheckedChange={setShowCanvasMessages}
 									>
 										<Brush className="mr-2 size-4" />
-										Canvas Messages
+										Canvas messages
 									</DropdownMenuCheckboxItem>
 									<DropdownMenuCheckboxItem
 										checked={showNoteMessages}
 										onCheckedChange={setShowNoteMessages}
 									>
 										<FileText className="mr-2 size-4" />
-										Note Messages
+										Note messages
 									</DropdownMenuCheckboxItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
@@ -330,7 +425,11 @@ export default function OutboxPage() {
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<DropdownMenuTrigger asChild>
-												<Button size="iconSm" variant="outline">
+												<Button
+													aria-label="Sort messages"
+													size="iconSm"
+													variant="outline"
+												>
 													<SortDesc className="size-4" />
 												</Button>
 											</DropdownMenuTrigger>
@@ -348,13 +447,13 @@ export default function OutboxPage() {
 										value={sortBy}
 									>
 										<DropdownMenuRadioItem value="newest">
-											Newest First
+											Newest first
 										</DropdownMenuRadioItem>
 										<DropdownMenuRadioItem value="oldest">
-											Oldest First
+											Oldest first
 										</DropdownMenuRadioItem>
 										<DropdownMenuRadioItem value="name">
-											By Name (A-Z)
+											By name (A-Z)
 										</DropdownMenuRadioItem>
 									</DropdownMenuRadioGroup>
 								</DropdownMenuContent>
@@ -371,152 +470,31 @@ export default function OutboxPage() {
 						/>
 					) : (
 						<div className="space-y-6">
-							{/* Today's messages */}
-							{groupedMessages.today?.length > 0 && (
-								<div>
-									<div className="flex items-center gap-2 mb-3">
-										<Clock className="size-4 text-muted-foreground" />
-										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-											Today
-										</h3>
-									</div>
-									<div className="space-y-3">
-										{groupedMessages.today.map((message) =>
-											renderMessageCard(message)
-										)}
-									</div>
-								</div>
-							)}
+							{MESSAGE_GROUPS.map(({ key, label }) => {
+								const group = groupedMessages[key];
+								if (!group?.length) return null;
 
-							{/* Yesterday's messages */}
-							{groupedMessages.yesterday?.length > 0 && (
-								<div>
-									<div className="flex items-center gap-2 mb-3">
-										<Clock className="size-4 text-muted-foreground" />
-										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-											Yesterday
-										</h3>
-									</div>
-									<div className="space-y-3">
-										{groupedMessages.yesterday.map((message) =>
-											renderMessageCard(message)
-										)}
-									</div>
-								</div>
-							)}
-
-							{/* This week's messages */}
-							{groupedMessages.thisWeek?.length > 0 && (
-								<div>
-									<div className="flex items-center gap-2 mb-3">
-										<Clock className="size-4 text-muted-foreground" />
-										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-											This Week
-										</h3>
-									</div>
-									<div className="space-y-3">
-										{groupedMessages.thisWeek.map((message) =>
-											renderMessageCard(message)
-										)}
-									</div>
-								</div>
-							)}
-
-							{/* Earlier messages */}
-							{groupedMessages.earlier?.length > 0 && (
-								<div>
-									<div className="flex items-center gap-2 mb-3">
-										<Clock className="size-4 text-muted-foreground" />
-										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-											Earlier
-										</h3>
-									</div>
-									<div className="space-y-3">
-										{groupedMessages.earlier.map((message) =>
-											renderMessageCard(message)
-										)}
-									</div>
-								</div>
-							)}
+								return (
+									<section key={key}>
+										<div className="mb-4 flex items-center gap-2">
+											<Clock
+												aria-hidden="true"
+												className="size-4 text-muted-foreground"
+											/>
+											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+												{label}
+											</h3>
+										</div>
+										<div className="space-y-3">
+											{group.map((message) => renderMessageCard(message))}
+										</div>
+									</section>
+								);
+							})}
 						</div>
 					)}
 				</div>
 			)}
 		</PageShell>
 	);
-
-	function renderMessageCard(message: Message) {
-		const content = parseMessageBody(message.body);
-
-		return (
-			<Link
-				className="flex flex-col rounded-2xl border bg-card p-4 shadow-sm transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-				href={getMessageUrl(message)}
-				key={message._id}
-			>
-				<div className="flex items-center justify-between mb-3">
-					<div className="flex items-center gap-2">
-						<Badge variant="outline">
-							{message.context.type === "channel" ? (
-								<span className="flex items-center">
-									<Hash className="mr-1 size-3" />
-									{message.context.name}
-								</span>
-							) : (
-								<span className="flex items-center">
-									<User className="mr-1 size-3" />
-									{message.context.name}
-								</span>
-							)}
-						</Badge>
-					</div>
-					<div className="flex items-center gap-1 text-xs text-muted-foreground">
-						<Clock className="size-3" />
-						<span>
-							{formatDistanceToNow(new Date(message._creationTime), {
-								addSuffix: true,
-							})}
-						</span>
-					</div>
-				</div>
-
-				<div className="flex items-start gap-3">
-					<div className="flex-1 space-y-1">
-						{typeof content === "object" ? (
-							<div>
-								{(content.type === "canvas" ||
-									content.type === "canvas-live" ||
-									content.type === "canvas-export") && (
-									<div className="flex items-center gap-2 text-sm">
-										<Brush className="size-4 text-muted-foreground" />
-										<span>
-											Canvas:{" "}
-											{content.canvasName ||
-												content.roomId?.split("-").slice(1, -1).join("-") ||
-												"Untitled Canvas"}
-										</span>
-									</div>
-								)}
-								{(content.type === "note" ||
-									content.type === "note-live" ||
-									content.type === "note-export") && (
-									<div className="flex items-center gap-2 text-sm">
-										<FileText className="size-4 text-muted-foreground" />
-										<span>Note: {content.noteTitle || "Untitled Note"}</span>
-									</div>
-								)}
-							</div>
-						) : (
-							<p className="text-sm">{content}</p>
-						)}
-						<div className="flex items-center justify-end mt-2">
-							<span className="text-xs text-muted-foreground">
-								{format(new Date(message._creationTime), "MMM d, h:mm a")}
-							</span>
-						</div>
-					</div>
-				</div>
-			</Link>
-		);
-	}
 }

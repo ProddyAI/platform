@@ -13,7 +13,6 @@ import {
 	FolderKanban,
 	Hash,
 	LayoutDashboard,
-	LayoutGrid,
 	Loader,
 	MessageSquareText,
 	PanelLeftClose,
@@ -115,8 +114,10 @@ const DroppableItem = ({
 		>
 			{/* Toggle and "new" action are sibling controls, not nested —
 			    a button inside a button is invalid HTML and unreliable for
-			    screen readers and keyboard focus order. */}
-			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-lg px-2 md:px-4 py-1.5 transition-standard text-muted-foreground hover:bg-sidebar-accent">
+			    screen readers and keyboard focus order. Geometry (radius,
+			    padding, height) mirrors SidebarItem so headers and their
+			    sub-items read as one consistent list. */}
+			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-full px-2 md:px-4 py-2 md:py-2.5 transition-standard text-muted-foreground hover:bg-sidebar-accent">
 				<button
 					className="flex flex-1 min-w-0 cursor-pointer items-center gap-x-2 md:gap-x-3 text-left"
 					onClick={handleToggle}
@@ -125,11 +126,11 @@ const DroppableItem = ({
 					{isCollapsed ? (
 						<div className="relative flex-shrink-0">
 							<Hint align="center" label={label} side="right">
-								<Icon className="size-4 flex-shrink-0 text-muted-foreground/60" />
+								<Icon className="size-4 md:size-5 flex-shrink-0 text-muted-foreground/60" />
 							</Hint>
 						</div>
 					) : (
-						<Icon className="size-4 flex-shrink-0 text-muted-foreground/60" />
+						<Icon className="size-4 md:size-5 flex-shrink-0 text-muted-foreground/60" />
 					)}
 
 					{!isCollapsed && (
@@ -162,7 +163,17 @@ const DroppableItem = ({
 			</div>
 
 			{isExpanded && (
-				<div className="mt-2 space-y-1.5 pl-1 md:pl-2">{children}</div>
+				<div
+					className={cn(
+						"mt-1 space-y-1",
+						// Indent sub-item pills to the right of the section header so
+						// the header reads as the parent. Only when expanded — the
+						// collapsed rail centers its icons and must not be offset.
+						!isCollapsed && "pl-2 md:pl-3"
+					)}
+				>
+					{children}
+				</div>
 			)}
 		</div>
 	);
@@ -183,7 +194,7 @@ const NewItemButton = ({
 }: NewItemButtonProps) => (
 	<button
 		className={cn(
-			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-lg transition-standard w-full text-muted-foreground hover:bg-sidebar-accent hover:text-foreground cursor-pointer",
+			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-full transition-standard w-full text-muted-foreground hover:bg-sidebar-accent hover:text-foreground cursor-pointer",
 			isCollapsed
 				? "justify-center px-1 md:px-2 py-2 md:py-2.5"
 				: "justify-start px-2 md:px-4 py-2 md:py-2.5"
@@ -223,29 +234,25 @@ export const WorkspaceSidebar = ({
 	const projectId = useProjectId();
 	const memberId = useMemberId();
 	const pathname = usePathname();
-	const activeTopSection = memberId
-		? "Members"
-		: projectId
-			? "Projects"
-			: "Channels";
-	// Track which sections are expanded. Sections toggle independently;
-	// start with the section for the current route open so the active item
-	// is visible on first render.
+	// Track which sections are expanded. Sections toggle independently and
+	// start collapsed; the user's last-open sections are rehydrated from
+	// localStorage in the effect below.
 	const [expandedSections, setExpandedSections] = useState<
 		Record<string, boolean>
 	>(() => ({
-		Channels: activeTopSection === "Channels",
-		Projects: activeTopSection === "Projects",
-		Members: activeTopSection === "Members",
-		Planning: true,
-		Messages: true,
-		Settings: true,
+		Channels: false,
+		Projects: false,
+		Members: false,
+		Planning: false,
+		Messages: false,
+		Settings: false,
 	}));
 
 	// Rehydrate the user's last expanded/collapsed sections from a previous
 	// visit. Reads happen in an effect (not the state initializer) so the
 	// server-rendered and first client render agree, avoiding a hydration
-	// mismatch; the section matching the current route stays open either way.
+	// mismatch. Everything starts collapsed unless the user previously
+	// expanded it.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally rehydrates once on mount only.
 	useEffect(() => {
 		if (typeof window === "undefined") {
@@ -260,10 +267,9 @@ export const WorkspaceSidebar = ({
 			setExpandedSections((prev) => ({
 				...prev,
 				...persisted,
-				[activeTopSection]: true,
 			}));
 		} catch {
-			// Ignore malformed storage; fall back to the route-derived defaults.
+			// Ignore malformed storage; fall back to the collapsed defaults.
 		}
 	}, []);
 
@@ -334,8 +340,10 @@ export const WorkspaceSidebar = ({
 	return (
 		<div
 			className={cn(
-				"flex h-full flex-col bg-sidebar transition-all duration-300 ease-in-out border-r border-sidebar-border",
-				isCollapsed ? "w-[70px]" : "w-[280px]"
+				"flex h-full w-full flex-col bg-sidebar border-r border-sidebar-border",
+				// Width is owned by the parent container (fixed 70px when collapsed,
+				// adjustable when expanded); fill it here.
+				isCollapsed && "min-w-[70px]"
 			)}
 		>
 			{/* Close button for mobile overlay */}
@@ -560,16 +568,6 @@ export const WorkspaceSidebar = ({
 								label="Calendar"
 							/>
 						</MobileCloseWrapper>
-						<MobileCloseWrapper onClose={onMobileClose}>
-							<SidebarItem
-								href={`/workspace/${workspaceId}/issues`}
-								icon={LayoutGrid}
-								id="issues"
-								isActive={pathname.includes("/issues")}
-								isCollapsed={isCollapsed}
-								label="Issues"
-							/>
-						</MobileCloseWrapper>
 					</DroppableItem>
 				</div>
 
@@ -668,22 +666,28 @@ export const WorkspaceSidebar = ({
 					isCollapsed ? "px-1 py-3" : "px-3 py-3"
 				)}
 			>
-				<UserButton isCollapsed={isCollapsed} variant="sidebar" />
+				{/* Expanded: account and collapse toggle share one row (toggle on
+				    the right). Collapsed: they stack, toggle centered below. */}
+				<div
+					className={cn(
+						"flex",
+						isCollapsed
+							? "flex-col items-center gap-2"
+							: "flex-row items-center gap-2"
+					)}
+				>
+					<div className={cn(!isCollapsed && "min-w-0 flex-1")}>
+						<UserButton isCollapsed={isCollapsed} variant="sidebar" />
+					</div>
 
-				{/* Collapse/Expand Button - Hidden in mobile overlay */}
-				{!onMobileClose && (
-					<div
-						className={cn(
-							"mt-2 flex",
-							isCollapsed ? "justify-center" : "justify-end"
-						)}
-					>
+					{/* Collapse/Expand Button - Hidden in mobile overlay */}
+					{!onMobileClose && (
 						<Hint
 							label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
 							side="right"
 						>
 							<Button
-								className="size-8 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
+								className="size-8 flex-shrink-0 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
 								onClick={() => setIsCollapsed(!isCollapsed)}
 								size="sm"
 								variant="ghost"
@@ -695,8 +699,8 @@ export const WorkspaceSidebar = ({
 								)}
 							</Button>
 						</Hint>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 		</div>
 	);

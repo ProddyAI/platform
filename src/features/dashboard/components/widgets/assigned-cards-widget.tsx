@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanSquare, Loader } from "lucide-react";
+import { KanbanSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 // A due date is only overdue once its calendar day has fully elapsed, matching
 // the convention in board-issue-row.tsx's isOverdue check.
@@ -76,11 +77,7 @@ export const AssignedCardsWidget = ({
 	};
 
 	if (cardsLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
@@ -90,7 +87,7 @@ export const AssignedCardsWidget = ({
 					sortedCards.length > 0 && (
 						<Button
 							className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
-							onClick={() => router.push(`/workspace/${workspaceId}/issues`)}
+							onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 							size="sm"
 							variant="ghost"
 						>

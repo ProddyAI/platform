@@ -445,7 +445,6 @@ export const ContentAnalysisDashboard = ({
 										data={resolvedMessageData.topSenders.map((sender) => ({
 											label: sender.name,
 											value: sender.count,
-											color: "bg-secondary",
 										}))}
 										formatValue={(value) => `${value} messages`}
 									/>

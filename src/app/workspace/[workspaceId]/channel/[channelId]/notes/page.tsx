@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Brain, FileText, Loader, Plus, TriangleAlert } from "lucide-react";
+import { Brain, FileText, Loader2, Plus, TriangleAlert } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -99,8 +99,8 @@ const NotesPage = () => {
 		return (
 			<div className="flex h-full items-center justify-center">
 				<div className="flex flex-col items-center gap-y-4">
-					<Loader className="size-6 animate-spin text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">Loading notes...</p>
+					<Loader2 className="size-6 animate-spin text-primary" />
+					<p className="text-sm text-muted-foreground">Loading notes…</p>
 				</div>
 			</div>
 		);
@@ -210,7 +210,7 @@ const NotesPage = () => {
 							<LimitIndicator featureLabel="Notes" />
 						</div>
 					)}
-					<div className="mx-auto size-20 rounded-3xl bg-primary/10 flex items-center justify-center shadow-sm">
+					<div className="mx-auto size-20 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm">
 						<FileText className="size-10 text-primary" />
 					</div>
 					<div>

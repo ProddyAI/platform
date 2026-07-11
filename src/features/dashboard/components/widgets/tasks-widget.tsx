@@ -15,6 +15,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 // A due date only reads as overdue while the task is still open; matches the
 // overdue rule in task-item.tsx.
@@ -49,7 +50,7 @@ export const TasksWidget = ({
 	);
 
 	// Fetch your tasks
-	const { data: tasks } = useGetTasks({ workspaceId });
+	const { data: tasks, isLoading: tasksLoading } = useGetTasks({ workspaceId });
 	const { data: categories } = useGetTaskCategories({ workspaceId });
 	const updateTask = useUpdateTask();
 
@@ -136,6 +137,10 @@ export const TasksWidget = ({
 		);
 	};
 
+	if (tasksLoading) {
+		return <WidgetLoading />;
+	}
+
 	return (
 		<div className="space-y-3">
 			<WidgetHeader
@@ -162,7 +167,6 @@ export const TasksWidget = ({
 						{sortedTasks.map((task) => (
 							<WidgetCard
 								className={task.completed ? "bg-muted/20" : ""}
-								contentClassName="p-4"
 								key={task._id}
 							>
 								<div className="flex items-start gap-3">

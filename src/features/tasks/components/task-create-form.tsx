@@ -29,13 +29,9 @@ import { TaskCategorySelector } from "./task-category-selector";
 
 interface TaskCreateFormProps {
 	workspaceId: Id<"workspaces">;
-	onSuccess?: () => void;
 }
 
-export const TaskCreateForm = ({
-	workspaceId,
-	onSuccess,
-}: TaskCreateFormProps) => {
+export const TaskCreateForm = ({ workspaceId }: TaskCreateFormProps) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	const [title, setTitle] = useState("");
@@ -66,22 +62,15 @@ export const TaskCreateForm = ({
 				workspaceId,
 			});
 
-			// Show success toast
 			toast.success("Task created");
 
-			// Reset form
 			setTitle("");
 			setDescription("");
 			setDueDate(undefined);
 			setPriority(undefined);
 			setCategoryId(null);
-
-			if (onSuccess) {
-				onSuccess();
-			}
 		} catch (error) {
-			console.error("Failed to create task:", error);
-			toast.error("Failed to create task", {
+			toast.error("Couldn't create task", {
 				description:
 					error instanceof Error ? error.message : "Please try again",
 			});
@@ -104,19 +93,19 @@ export const TaskCreateForm = ({
 			case "high":
 				return {
 					icon: <div className="size-3 rounded-full bg-warning mr-2" />,
-					label: "High Priority",
+					label: "High priority",
 				};
 			case "medium":
 				return {
 					icon: <div className="size-3 rounded-full bg-primary mr-2" />,
-					label: "Medium Priority",
+					label: "Medium priority",
 				};
 			case "low":
 				return {
 					icon: (
 						<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
 					),
-					label: "Low Priority",
+					label: "Low priority",
 				};
 			default:
 				return {
@@ -257,19 +246,19 @@ export const TaskCreateForm = ({
 								<SelectItem value="high">
 									<div className="flex items-center">
 										<div className="size-3 rounded-full bg-warning mr-2" />
-										High Priority
+										High priority
 									</div>
 								</SelectItem>
 								<SelectItem value="medium">
 									<div className="flex items-center">
 										<div className="size-3 rounded-full bg-primary mr-2" />
-										Medium Priority
+										Medium priority
 									</div>
 								</SelectItem>
 								<SelectItem value="low">
 									<div className="flex items-center">
 										<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
-										Low Priority
+										Low priority
 									</div>
 								</SelectItem>
 							</SelectContent>

@@ -99,19 +99,19 @@ export const FullMessage = ({
 						)}
 					>
 						<button
-							className="font-medium text-sm hover:underline transition-all duration-200"
+							className="font-medium text-sm hover:underline transition-colors"
 							onClick={() => onOpenProfile(memberId)}
 							type="button"
 						>
 							{authorName}
 						</button>
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button
-								className="text-xs text-muted-foreground hover:underline transition-all duration-200"
-								type="button"
+							<time
+								className="text-xs text-muted-foreground"
+								dateTime={new Date(createdAt).toISOString()}
 							>
 								{format(new Date(createdAt), "h:mm a")}
-							</button>
+							</time>
 						</Hint>
 					</div>
 

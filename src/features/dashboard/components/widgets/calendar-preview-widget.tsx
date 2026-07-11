@@ -1,7 +1,7 @@
 "use client";
 
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
-import { Calendar as CalendarIcon, Loader } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -12,6 +12,7 @@ import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-e
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 // Define the CalendarEvent interface
 interface CalendarEventMessage {
@@ -106,7 +107,7 @@ export const CalendarPreviewWidget = ({
 				</Badge>
 			</div>
 			<Button
-				className="mt-1 w-full justify-start text-primary hover:bg-primary/10 hover:text-primary"
+				className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 				onClick={() => handleViewEvent(event._id)}
 				size="sm"
 				variant="ghost"
@@ -145,15 +146,11 @@ export const CalendarPreviewWidget = ({
 	}, [upcomingEvents, nextSevenDays]);
 
 	if (isLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-3">
 			<WidgetHeader
 				action={
 					<Button
@@ -166,7 +163,6 @@ export const CalendarPreviewWidget = ({
 					</Button>
 				}
 				badge={upcomingEvents.length > 0 ? upcomingEvents.length : undefined}
-				className="pr-2"
 				controls={controls}
 				icon={<CalendarIcon className="size-5 text-primary" />}
 				isEditMode={isEditMode}

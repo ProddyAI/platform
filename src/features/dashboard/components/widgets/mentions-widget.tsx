@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, CheckCircle, Hash, Loader } from "lucide-react";
+import { AtSign, CheckCircle, Hash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -18,6 +18,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 interface MentionsWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -141,15 +142,11 @@ export const MentionsWidget = ({
 	};
 
 	if (isLoading || countsLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
-		<div className="space-y-4 pb-4">
+		<div className="space-y-3">
 			<WidgetHeader
 				action={
 					counts &&
@@ -166,7 +163,6 @@ export const MentionsWidget = ({
 					)
 				}
 				badge={counts && counts.total > 0 ? counts.total : undefined}
-				className="pr-2"
 				controls={controls}
 				icon={<AtSign className="size-5 text-primary" />}
 				isEditMode={isEditMode}

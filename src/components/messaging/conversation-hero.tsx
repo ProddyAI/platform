@@ -20,7 +20,7 @@ export const ConversationHero = ({
 					<AvatarFallback>{avatarFallback}</AvatarFallback>
 				</Avatar>
 
-				<p className="text-xl md:text-2xl font-bold">{name}</p>
+				<p className="text-xl md:text-2xl font-semibold">{name}</p>
 			</div>
 
 			<p className="mb-4 text-sm md:text-base font-normal text-muted-foreground">

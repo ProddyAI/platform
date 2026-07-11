@@ -201,6 +201,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						<TooltipTrigger asChild>
 							<span>
 								<Button
+									aria-label="Add issue"
 									className="size-6 hover:bg-muted"
 									disabled={disableCreateIssue}
 									onClick={handleStartCreating}
@@ -224,6 +225,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
+							aria-label="Status options"
 							className="size-6 hover:bg-muted"
 							size="icon"
 							variant="ghost"
@@ -234,14 +236,14 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					<DropdownMenuContent align="end" className="w-40">
 						<DropdownMenuItem onClick={onEditStatus}>
 							<Pencil className="size-3.5 mr-2" />
-							Edit Status
+							Edit status
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							className="text-destructive focus:text-destructive"
 							onClick={onDeleteStatus}
 						>
 							<Trash className="size-3.5 mr-2" />
-							Delete Status
+							Delete status
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -297,7 +299,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 							onBlur={handleCreateIssue}
 							onChange={(e) => setNewTitle(e.target.value)}
 							onKeyDown={handleKeyDown}
-							placeholder="Issue title..."
+							placeholder="Issue title…"
 							ref={inputRef}
 							value={newTitle}
 						/>

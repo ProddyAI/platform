@@ -89,8 +89,7 @@ export const TaskCategorySelector = ({
 			setNewCategoryColor(CATEGORY_COLORS[0].value);
 			setCreateDialogOpen(false);
 		} catch (error) {
-			console.error("Failed to create category:", error);
-			toast.error("Failed to create category", {
+			toast.error("Couldn't create category", {
 				description:
 					error instanceof Error ? error.message : "Please try again",
 			});
@@ -120,7 +119,10 @@ export const TaskCategorySelector = ({
 						)}
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent align="start" className="w-full p-0">
+				<PopoverContent
+					align="start"
+					className="w-[var(--radix-popover-trigger-width)] p-0"
+				>
 					<Command>
 						<CommandInput placeholder="Search categories..." />
 						<CommandList>
@@ -214,7 +216,7 @@ export const TaskCategorySelector = ({
 										<button
 											aria-label={`Select color ${color.label}`}
 											className={cn(
-												"size-8 rounded-full cursor-pointer flex items-center justify-center border-2 ring-offset-2 ring-offset-background transition-colors hover:ring-2 hover:ring-muted-foreground",
+												"size-8 rounded-full cursor-pointer flex items-center justify-center border-2 ring-offset-2 ring-offset-background transition-shadow duration-fast hover:ring-2 hover:ring-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 												newCategoryColor === color.value
 													? "border-foreground"
 													: "border-transparent"

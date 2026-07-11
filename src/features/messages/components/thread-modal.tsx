@@ -23,9 +23,10 @@ import { Thumbnail } from "@/components/messaging/thumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -98,13 +99,14 @@ const SpecialContentChip = ({ parsed }: { parsed: ParsedMessageBody }) => (
 					</span>
 					{parsed.fileUrl && (
 						<Button
+							aria-label={`Download ${parsed.content}`}
 							onClick={() =>
 								window.open(parsed.fileUrl, "_blank", "noopener,noreferrer")
 							}
 							size="iconSm"
 							variant="ghost"
 						>
-							<Download className="size-4" />
+							<Download aria-hidden className="size-4" />
 						</Button>
 					)}
 				</div>
@@ -347,12 +349,18 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 	return (
 		<Dialog onOpenChange={onClose} open={isOpen}>
-			<DialogContent className="max-w-2xl h-[80vh] p-0 flex flex-col gap-0">
+			<DialogContent
+				aria-describedby={undefined}
+				className="flex h-[80vh] max-w-2xl flex-col gap-0 overflow-hidden p-0"
+			>
 				{/* Header */}
-				<div className="flex items-center gap-3 p-4 border-b flex-shrink-0">
-					<MessageSquare className="size-5 text-primary flex-shrink-0" />
+				<div className="flex flex-shrink-0 items-center gap-3 border-b p-4 pr-12">
+					<MessageSquare
+						aria-hidden
+						className="size-5 flex-shrink-0 text-primary"
+					/>
 					<div className="min-w-0 flex-1">
-						<h2 className="text-lg font-semibold">Thread</h2>
+						<DialogTitle>Thread</DialogTitle>
 						<div className="flex min-w-0 items-center gap-2 mt-1">
 							<Badge
 								className={`min-w-0 max-w-full rounded-full text-xs ${
@@ -380,7 +388,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 				<ScrollArea className="flex-1 p-4">
 					<div className="space-y-4">
-						<div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+						<div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
 							<div className="flex items-start gap-3">
 								<Avatar className="size-10 flex-shrink-0">
 									<AvatarImage src={thread.parentUser.image} />
@@ -414,8 +422,22 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 						<Separator />
 
 						{allReplies.length === 0 && !threadReplies ? (
-							<div className="flex items-center justify-center py-8">
-								<Loader className="size-6 animate-spin text-muted-foreground" />
+							// Skeleton rows mirror the reply layout so nothing jumps on load
+							<div
+								aria-busy="true"
+								aria-label="Loading replies"
+								className="space-y-3"
+								role="status"
+							>
+								{[0, 1, 2].map((i) => (
+									<div className="flex items-start gap-3 pl-4" key={i}>
+										<Skeleton className="size-8 flex-shrink-0 rounded-full" />
+										<div className="flex-1 space-y-2">
+											<Skeleton className="h-3 w-32" />
+											<Skeleton className="h-3 w-3/4" />
+										</div>
+									</div>
+								))}
 							</div>
 						) : (
 							<>
@@ -491,9 +513,17 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 											})}
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-										<MessageSquare className="size-8 mb-2" />
-										<p className="text-sm">No replies yet</p>
+									<div className="flex flex-col items-center justify-center py-8 text-center">
+										<MessageSquare
+											aria-hidden
+											className="mb-2 size-8 text-muted-foreground/50"
+										/>
+										<p className="text-sm font-medium text-foreground">
+											No replies yet
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											Reply below to keep the discussion in this thread.
+										</p>
 									</div>
 								)}
 							</>

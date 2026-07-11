@@ -16,11 +16,11 @@ import {
 import { useState } from "react";
 import { SiGithub, SiSlack } from "react-icons/si";
 import { toast } from "sonner";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader } from "../../../components/ui/card";
-import { cn } from "../../../lib/utils";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Single source of truth for supported toolkits
 type Toolkit = "github" | "gmail" | "slack" | "linear" | "notion" | "clickup";

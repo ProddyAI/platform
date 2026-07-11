@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import { Hash, Search, User, Video } from "lucide-react";
+import { Hash, Loader, Search, User, Video } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -144,7 +145,7 @@ export const NewMeetingModal = ({
 
 				<div className="space-y-4">
 					<div className="relative">
-						<Search className="size-4 absolute left-3 top-3 text-muted-foreground" />
+						<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							className="pl-9"
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -157,45 +158,49 @@ export const NewMeetingModal = ({
 						/>
 					</div>
 
-					<ScrollArea className="h-[200px] border rounded-lg p-2">
+					<ScrollArea className="h-[200px] rounded-lg border p-2">
 						{target === "channel" ? (
 							channels === undefined ? (
-								<div className="flex items-center justify-center h-full">
-									<p className="text-sm text-muted-foreground">
-										Loading channels...
-									</p>
+								<div aria-busy="true" className="space-y-1">
+									{[0, 1, 2, 3].map((i) => (
+										<Skeleton className="h-9 w-full" key={i} />
+									))}
 								</div>
 							) : filteredChannels.length === 0 ? (
-								<div className="flex items-center justify-center h-full">
+								<div className="flex h-full items-center justify-center">
 									<p className="text-sm text-muted-foreground">
-										No channels found
+										{searchQuery
+											? "No channels match your search"
+											: "No channels in this workspace yet"}
 									</p>
 								</div>
 							) : (
 								filteredChannels.map((channel) => (
 									<button
-										className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedChannelId === channel._id ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
+										className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${selectedChannelId === channel._id ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
 										key={channel._id}
 										onClick={() => setSelectedChannelId(channel._id)}
 										type="button"
 									>
 										<Hash className="size-4 shrink-0" />
-										<span className="text-sm flex-1 truncate">
+										<span className="flex-1 truncate text-sm">
 											{channel.name}
 										</span>
 									</button>
 								))
 							)
 						) : members === undefined ? (
-							<div className="flex items-center justify-center h-full">
-								<p className="text-sm text-muted-foreground">
-									Loading members...
-								</p>
+							<div aria-busy="true" className="space-y-1">
+								{[0, 1, 2, 3].map((i) => (
+									<Skeleton className="h-9 w-full" key={i} />
+								))}
 							</div>
 						) : filteredMembers.length === 0 ? (
-							<div className="flex items-center justify-center h-full">
+							<div className="flex h-full items-center justify-center">
 								<p className="text-sm text-muted-foreground">
-									No members found
+									{searchQuery
+										? "No members match your search"
+										: "No other members in this workspace yet"}
 								</p>
 							</div>
 						) : (
@@ -203,13 +208,13 @@ export const NewMeetingModal = ({
 								if (!member.user) return null;
 								return (
 									<button
-										className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedMemberId === member._id ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
+										className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${selectedMemberId === member._id ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
 										key={member._id}
 										onClick={() => setSelectedMemberId(member._id)}
 										type="button"
 									>
 										<User className="size-4 shrink-0" />
-										<span className="text-sm flex-1 truncate">
+										<span className="flex-1 truncate text-sm">
 											{member.user.name}
 										</span>
 									</button>
@@ -228,7 +233,11 @@ export const NewMeetingModal = ({
 						disabled={!canStart || isStarting}
 						onClick={handleStartMeeting}
 					>
-						<Video className="size-4" />
+						{isStarting ? (
+							<Loader className="size-4 animate-spin" />
+						) : (
+							<Video className="size-4" />
+						)}
 						{isStarting ? "Starting..." : "Start Meeting"}
 					</Button>
 				</DialogFooter>

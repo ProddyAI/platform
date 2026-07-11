@@ -301,7 +301,7 @@ export const AIActionsToolbar = ({
 				{AI_ACTIONS.map((action) => (
 					<Button
 						className={cn(
-							"h-7 px-2.5 text-xs gap-1.5 transition-all duration-200",
+							"h-7 px-2.5 text-xs gap-1.5 transition-colors duration-200",
 							activeAction === action.id && "bg-secondary/10 text-secondary"
 						)}
 						disabled={isDisabled}

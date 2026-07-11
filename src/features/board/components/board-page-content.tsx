@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import { Loader } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -512,8 +513,9 @@ export const BoardPageContent = ({
 			)}
 			{view === "kanban" ? (
 				statuses === undefined ? (
-					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-						Loading board…
+					<div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+						<Loader className="size-4 animate-spin" />
+						<span>Loading board…</span>
 					</div>
 				) : (
 					<BoardKanbanView

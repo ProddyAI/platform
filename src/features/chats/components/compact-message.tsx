@@ -65,12 +65,12 @@ export const CompactMessage = ({
 				{/* Timestamp (position mirrors via flex-row-reverse when isAuthor) */}
 				<div className="flex items-center gap-2 min-w-[40px] md:min-w-[50px]">
 					<Hint label={formatFullTime(new Date(createdAt))}>
-						<button
-							className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline focus-visible:opacity-100 group-hover:opacity-100"
-							type="button"
+						<time
+							className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 transition-opacity duration-fast group-hover:opacity-100 motion-reduce:transition-none"
+							dateTime={new Date(createdAt).toISOString()}
 						>
 							{format(new Date(createdAt), "h:mm a")}
-						</button>
+						</time>
 					</Hint>
 				</div>
 

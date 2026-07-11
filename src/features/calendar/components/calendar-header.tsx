@@ -86,7 +86,7 @@ export const CalendarHeader = ({
 						>
 							<Search
 								aria-hidden="true"
-								className="absolute left-3.5 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground"
+								className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
 							/>
 							<Input
 								aria-label="Search events"
@@ -116,7 +116,7 @@ export const CalendarHeader = ({
 			</div>
 
 			{/* Bottom row with event counts */}
-			<div className="flex flex-wrap items-center gap-2 mt-3 text-sm text-muted-foreground bg-muted p-2 rounded-xl border border-border">
+			<div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-muted p-2 text-sm text-muted-foreground">
 				<span className="font-medium">
 					{noTypesSelected
 						? "Nothing shown — all event types hidden"
@@ -158,7 +158,7 @@ export const CalendarHeader = ({
 						{filterOptions.eventTypes.includes("board-card") && (
 							<div className="flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-foreground">
 								<span className="font-medium">{eventCounts.boardCard}</span>
-								<span>Board Cards</span>
+								<span>Board cards</span>
 							</div>
 						)}
 
@@ -174,5 +174,3 @@ export const CalendarHeader = ({
 		</div>
 	);
 };
-
-export default CalendarHeader;

@@ -3,8 +3,8 @@
 import {
 	Edit,
 	Hash,
+	Loader2,
 	Plus,
-	RefreshCw,
 	Smile,
 	Trash2,
 	Upload,
@@ -196,8 +196,6 @@ export const ChannelsManagement = ({
 
 			toast.success("Icon image uploaded successfully");
 		} catch (error) {
-			console.error("Failed to upload edit channel icon:", error);
-
 			// Provide specific error messages based on error type and HTTP status
 			if (error instanceof TypeError && error.message.includes("fetch")) {
 				toast.error(
@@ -209,7 +207,7 @@ export const ChannelsManagement = ({
 				// Handle HTTP status codes
 				if (status === 400) {
 					toast.error(
-						"Invalid file format. Please upload a valid image file (PNG, JPG, SVG)."
+						"Invalid file format. Please upload a valid image file (PNG, JPG, GIF, or WebP)."
 					);
 				} else if (status === 401 || status === 403) {
 					toast.error(
@@ -219,7 +217,7 @@ export const ChannelsManagement = ({
 					toast.error("Image file is too large. Maximum size is 5MB.");
 				} else if (status === 415) {
 					toast.error(
-						"Unsupported file type. Please use PNG, JPG, or SVG format."
+						"Unsupported file type. Please use PNG, JPG, GIF, or WebP format."
 					);
 				} else if (status === 500 || status === 502 || status === 503) {
 					toast.error("Server error. Please try again in a few moments.");
@@ -285,8 +283,6 @@ export const ChannelsManagement = ({
 			setEditChannelId(null);
 			setEditDialogOpen(false);
 		} catch (error) {
-			console.error("Failed to update channel:", error);
-
 			// Provide specific error messages based on error type
 			if (error instanceof TypeError && error.message.includes("fetch")) {
 				toast.error(
@@ -337,8 +333,6 @@ export const ChannelsManagement = ({
 			setDeleteChannelId(null);
 			setDeleteDialogOpen(false);
 		} catch (error) {
-			console.error("Failed to delete channel:", error);
-
 			// Provide specific error messages based on error type
 			if (error instanceof TypeError && error.message.includes("fetch")) {
 				toast.error(
@@ -398,7 +392,7 @@ export const ChannelsManagement = ({
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h3 className="text-lg font-medium">Channels</h3>
+					<h3 className="text-lg font-semibold tracking-tight">Channels</h3>
 					<p className="text-sm text-muted-foreground">
 						Manage the channels in your workspace
 					</p>
@@ -407,7 +401,7 @@ export const ChannelsManagement = ({
 				{canManage && (
 					<Button onClick={() => setCreateOpen(true)}>
 						<Plus className="mr-2 size-4" />
-						New Channel
+						New channel
 					</Button>
 				)}
 			</div>
@@ -451,7 +445,7 @@ export const ChannelsManagement = ({
 					{canManage && (
 						<Button className="mt-4" onClick={() => setCreateOpen(true)}>
 							<Plus className="mr-2 size-4" />
-							New Channel
+							New channel
 						</Button>
 					)}
 				</div>
@@ -511,7 +505,7 @@ export const ChannelsManagement = ({
 			<Dialog onOpenChange={setEditDialogOpen} open={editDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Edit Channel</DialogTitle>
+						<DialogTitle>Edit channel</DialogTitle>
 						<DialogDescription>
 							Update the channel name and icon
 						</DialogDescription>
@@ -519,7 +513,7 @@ export const ChannelsManagement = ({
 					<div className="space-y-4 py-4">
 						<div className="flex flex-col gap-2">
 							<div className="flex items-center justify-between">
-								<Label className="text-sm font-medium">Channel Icon</Label>
+								<Label className="text-sm font-medium">Channel icon</Label>
 								<span className="text-xs text-muted-foreground">
 									Select emoji or upload image
 								</span>
@@ -539,7 +533,7 @@ export const ChannelsManagement = ({
 										{/* biome-ignore lint/a11y/useSemanticElements: This upload zone contains nested controls, so replacing it with a button would create invalid nested buttons. */}
 										<div
 											aria-label="Upload channel icon"
-											className="relative flex size-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all"
+											className="relative flex size-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted transition-colors duration-fast hover:bg-accent hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 											onClick={() =>
 												!isUploadingEdit && editImageInputRef.current?.click()
 											}
@@ -569,7 +563,7 @@ export const ChannelsManagement = ({
 													)}
 													<button
 														aria-label="Remove icon"
-														className="absolute -top-2 -right-2 size-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+														className="absolute -top-2 -right-2 size-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 														onClick={(e) => {
 															e.stopPropagation();
 															if (
@@ -591,7 +585,7 @@ export const ChannelsManagement = ({
 												<div className="flex flex-col items-center gap-1">
 													<Upload className="size-6 text-muted-foreground" />
 													<span className="text-xs text-muted-foreground text-center">
-														{isUploadingEdit ? "Uploading..." : "Upload"}
+														{isUploadingEdit ? "Uploading…" : "Upload"}
 													</span>
 												</div>
 											)}
@@ -602,7 +596,7 @@ export const ChannelsManagement = ({
 										>
 											<button
 												aria-label="Select emoji icon"
-												className="absolute -bottom-1 -right-1 size-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+												className="absolute -bottom-1 -right-1 size-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 												type="button"
 											>
 												<Smile className="size-4" />
@@ -618,7 +612,7 @@ export const ChannelsManagement = ({
 										className="text-sm font-medium mb-1 block"
 										htmlFor="edit-name"
 									>
-										Channel Name
+										Channel name
 									</Label>
 									<Input
 										className="h-10"
@@ -641,14 +635,22 @@ export const ChannelsManagement = ({
 						>
 							Cancel
 						</Button>
-						<Button disabled={isUpdating} onClick={handleUpdateChannel}>
+						<Button
+							disabled={
+								isUpdating ||
+								isUploadingEdit ||
+								editChannelName.trim().length < 3 ||
+								editChannelName.trim().length > 20
+							}
+							onClick={handleUpdateChannel}
+						>
 							{isUpdating ? (
 								<>
-									<RefreshCw className="mr-2 size-4 animate-spin" />
-									Updating...
+									<Loader2 className="mr-2 size-4 animate-spin" />
+									Updating…
 								</>
 							) : (
-								"Update Channel"
+								"Update channel"
 							)}
 						</Button>
 					</DialogFooter>
@@ -659,7 +661,7 @@ export const ChannelsManagement = ({
 			<AlertDialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogTitle>Delete this channel?</AlertDialogTitle>
 						<AlertDialogDescription>
 							This action cannot be undone. This will permanently delete the
 							channel and all of its messages.
@@ -672,7 +674,7 @@ export const ChannelsManagement = ({
 							disabled={isDeleting}
 							onClick={handleDeleteChannel}
 						>
-							{isDeleting ? "Deleting..." : "Delete"}
+							{isDeleting ? "Deleting…" : "Delete"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

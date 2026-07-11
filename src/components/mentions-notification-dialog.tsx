@@ -166,7 +166,7 @@ export const MentionsNotificationDialog = ({
 					return `/workspace/${workspaceId}/project/${projectId}/board`;
 				}
 
-				return `/workspace/${workspaceId}/issues`;
+				return `/workspace/${workspaceId}/tasks`;
 			}
 			default:
 				return `/workspace/${workspaceId}`;

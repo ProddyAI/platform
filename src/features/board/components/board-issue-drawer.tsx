@@ -302,7 +302,7 @@ const IssueContent = ({
 				className="min-h-[90px] text-sm bg-muted/20 border-border/30 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 placeholder:text-muted-foreground/40"
 				onBlur={onBlur}
 				onChange={(e) => onDescriptionChange(e.target.value)}
-				placeholder="Add a description..."
+				placeholder="Add a description…"
 				value={description}
 			/>
 
@@ -434,7 +434,7 @@ const IssueContent = ({
 										onAddLabel();
 									}
 								}}
-								placeholder="Add label..."
+								placeholder="Add label…"
 								value={labelInput}
 							/>
 							<Button
@@ -561,7 +561,7 @@ const SubIssuesSection = ({
 
 	if (!subIssues) {
 		return (
-			<div className="text-sm text-muted-foreground">Loading sub-issues...</div>
+			<div className="text-sm text-muted-foreground">Loading sub-issues…</div>
 		);
 	}
 
@@ -596,7 +596,7 @@ const SubIssuesSection = ({
 			{totalCount > 0 && (
 				<div className="w-full bg-muted rounded-full h-1.5">
 					<div
-						className="bg-primary h-1.5 rounded-full transition-all duration-300"
+						className="bg-primary h-1.5 rounded-full transition-[width] duration-slow motion-reduce:transition-none"
 						style={{ width: `${(completedCount / totalCount) * 100}%` }}
 					/>
 				</div>
@@ -728,7 +728,7 @@ const SubIssuesSection = ({
 								setNewTitle("");
 							}
 						}}
-						placeholder="Sub-issue title..."
+						placeholder="Sub-issue title…"
 						ref={newSubIssueInputRef}
 						value={newTitle}
 					/>
@@ -897,7 +897,7 @@ const BlockingSection = ({
 
 	const renderBlockingContent = () => {
 		if (!blockingIssues) {
-			return <div className="text-sm text-muted-foreground">Loading...</div>;
+			return <div className="text-sm text-muted-foreground">Loading…</div>;
 		}
 
 		if (blockingIssues.length === 0) {
@@ -942,7 +942,7 @@ const BlockingSection = ({
 
 	const renderBlockedByContent = () => {
 		if (!blockedByIssuesDetailed) {
-			return <div className="text-sm text-muted-foreground">Loading...</div>;
+			return <div className="text-sm text-muted-foreground">Loading…</div>;
 		}
 
 		if (blockedByIssuesDetailed.length === 0) {
@@ -1030,7 +1030,7 @@ const BlockingSection = ({
 					{availableForBlocking.length > 0 && (
 						<Select onValueChange={handleSelectBlocking} value="">
 							<SelectTrigger className="h-7 w-44 rounded-full text-xs">
-								<SelectValue placeholder="Add blocking issue..." />
+								<SelectValue placeholder="Add blocking issue…" />
 							</SelectTrigger>
 							<SelectContent>
 								{availableForBlocking.map((i) => (
@@ -1063,7 +1063,7 @@ const BlockingSection = ({
 					{availableForBlocking.length > 0 && (
 						<Select onValueChange={handleSelectBlockedBy} value="">
 							<SelectTrigger className="h-7 w-44 rounded-full text-xs">
-								<SelectValue placeholder="Add blocked by issue..." />
+								<SelectValue placeholder="Add blocked by issue…" />
 							</SelectTrigger>
 							<SelectContent>
 								{availableForBlocking.map((i) => (
@@ -1123,7 +1123,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 
 	if (!comments) {
 		return (
-			<div className="text-sm text-muted-foreground">Loading discussion...</div>
+			<div className="text-sm text-muted-foreground">Loading discussion…</div>
 		);
 	}
 
@@ -1192,7 +1192,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 							handleSend();
 						}
 					}}
-					placeholder="Write a comment..."
+					placeholder="Write a comment…"
 					value={message}
 				/>
 				<Button

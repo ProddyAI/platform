@@ -14,7 +14,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -488,6 +488,10 @@ export const WorkspaceToolbar = () => {
 	);
 	const channelId = params?.channelId as Id<"channels"> | undefined;
 	const activeBoardChannelId = channelId ?? boardSearchChannelId ?? undefined;
+	const pathname = usePathname();
+	// AI notes are generated from channel messages, so the action only makes
+	// sense on the channel chats page.
+	const isChannelChatsPage = Boolean(channelId) && pathname.endsWith("/chats");
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
@@ -524,7 +528,7 @@ export const WorkspaceToolbar = () => {
 			const projectId = projectIdByBoardChannelId.get(channelId);
 			const baseRoute = projectId
 				? `/workspace/${workspaceId}/project/${projectId}/board`
-				: `/workspace/${workspaceId}/issues`;
+				: `/workspace/${workspaceId}/tasks`;
 
 			return focusParam ? `${baseRoute}?${focusParam}` : baseRoute;
 		},
@@ -808,8 +812,8 @@ export const WorkspaceToolbar = () => {
 
 			{/* Right section - Actions */}
 			<div className="ml-auto flex flex-1 items-center justify-end gap-x-1.5 md:gap-x-3 px-3 md:px-6">
-				{/* AI Notemaker Component - only shown on channel pages */}
-				{channelId && (
+				{/* AI Notemaker Component - only shown on channel chats pages */}
+				{isChannelChatsPage && (
 					<div className="hidden md:flex">
 						<Button
 							className="gap-2 h-9"

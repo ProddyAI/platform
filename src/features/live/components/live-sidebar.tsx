@@ -268,7 +268,7 @@ export const LiveSidebar = ({
 				{/* Search and Create */}
 				<div className="flex gap-2">
 					<div className="relative flex-1">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 						<Input
 							className="pl-9"
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -349,7 +349,7 @@ export const LiveSidebar = ({
 							{filteredItems.map((item) => (
 								<div
 									className={cn(
-										"p-3 rounded-lg cursor-pointer transition-colors group",
+										"p-3 rounded-lg cursor-pointer transition-colors group outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
 										selectedItemId === item._id
 											? "bg-primary/10 border border-primary/20 dark:bg-primary/30 dark:border-primary/40"
 											: "hover:bg-muted/50 dark:hover:bg-muted/70"

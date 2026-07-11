@@ -203,7 +203,7 @@ export const ImportDataManagement = ({
 				);
 			}
 		} else {
-			toast.info("This platform will be available soon!");
+			toast.info("This platform will be available soon");
 		}
 	};
 
@@ -227,9 +227,7 @@ export const ImportDataManagement = ({
 					},
 					{ throwError: true }
 				);
-				toast.success(
-					"Import started! You'll receive a notification when it's complete."
-				);
+				toast.success("Import started. You'll be notified when it completes.");
 			} else if (selectedPlatform === "todoist") {
 				await startTodoistImport.mutate(
 					{
@@ -241,9 +239,7 @@ export const ImportDataManagement = ({
 					},
 					{ throwError: true }
 				);
-				toast.success(
-					"Import started! You'll receive a notification when it's complete."
-				);
+				toast.success("Import started. You'll be notified when it completes.");
 			} else if (selectedPlatform === "linear") {
 				await startLinearImport.mutate(
 					{
@@ -258,9 +254,7 @@ export const ImportDataManagement = ({
 					},
 					{ throwError: true }
 				);
-				toast.success(
-					"Import started! You'll receive a notification when it's complete."
-				);
+				toast.success("Import started. You'll be notified when it completes.");
 			} else {
 				toast.info("This platform import is not yet implemented");
 			}
@@ -383,7 +377,7 @@ export const ImportDataManagement = ({
 		<div className="space-y-6" data-member-role={currentMember.role}>
 			{/* Header */}
 			<div>
-				<h3 className="text-lg font-medium">Import Data</h3>
+				<h3 className="text-lg font-semibold tracking-tight">Import data</h3>
 				<p className="text-sm text-muted-foreground">
 					Connect to external platforms and import your data into Proddy. Slack
 					and Linear are fully supported. More platforms coming soon.
@@ -418,7 +412,7 @@ export const ImportDataManagement = ({
 											</CardTitle>
 											{!platform.available && (
 												<Badge className="mt-1" variant="outline">
-													Coming Soon
+													Coming soon
 												</Badge>
 											)}
 										</div>
@@ -454,9 +448,11 @@ export const ImportDataManagement = ({
 												size="sm"
 											>
 												<Upload className="size-4 mr-2" />
-												Start Import
+												Start import
 											</Button>
 											<Button
+												aria-label={`Disconnect ${platform.name}`}
+												className="text-destructive hover:bg-destructive/10"
 												disabled={disconnectImport.isPending}
 												onClick={() => handleDisconnect(connection._id)}
 												size="sm"
@@ -482,7 +478,7 @@ export const ImportDataManagement = ({
 									<div className="pt-2 border-t">
 										<div className="flex items-center justify-between text-xs mb-1">
 											<span className="text-muted-foreground">
-												Latest Import
+												Latest import
 											</span>
 											{getStatusBadge(latestJob.status)}
 										</div>
@@ -542,7 +538,9 @@ export const ImportDataManagement = ({
 				<>
 					<Separator />
 					<div>
-						<h3 className="text-lg font-medium mb-4">Import History</h3>
+						<h3 className="text-lg font-semibold tracking-tight mb-4">
+							Import history
+						</h3>
 						<div className="border rounded-lg">
 							<Table>
 								<TableHeader>
@@ -659,7 +657,7 @@ export const ImportDataManagement = ({
 			<Dialog onOpenChange={setConfigDialogOpen} open={configDialogOpen}>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
-						<DialogTitle>Configure Import</DialogTitle>
+						<DialogTitle>Configure import</DialogTitle>
 						<DialogDescription>
 							Choose what to import from{" "}
 							{selectedPlatform &&
@@ -776,7 +774,7 @@ export const ImportDataManagement = ({
 								</div>
 
 								<div className="space-y-2 pt-2">
-									<Label htmlFor="targetChannel">Import Destination</Label>
+									<Label htmlFor="targetChannel">Import destination</Label>
 									<Select
 										onValueChange={(value) =>
 											setImportConfig((prev) => ({
@@ -832,8 +830,19 @@ export const ImportDataManagement = ({
 							}
 							onClick={handleConfirmImport}
 						>
-							<Download className="size-4 mr-2" />
-							Start Import
+							{startSlackImport.isPending ||
+							startTodoistImport.isPending ||
+							startLinearImport.isPending ? (
+								<>
+									<Loader2 className="size-4 mr-2 animate-spin" />
+									Starting…
+								</>
+							) : (
+								<>
+									<Download className="size-4 mr-2" />
+									Start import
+								</>
+							)}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

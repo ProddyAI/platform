@@ -13,6 +13,7 @@ import {
 	Loader,
 	MessageSquare,
 	Mic,
+	Plus,
 	Search,
 	Sparkles,
 	Target,
@@ -29,6 +30,7 @@ import { StatusDot, type StatusTone } from "@/components/status-dot";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewMeetingModal } from "@/features/audio/components/new-meeting-modal";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -51,6 +53,8 @@ export default function MeetingsPage() {
 	const [sourceFilter, setSourceFilter] = useState<
 		"all" | "live" | "upload" | "chat"
 	>("all");
+
+	const hasActiveFilter = searchQuery.trim() !== "" || sourceFilter !== "all";
 
 	const sortedNotes = [...(allNotes || [])]
 		.filter((note) => {
@@ -95,10 +99,10 @@ export default function MeetingsPage() {
 						Meetings
 					</h1>
 					<p className="text-sm text-muted-foreground">
+						AI-generated notes from meetings, uploads, and chats
 						{allNotes
-							? `${allNotes.length} note${allNotes.length !== 1 ? "s" : ""}`
-							: "Loading..."}{" "}
-						— All your AI-generated meeting notes
+							? ` · ${allNotes.length} note${allNotes.length !== 1 ? "s" : ""}`
+							: ""}
 					</p>
 				</div>
 				<Button className="gap-1.5" onClick={() => setStartMeetingOpen(true)}>
@@ -112,9 +116,9 @@ export default function MeetingsPage() {
 			/>
 
 			{/* Search + Filters */}
-			<div className="flex items-center gap-3">
-				<div className="relative flex-1 max-w-md">
-					<Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="relative max-w-md flex-1">
+					<Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
 						onChange={(e) => setSearchQuery(e.target.value)}
@@ -146,20 +150,44 @@ export default function MeetingsPage() {
 
 			{/* Content */}
 			{!allNotes ? (
-				<div className="flex items-center justify-center py-20">
-					<Loader className="size-8 animate-spin text-muted-foreground" />
+				<div
+					aria-busy="true"
+					aria-label="Loading meeting notes"
+					className="space-y-3"
+					role="status"
+				>
+					{[0, 1, 2].map((i) => (
+						<div
+							className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"
+							key={i}
+						>
+							<Skeleton className="size-9 shrink-0 rounded-lg" />
+							<div className="flex-1 space-y-2">
+								<Skeleton className="h-4 w-1/3" />
+								<Skeleton className="h-3 w-1/2" />
+							</div>
+						</div>
+					))}
 				</div>
 			) : sortedNotes.length === 0 ? (
-				<EmptyState
-					action={{
-						label: "Start Meeting",
-						onClick: () => setStartMeetingOpen(true),
-						icon: Video,
-					}}
-					description="Start a meeting with a channel or teammate and record it, or upload a recording to generate AI notes."
-					icon={Sparkles}
-					title="No meeting notes yet"
-				/>
+				hasActiveFilter ? (
+					<EmptyState
+						description="Try a different search or source filter."
+						icon={Search}
+						title="No matching notes"
+					/>
+				) : (
+					<EmptyState
+						action={{
+							label: "Start Meeting",
+							onClick: () => setStartMeetingOpen(true),
+							icon: Video,
+						}}
+						description="Start a meeting with a channel or teammate and record it, or upload a recording to generate AI notes."
+						icon={Sparkles}
+						title="No meeting notes yet"
+					/>
+				)
 			) : (
 				<div className="space-y-3">
 					{sortedNotes.map((note) => (
@@ -243,14 +271,13 @@ function NoteCard({
 	const date = new Date(note.createdAt);
 	const isChat = note.roomId.startsWith("chat-");
 	const isUpload = note.source === "upload";
-	const _isLive = !isChat && !isUpload;
 	const hasGenerations = generations && generations.length > 0;
 
 	const sourceLabel = isChat
-		? "Chat Notes"
+		? "Chat notes"
 		: isUpload
-			? "Uploaded Recording"
-			: "Live Meeting";
+			? "Uploaded recording"
+			: "Live meeting";
 	const SourceIcon = isChat ? MessageSquare : isUpload ? Upload : Mic;
 	const statusTone: StatusTone =
 		note.status === "completed"
@@ -260,6 +287,9 @@ function NoteCard({
 				: note.status === "failed"
 					? "destructive"
 					: "neutral";
+	const statusLabel = note.status
+		? note.status.charAt(0).toUpperCase() + note.status.slice(1)
+		: undefined;
 
 	const priorityBadgeVariant = (priority: string) => {
 		if (priority === "high") return "destructiveSoft";
@@ -286,29 +316,32 @@ function NoteCard({
 	};
 
 	return (
-		<div className="rounded-2xl border border-border bg-card overflow-hidden transition-colors hover:border-primary/30">
+		<div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors hover:border-primary/30">
 			{/* Card Header */}
 			<button
-				className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/50 transition-colors"
+				aria-expanded={isExpanded}
+				className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 				onClick={onToggle}
 				type="button"
 			>
 				<div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
 					<SourceIcon className="size-4 text-primary" />
 				</div>
-				<div className="flex-1 min-w-0">
+				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<p className="text-sm font-semibold text-foreground truncate">
+						<p className="truncate text-sm font-semibold text-foreground">
 							{deriveTitle()}
 						</p>
-						<StatusDot label={note.status} tone={statusTone} />
+						<StatusDot label={statusLabel} tone={statusTone} />
 					</div>
-					<div className="flex items-center gap-3 mt-0.5">
-						<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+					<div className="mt-0.5 flex items-center gap-2">
+						<span className="text-xs font-medium text-muted-foreground">
 							{sourceLabel}
 						</span>
-						<span className="text-muted-foreground/50">·</span>
-						<span className="text-xs text-muted-foreground flex items-center gap-1">
+						<span aria-hidden="true" className="text-muted-foreground/50">
+							·
+						</span>
+						<span className="flex items-center gap-1 text-xs text-muted-foreground">
 							<Clock className="size-3" />
 							{date.toLocaleDateString()} at{" "}
 							{date.toLocaleTimeString([], {
@@ -316,15 +349,11 @@ function NoteCard({
 								minute: "2-digit",
 							})}
 						</span>
-						{hasGenerations && (
-							<span className="text-xs text-primary font-medium">
-								{generations.length} generation
-								{generations.length > 1 ? "s" : ""}
+						{generations && generations.length > 1 && (
+							<span className="text-xs font-medium text-primary">
+								{generations.length} versions
 							</span>
 						)}
-						<span className="text-xs text-muted-foreground">
-							{note.transcript?.length || 0} chars
-						</span>
 					</div>
 				</div>
 				{isExpanded ? (
@@ -334,28 +363,28 @@ function NoteCard({
 				)}
 			</button>
 
-			{/* Export Buttons (Inline) */}
+			{/* Export + save actions */}
 			{isExpanded && (currentGen || note.summary) && (
-				<div className="px-5 py-2 bg-card flex items-center gap-2 border-b border-border">
+				<div className="flex items-center gap-2 border-b border-border px-5 py-2">
 					<Button
-						className="h-8 text-[11px] gap-1.5"
+						className="h-8 gap-1.5 text-xs"
 						onClick={() => handleExport("pdf")}
 						size="sm"
 						variant="outline"
 					>
-						<FileDown className="size-3.5 text-destructive" /> Export PDF
+						<FileDown className="size-3.5" /> Export PDF
 					</Button>
 					<Button
-						className="h-8 text-[11px] gap-1.5"
+						className="h-8 gap-1.5 text-xs"
 						onClick={() => handleExport("word")}
 						size="sm"
 						variant="outline"
 					>
-						<Download className="size-3.5 text-primary" /> Export Word
+						<Download className="size-3.5" /> Export Word
 					</Button>
 					<div className="flex-1" />
 					<Button
-						className="h-8 text-[11px] font-bold gap-1.5 border-success/20 bg-success/10 text-success hover:bg-success/15"
+						className="h-8 gap-1.5 text-xs"
 						disabled={isSavingNote}
 						onClick={async () => {
 							if (!channels || channels.length === 0) {
@@ -395,9 +424,9 @@ function NoteCard({
 									icon: "✨",
 									tags: ["AI", "Meeting"],
 								});
-								toast.success("Notes saved to your workspace library!");
+								toast.success("Saved to your notes");
 							} catch (_e) {
-								toast.error("Failed to save to library");
+								toast.error("Failed to save note");
 							} finally {
 								setIsSavingNote(false);
 							}
@@ -406,11 +435,11 @@ function NoteCard({
 						variant="outline"
 					>
 						{isSavingNote ? (
-							<div className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+							<Loader className="size-3.5 animate-spin" />
 						) : (
-							<Sparkles className="size-3.5" />
+							<FileText className="size-3.5" />
 						)}
-						Save to Note Library
+						Save as Note
 					</Button>
 				</div>
 			)}
@@ -420,20 +449,26 @@ function NoteCard({
 				<div className="border-t border-border">
 					{/* Generation selector */}
 					{hasGenerations && generations.length > 1 && (
-						<div className="px-5 py-2 bg-muted/40 border-b border-border flex items-center gap-2 overflow-x-auto">
-							<span className="text-[11px] text-muted-foreground font-medium shrink-0">
-								Version:
+						<div className="flex items-center gap-2 overflow-x-auto border-b border-border bg-muted/40 px-5 py-2">
+							<span className="shrink-0 text-xs font-medium text-muted-foreground">
+								Version
 							</span>
-							{generations.map((gen, idx) => (
-								<button
-									className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors shrink-0 ${(selectedGen === -1 && idx === generations.length - 1) || selectedGen === idx ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground hover:bg-muted"}`}
-									key={gen._id}
-									onClick={() => setSelectedGen(idx)}
-									type="button"
-								>
-									Gen #{gen.generationNumber}
-								</button>
-							))}
+							{generations.map((gen, idx) => {
+								const isActive =
+									(selectedGen === -1 && idx === generations.length - 1) ||
+									selectedGen === idx;
+								return (
+									<button
+										aria-pressed={isActive}
+										className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isActive ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground hover:bg-muted"}`}
+										key={gen._id}
+										onClick={() => setSelectedGen(idx)}
+										type="button"
+									>
+										v{gen.generationNumber}
+									</button>
+								);
+							})}
 						</div>
 					)}
 
@@ -460,18 +495,17 @@ function NoteCard({
 							<TabsContent className="m-0" value="summary">
 								{currentGen?.summary || note.summary ? (
 									<div className="space-y-3">
-										<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-											<FileText className="size-3.5 text-primary" /> Executive
+										<h4 className="text-xs font-medium text-muted-foreground">
 											Summary
 										</h4>
-										<div className="bg-muted/40 p-5 rounded-2xl border border-border">
-											<p className="text-sm text-foreground leading-[1.8]">
+										<div className="rounded-lg border border-border bg-muted/40 p-4">
+											<p className="text-sm leading-relaxed text-foreground">
 												{currentGen?.summary || note.summary}
 											</p>
 										</div>
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+									<div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
 										<FileText className="size-8 opacity-30" />
 										<p className="text-sm font-medium">
 											No summary generated yet
@@ -492,13 +526,12 @@ function NoteCard({
 										return (
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-														<CheckSquare className="size-3.5 text-success" />{" "}
-														Action Items
+													<h4 className="text-xs font-medium text-muted-foreground">
+														Action items
 													</h4>
 													<div className="flex items-center gap-2">
 														<Button
-															className="h-7 text-[10px] font-bold gap-1 bg-success/10 text-success hover:bg-success/15 border-success/20"
+															className="h-8 gap-1.5 text-xs"
 															disabled={isPushingTasks}
 															onClick={async () => {
 																try {
@@ -515,10 +548,10 @@ function NoteCard({
 																		})),
 																	});
 																	toast.success(
-																		`Successfully pushed ${genItems.length} tasks to dashboard!`
+																		`Added ${genItems.length} task${genItems.length !== 1 ? "s" : ""} to Tasks`
 																	);
 																} catch (_e) {
-																	toast.error("Failed to push tasks");
+																	toast.error("Failed to add tasks");
 																} finally {
 																	setIsPushingTasks(false);
 																}
@@ -527,48 +560,41 @@ function NoteCard({
 															variant="outline"
 														>
 															{isPushingTasks ? (
-																<div className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+																<Loader className="size-3.5 animate-spin" />
 															) : (
-																<Target className="size-3" />
+																<Plus className="size-3.5" />
 															)}
-															Push to Dashboard
+															Add to Tasks
 														</Button>
-														<Badge
-															className="text-[10px] font-bold"
-															variant="success"
-														>
-															{genItems.length} tasks
+														<Badge variant="primarySoft">
+															{genItems.length}
 														</Badge>
 													</div>
 												</div>
 												<div className="space-y-2">
 													{genItems.map((task, i) => (
 														<div
-															className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 transition-colors group"
+															className="rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
 															key={i}
 														>
 															<div className="flex items-start gap-3">
-																<div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-																	<span className="text-[11px] font-bold text-primary">
+																<div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
+																	<span className="text-xs font-semibold text-primary">
 																		{i + 1}
 																	</span>
 																</div>
-																<div className="flex-1 min-w-0">
-																	<p className="text-sm font-semibold text-foreground leading-snug">
+																<div className="min-w-0 flex-1">
+																	<p className="text-sm font-semibold leading-snug text-foreground">
 																		{task.title}
 																	</p>
-																	<div className="flex items-center gap-2 mt-2 flex-wrap">
+																	<div className="mt-2 flex flex-wrap items-center gap-2">
 																		{task.assignee && (
-																			<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
-																				<span className="size-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
-																					{task.assignee[0]?.toUpperCase()}
-																				</span>
+																			<span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
 																				{task.assignee}
 																			</span>
 																		)}
 																		{task.priority && (
 																			<Badge
-																				className="text-[10px] font-bold"
 																				variant={priorityBadgeVariant(
 																					task.priority
 																				)}
@@ -578,7 +604,7 @@ function NoteCard({
 																			</Badge>
 																		)}
 																		{task.dueDate && (
-																			<span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+																			<span className="flex items-center gap-1 text-xs text-muted-foreground">
 																				<Clock className="size-3" />{" "}
 																				{task.dueDate}
 																			</span>
@@ -595,15 +621,11 @@ function NoteCard({
 										return (
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-														<CheckSquare className="size-3.5 text-success" />{" "}
-														Action Items
+													<h4 className="text-xs font-medium text-muted-foreground">
+														Action items
 													</h4>
-													<Badge
-														className="text-[10px] font-bold"
-														variant="success"
-													>
-														{noteItems.length} tasks
+													<Badge variant="primarySoft">
+														{noteItems.length}
 													</Badge>
 												</div>
 												<div className="space-y-2">
@@ -630,32 +652,28 @@ function NoteCard({
 															: null;
 														return (
 															<div
-																className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 transition-colors"
+																className="rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
 																key={i}
 															>
 																<div className="flex items-start gap-3">
-																	<div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-																		<span className="text-[11px] font-bold text-primary">
+																	<div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
+																		<span className="text-xs font-semibold text-primary">
 																			{i + 1}
 																		</span>
 																	</div>
-																	<div className="flex-1 min-w-0">
-																		<p className="text-sm font-semibold text-foreground leading-snug">
+																	<div className="min-w-0 flex-1">
+																		<p className="text-sm font-semibold leading-snug text-foreground">
 																			{taskTitle}
 																		</p>
 																		{(assignee || priority) && (
-																			<div className="flex items-center gap-2 mt-2 flex-wrap">
+																			<div className="mt-2 flex flex-wrap items-center gap-2">
 																				{assignee && (
-																					<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
-																						<span className="size-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
-																							{assignee[0]?.toUpperCase()}
-																						</span>
+																					<span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
 																						{assignee}
 																					</span>
 																				)}
 																				{priority && (
 																					<Badge
-																						className="text-[10px] font-bold"
 																						variant={priorityBadgeVariant(
 																							priority
 																						)}
@@ -676,7 +694,7 @@ function NoteCard({
 										);
 									} else {
 										return (
-											<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+											<div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
 												<CheckSquare className="size-8 opacity-30" />
 												<p className="text-sm font-medium">
 													No action items found
@@ -701,30 +719,24 @@ function NoteCard({
 										return (
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-														<Target className="size-3.5 text-primary" /> Key
+													<h4 className="text-xs font-medium text-muted-foreground">
 														Decisions
 													</h4>
-													<Badge
-														className="text-[10px] font-bold"
-														variant="primarySoft"
-													>
-														{items.length} decisions
-													</Badge>
+													<Badge variant="primarySoft">{items.length}</Badge>
 												</div>
 												<div className="space-y-2">
 													{items.map((d: string, i: number) => (
 														<div
-															className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 transition-colors"
+															className="rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
 															key={i}
 														>
 															<div className="flex items-start gap-3">
-																<div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-																	<span className="text-[11px] font-bold text-primary">
+																<div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
+																	<span className="text-xs font-semibold text-primary">
 																		{i + 1}
 																	</span>
 																</div>
-																<p className="text-sm font-medium text-foreground leading-snug">
+																<p className="text-sm font-medium leading-snug text-foreground">
 																	{d}
 																</p>
 															</div>
@@ -735,7 +747,7 @@ function NoteCard({
 										);
 									} else {
 										return (
-											<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+											<div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
 												<Target className="size-8 opacity-30" />
 												<p className="text-sm font-medium">
 													No decisions recorded
@@ -751,20 +763,19 @@ function NoteCard({
 								{note.transcript ? (
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
-											<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-												<MessageSquare className="size-3.5 text-muted-foreground" />{" "}
-												Full Transcript
+											<h4 className="text-xs font-medium text-muted-foreground">
+												Transcript
 											</h4>
-											<span className="text-[10px] font-medium text-muted-foreground">
+											<span className="text-xs text-muted-foreground">
 												{note.transcript.length.toLocaleString()} characters
 											</span>
 										</div>
-										<div className="text-[12px] text-muted-foreground font-mono bg-muted/40 p-5 rounded-2xl whitespace-pre-wrap max-h-[400px] overflow-y-auto leading-relaxed border border-border selection:bg-primary/15">
+										<div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs leading-relaxed text-muted-foreground selection:bg-primary/15">
 											{note.transcript}
 										</div>
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+									<div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
 										<MessageSquare className="size-8 opacity-30" />
 										<p className="text-sm font-medium">
 											No transcript available

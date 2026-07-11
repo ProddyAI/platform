@@ -1,15 +1,16 @@
 "use client";
 
 import { isAfter, isBefore, isToday, startOfDay } from "date-fns";
-import { CheckSquare, Loader, Search, SlidersHorizontal } from "lucide-react";
+import { CheckSquare, Search, SlidersHorizontal } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AssignedIssuesList } from "@/features/board/components/assigned-issues-list";
 import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useGetTaskCategories } from "@/features/tasks/api/use-get-task-categories";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
@@ -178,12 +179,6 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 		return filtered;
 	}, [tasks, searchQuery, filterOptions]);
 
-	const handleTaskCreated = useCallback(() => {
-		toast.success("Task created successfully", {
-			description: "Your new task has been added to the list",
-		});
-	}, []);
-
 	return (
 		<div className="flex h-full flex-col">
 			<div className="flex flex-1 overflow-hidden">
@@ -191,6 +186,7 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 					<div className="flex items-center gap-2">
 						<div className="relative flex-1">
 							<Input
+								aria-label="Search tasks"
 								className="rounded-full bg-muted/50 pl-10 focus:bg-card"
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="Search tasks..."
@@ -200,9 +196,9 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 						</div>
 						<Button
 							aria-label="Open task filters"
-							className="md:hidden"
+							className="lg:hidden"
 							onClick={() => setFiltersOpen(true)}
-							size="iconSm"
+							size="icon"
 							variant="outline"
 						>
 							<SlidersHorizontal className="size-4" />
@@ -210,8 +206,13 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 					</div>
 
 					{isLoading ? (
-						<div className="flex h-40 items-center justify-center">
-							<Loader className="size-6 animate-spin text-primary" />
+						<div aria-busy="true" className="space-y-6">
+							<Skeleton className="h-10 w-full rounded-full" />
+							<div className="grid gap-4">
+								<Skeleton className="h-28 w-full rounded-2xl" />
+								<Skeleton className="h-28 w-full rounded-2xl" />
+								<Skeleton className="h-28 w-full rounded-2xl" />
+							</div>
 						</div>
 					) : (
 						<div className="space-y-6">
@@ -237,21 +238,24 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 									/>
 								)}
 							</div>
-							<div className="pt-4 border-t border-border">
-								<h2 className="text-lg font-medium text-foreground mb-4">
-									Create a new task
+							<div className="border-t pt-4">
+								<h2 className="mb-4 text-lg font-semibold text-foreground">
+									Create a task
 								</h2>
-								<TaskCreateForm
-									onSuccess={handleTaskCreated}
-									workspaceId={workspaceId}
-								/>
+								<TaskCreateForm workspaceId={workspaceId} />
+							</div>
+							<div className="border-t pt-4">
+								<h2 className="mb-4 text-lg font-semibold text-foreground">
+									Assigned issues
+								</h2>
+								<AssignedIssuesList workspaceId={workspaceId} />
 							</div>
 						</div>
 					)}
 				</PageShell>
 
 				<Sheet onOpenChange={setFiltersOpen} open={filtersOpen}>
-					<SheetContent className="w-[280px] p-0" side="right">
+					<SheetContent className="w-[300px] p-0" side="right">
 						<TaskSidebar
 							categories={categories}
 							categoriesLoading={categoriesLoading}

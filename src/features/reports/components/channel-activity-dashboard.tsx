@@ -319,12 +319,11 @@ const ChannelActivityDashboardContent = ({
 				</h2>
 				{isRefetching && (
 					<span
-						aria-label="Refreshing channel activity"
 						className="flex items-center gap-1.5 text-xs text-muted-foreground"
 						role="status"
 					>
-						<Loader className="size-3.5 animate-spin" />
-						Refreshing...
+						<Loader aria-hidden="true" className="size-3 animate-spin" />
+						Updating…
 					</span>
 				)}
 			</div>
@@ -449,7 +448,7 @@ const ChannelActivityDashboardContent = ({
 									<p className="text-muted-foreground text-sm">
 										No time tracking data available
 									</p>
-									<p className="text-muted-foreground/70 text-xs mt-1">
+									<p className="text-muted-foreground text-xs mt-1">
 										Time spent data will appear as users spend time in channels
 									</p>
 								</div>

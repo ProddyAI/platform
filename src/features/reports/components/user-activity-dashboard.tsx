@@ -182,11 +182,11 @@ export const UserActivityDashboard = ({
 		return timeB - timeA;
 	});
 
-	// Prepare data for charts
+	// Prepare data for charts. No explicit color: single-series bars take the
+	// chart primitive's default (primary), matching the channel dashboard.
 	const messageCountData = sortedByMessages.slice(0, 10).map((item) => ({
 		label: item.member?.user?.name || "Unknown",
 		value: item.messageCount,
-		color: "bg-secondary",
 	}));
 
 	const timeSpentData = sortedByTimeSpent
@@ -353,7 +353,7 @@ export const UserActivityDashboard = ({
 									<p className="text-muted-foreground text-sm">
 										No time tracking data available
 									</p>
-									<p className="text-muted-foreground/70 text-xs mt-1">
+									<p className="text-muted-foreground text-xs mt-1">
 										Time spent data will appear as users interact with the
 										workspace
 									</p>

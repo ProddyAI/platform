@@ -49,7 +49,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -268,33 +267,46 @@ function formatRelativeTime(timestamp: number): string {
 	return new Date(timestamp).toLocaleDateString();
 }
 
-function ProddyChatAvatar() {
+function ProddyChatAvatar({ className }: { className?: string }) {
+	// Solid brand mark: white icon on deep-purple primary reads as a logo and
+	// clears WCAG AA, unlike a tinted icon on the light fallback surface.
 	return (
-		<Avatar className="size-9 bg-primary/10 ring-2 ring-primary/20">
-			<AvatarFallback>
-				<Bot className="size-5 text-primary" />
-			</AvatarFallback>
-		</Avatar>
-	);
-}
-
-function ChatLoadingBody() {
-	return (
-		<div className="min-w-0 flex-1">
-			<p className="text-sm font-medium text-muted-foreground">Thinking…</p>
+		<div
+			className={cn(
+				"flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/25",
+				className
+			)}
+		>
+			<Bot className="size-5" />
 		</div>
 	);
 }
 
 function ChatLoadingIndicator() {
+	// Mirrors an assistant MessageBubble (brand mark + bubble) so the reply
+	// animates in place. Dots reuse the app's typing-indicator convention.
 	return (
-		<div className="flex justify-start">
-			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3 flex items-start gap-2">
-				<div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-					<Zap className="size-4 animate-pulse text-primary" />
+		<div className="flex justify-start gap-3">
+			<ProddyChatAvatar className="mt-0.5 size-8" />
+			<div className="flex items-center gap-2 rounded-2xl rounded-tl-md bg-muted px-4 py-3.5">
+				<div
+					aria-label="Assistant is typing"
+					className="flex gap-1"
+					role="status"
+				>
+					<span
+						className="size-1.5 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
+						style={{ animationDelay: "0ms" }}
+					/>
+					<span
+						className="size-1.5 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
+						style={{ animationDelay: "200ms" }}
+					/>
+					<span
+						className="size-1.5 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
+						style={{ animationDelay: "400ms" }}
+					/>
 				</div>
-				<ChatLoadingBody />
-				<Loader className="size-4 shrink-0 animate-spin text-muted-foreground" />
 			</div>
 		</div>
 	);
@@ -1160,18 +1172,29 @@ function MessageBubble({
 	onNavigate: (action: NavigationAction) => void;
 }) {
 	const isUser = message.sender === "user";
-	return (
-		<div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-			<div
-				className={`max-w-[80%] rounded-lg px-4 py-3 ${
-					isUser ? "bg-primary text-primary-foreground" : "bg-muted"
-				}`}
-			>
-				{isUser ? (
+	const time = message.timestamp.toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+
+	if (isUser) {
+		return (
+			<div className="flex justify-end">
+				<div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-primary-foreground">
 					<p className="text-sm">{message.content}</p>
-				) : (
-					<AssistantMarkdown content={message.content} />
-				)}
+					<p className="mt-1.5 text-right text-xs text-primary-foreground/70">
+						{time}
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex justify-start gap-3">
+			<ProddyChatAvatar className="mt-0.5 size-8" />
+			<div className="min-w-0 max-w-[80%] rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+				<AssistantMarkdown content={message.content} />
 				<MessageSourceBadges sources={message.sources} />
 				{message.actions && message.actions.length > 0 ? (
 					<MessageActions
@@ -1180,12 +1203,7 @@ function MessageBubble({
 						onNavigate={onNavigate}
 					/>
 				) : null}
-				<p className="mt-2 text-right text-xs opacity-70">
-					{message.timestamp.toLocaleTimeString([], {
-						hour: "2-digit",
-						minute: "2-digit",
-					})}
-				</p>
+				<p className="mt-2 text-xs text-muted-foreground">{time}</p>
 			</div>
 		</div>
 	);

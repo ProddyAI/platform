@@ -293,7 +293,7 @@ export const OverviewDashboard = ({
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg">
 				<BarChartIcon className="size-12 text-muted-foreground mb-2" />
-				<h3 className="text-lg font-medium">No Overview Data</h3>
+				<h3 className="text-lg font-medium">No overview data</h3>
 				<p className="text-sm text-muted-foreground">
 					There is no data available for the selected time period.
 				</p>
@@ -345,7 +345,7 @@ export const OverviewDashboard = ({
 						</TooltipTrigger>
 						<TooltipContent className="max-w-xs" side="top">
 							<div className="space-y-1">
-								<p className="font-medium text-sm">Active Users:</p>
+								<p className="font-medium text-sm">Active users</p>
 								{stableActiveUsersData?.activeUsers &&
 								stableActiveUsersData.activeUsers.length > 0 ? (
 									<div className="space-y-1">
@@ -448,7 +448,7 @@ export const OverviewDashboard = ({
 									<h3 className="text-lg font-medium text-muted-foreground mb-2">
 										No activity data available
 									</h3>
-									<p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
+									<p className="text-sm text-muted-foreground max-w-sm mx-auto">
 										Messages will appear here once users start chatting in this
 										workspace
 									</p>
@@ -483,8 +483,8 @@ export const OverviewDashboard = ({
 								{/* Task Statistics */}
 								<div className="w-full space-y-2 px-2">
 									<div className="grid grid-cols-2 gap-2">
-										<div className="text-center p-2 bg-chart-2/10 dark:bg-chart-2/20 rounded-lg border border-chart-2/30">
-											<div className="text-xl font-bold text-foreground">
+										<div className="text-center p-2 bg-success/10 dark:bg-success/20 rounded-lg border border-success/30">
+											<div className="text-xl font-semibold tabular-nums text-foreground">
 												{stableTaskData.completedTasks}
 											</div>
 											<div className="text-xs text-muted-foreground">
@@ -492,7 +492,7 @@ export const OverviewDashboard = ({
 											</div>
 										</div>
 										<div className="text-center p-2 bg-muted/40 rounded-lg border border-muted-foreground/20">
-											<div className="text-xl font-bold text-foreground">
+											<div className="text-xl font-semibold tabular-nums text-foreground">
 												{stableTaskData.totalTasks -
 													stableTaskData.completedTasks}
 											</div>
@@ -513,7 +513,7 @@ export const OverviewDashboard = ({
 										</div>
 										<div className="w-full bg-muted rounded-full h-1.5">
 											<div
-												className="bg-chart-2 h-1.5 rounded-full transition-all duration-500"
+												className="bg-success h-1.5 rounded-full transition-[width] duration-slow ease-out"
 												style={{
 													width: `${stableTaskData.totalTasks > 0 ? (stableTaskData.completedTasks / stableTaskData.totalTasks) * 100 : 0}%`,
 												}}
@@ -529,7 +529,7 @@ export const OverviewDashboard = ({
 									<h3 className="text-lg font-medium text-muted-foreground mb-2">
 										No task data available
 									</h3>
-									<p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
+									<p className="text-sm text-muted-foreground max-w-sm mx-auto">
 										Tasks will appear here once they are created in this
 										workspace
 									</p>

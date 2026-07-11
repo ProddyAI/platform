@@ -112,7 +112,7 @@ export const BarChart = ({
 					<button
 						aria-disabled={!onBarClick}
 						aria-label={`${item.label}: ${formatValue(item.value)}`}
-						className="relative flex flex-col items-center justify-end flex-1 group"
+						className="relative flex flex-col items-center justify-end flex-1 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 						data-bar-id={item.id ?? item.label}
 						data-bar-index={index}
 						key={item.id ?? item.label}
@@ -137,7 +137,7 @@ export const BarChart = ({
 					>
 						<div
 							className={cn(
-								"relative w-full rounded-t-md transition-all duration-300",
+								"relative w-full rounded-t-md transition-[height,background-color,opacity] duration-slow ease-out",
 								!item.color && (isActive ? "bg-primary" : "bg-primary/15"),
 								animate &&
 									"animate-in fade-in-50 slide-in-from-bottom-3 motion-reduce:animate-none",
@@ -147,7 +147,6 @@ export const BarChart = ({
 								height: `${(percentage / 100) * actualBarHeight}px`,
 								backgroundColor: item.color,
 								opacity: item.color ? (isActive ? 1 : 0.25) : undefined,
-								transitionDelay: animate ? `${index * 50}ms` : "0ms",
 							}}
 						/>
 

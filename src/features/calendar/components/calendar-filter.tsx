@@ -29,9 +29,10 @@ export type CalendarFilterOptions = {
 
 // Single source of truth for per-event-type copy, shared by the filter
 // trigger dots and the toggle rows below. Event types are told apart by icon
-// + label, not color — quiet chips, matches the count badges in
-// calendar-header.tsx. Switches fall back to the Switch primitive's default
-// (primary when checked).
+// + label, not color — quiet chips. Labels match the count chips in
+// calendar-header.tsx and the event-card meta lines in page.tsx, so each
+// event type has one name everywhere. Switches fall back to the Switch
+// primitive's default (primary when checked).
 const EVENT_TYPE_META: Record<
 	EventType,
 	{
@@ -40,15 +41,15 @@ const EVENT_TYPE_META: Record<
 	}
 > = {
 	message: {
-		label: "Message Events",
+		label: "Messages",
 		icon: MessageSquare,
 	},
 	"board-card": {
-		label: "Board Assignments",
+		label: "Board cards",
 		icon: LayoutGrid,
 	},
 	task: {
-		label: "My Tasks",
+		label: "Tasks",
 		icon: CheckSquare,
 	},
 };
@@ -84,7 +85,10 @@ export const CalendarFilter = ({
 		return filterOptions.eventTypes.includes(type);
 	};
 
-	const allTypesSelected = filterOptions.eventTypes.length === 3; // All 3 types selected
+	const allTypesSelected =
+		filterOptions.eventTypes.length === EVENT_TYPE_ORDER.length;
+	const someTypesHidden =
+		filterOptions.eventTypes.length > 0 && !allTypesSelected;
 
 	return (
 		<div className="flex items-center gap-2">
@@ -93,38 +97,32 @@ export const CalendarFilter = ({
 					<Button
 						className={cn(
 							"flex items-center gap-1.5 transition-standard",
-							filterOptions.eventTypes.length > 0 &&
-								filterOptions.eventTypes.length < 3 &&
-								"bg-muted border-border"
+							someTypesHidden && "border-border bg-muted"
 						)}
 						variant="outline"
 					>
 						<Filter className="size-4" />
 						<span>Filter</span>
-						{filterOptions.eventTypes.length > 0 &&
-							filterOptions.eventTypes.length < 3 && (
-								<div
-									aria-label={`${filterOptions.eventTypes.length} of 3 event types shown`}
-									className="flex ml-1 gap-1"
-									role="img"
-								>
-									{EVENT_TYPE_ORDER.filter((type) =>
-										filterOptions.eventTypes.includes(type)
-									).map((type) => (
-										<div
-											className="size-2 rounded-full bg-primary"
-											key={type}
-										/>
-									))}
-								</div>
-							)}
+						{someTypesHidden && (
+							<div
+								aria-label={`${filterOptions.eventTypes.length} of ${EVENT_TYPE_ORDER.length} event types shown`}
+								className="ml-1 flex gap-1"
+								role="img"
+							>
+								{EVENT_TYPE_ORDER.filter((type) =>
+									filterOptions.eventTypes.includes(type)
+								).map((type) => (
+									<div className="size-2 rounded-full bg-primary" key={type} />
+								))}
+							</div>
+						)}
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuLabel className="flex items-center justify-between">
-						<span>Event Types</span>
+						<span>Event types</span>
 						<Button
-							className="h-7 text-xs px-2"
+							className="h-7 px-2 text-xs"
 							onClick={() =>
 								onFilterChange({
 									eventTypes: allTypesSelected ? [] : EVENT_TYPE_ORDER,
@@ -133,7 +131,7 @@ export const CalendarFilter = ({
 							size="sm"
 							variant="ghost"
 						>
-							{allTypesSelected ? "Clear All" : "Select All"}
+							{allTypesSelected ? "Clear all" : "Select all"}
 						</Button>
 					</DropdownMenuLabel>
 					<DropdownMenuSeparator />
@@ -146,10 +144,10 @@ export const CalendarFilter = ({
 
 							return (
 								<div
-									className="flex items-center justify-between space-x-2"
+									className="flex items-center justify-between gap-2"
 									key={type}
 								>
-									<div className="flex items-center space-x-2">
+									<div className="flex items-center gap-2">
 										<Icon className="size-4 text-muted-foreground" />
 										<Label className="cursor-pointer" htmlFor={id}>
 											{meta.label}

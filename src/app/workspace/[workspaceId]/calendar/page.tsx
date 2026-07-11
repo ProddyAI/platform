@@ -1,11 +1,12 @@
 "use client";
 
 import { addMonths, getMonth, getYear, subMonths } from "date-fns";
-import { CalendarIcon, Loader } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import Renderer from "@/components/messaging/renderer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-events";
 import type { CalendarFilterOptions } from "@/features/calendar/components/calendar-filter";
 import { CalendarHeader } from "@/features/calendar/components/calendar-header";
@@ -231,7 +232,7 @@ const CalendarContent = ({
 		const projectId = projectIdByBoardChannelId.get(boardChannelId);
 
 		if (!projectId) {
-			return `/workspace/${workspaceId}/issues`;
+			return `/workspace/${workspaceId}/tasks`;
 		}
 
 		return `/workspace/${workspaceId}/project/${projectId}/board`;
@@ -286,6 +287,21 @@ const CalendarContent = ({
 	const weeks = generateCalendarDays();
 	const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+	// Today's date only needs computing once per render, not once per cell.
+	const now = new Date();
+	const isToday = (day: number) =>
+		now.getDate() === day &&
+		now.getMonth() === currentDate.getMonth() &&
+		now.getFullYear() === currentDate.getFullYear();
+
+	// Static rows so Tailwind can compile them; months span 4–6 weeks.
+	const gridRowsClass =
+		weeks.length <= 4
+			? "grid-rows-4"
+			: weeks.length === 5
+				? "grid-rows-5"
+				: "grid-rows-6";
+
 	return (
 		<div className="flex flex-1 flex-col bg-background overflow-hidden">
 			<CalendarHeader
@@ -298,13 +314,34 @@ const CalendarContent = ({
 			/>
 			<div className="flex-1 overflow-auto p-4">
 				{isLoading ? (
-					<div className="flex h-full items-center justify-center">
-						<Loader className="size-6 animate-spin text-muted-foreground" />
+					// Skeleton mirrors the real month grid so the layout doesn't jump
+					// when events arrive: weekday labels are static and render for real.
+					<div className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card">
+						<div className="grid shrink-0 grid-cols-7 gap-px border-b bg-muted text-center">
+							{weekdays.map((day) => (
+								<div
+									className="bg-card p-2 text-xs font-medium text-muted-foreground"
+									key={day}
+								>
+									{day}
+								</div>
+							))}
+						</div>
+						<div className="grid flex-1 grid-cols-7 grid-rows-6 gap-px bg-muted">
+							{Array.from({ length: 42 }, (_, index) => (
+								<div className="bg-card p-1" key={`skeleton-day-${index}`}>
+									<Skeleton className="ml-auto mt-0.5 mr-0.5 size-4 rounded-full" />
+									{index % 5 === 2 && (
+										<Skeleton className="mt-2 h-8 w-full rounded-md" />
+									)}
+								</div>
+							))}
+						</div>
 					</div>
 				) : (
-					<div className="h-full overflow-hidden rounded-2xl border bg-card">
-						{/* Calendar header */}
-						<div className="grid grid-cols-7 gap-px border-b bg-muted text-center">
+					<div className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card">
+						{/* Weekday header */}
+						<div className="grid shrink-0 grid-cols-7 gap-px border-b bg-muted text-center">
 							{weekdays.map((day) => (
 								<div
 									className="bg-card p-2 text-xs font-medium text-muted-foreground"
@@ -315,14 +352,19 @@ const CalendarContent = ({
 							))}
 						</div>
 						{/* Calendar grid */}
-						<div className="grid h-[calc(100%-1rem)] grid-cols-7 grid-rows-6 gap-px bg-muted">
+						<div
+							className={cn(
+								"grid flex-1 grid-cols-7 gap-px overflow-hidden bg-muted",
+								gridRowsClass
+							)}
+						>
 							{weeks.flat().map((dayObj, index) => (
 								<div
-									className={`relative bg-card p-1 ${
-										dayObj.isCurrentMonth
-											? ""
-											: "text-muted-foreground opacity-50"
-									}`}
+									className={cn(
+										"relative p-1",
+										// Out-of-month cells read as a quieter surface, not blank days.
+										dayObj.isCurrentMonth ? "bg-card" : "bg-muted/50"
+									)}
 									key={
 										dayObj.day !== null ? `day-${dayObj.day}` : `empty-${index}`
 									}
@@ -330,22 +372,19 @@ const CalendarContent = ({
 									{dayObj.day && (
 										<>
 											<div
-												className={`absolute right-1 top-1 text-xs ${
-													dayObj.day &&
-													new Date().getDate() === dayObj.day &&
-													new Date().getMonth() === currentDate.getMonth() &&
-													new Date().getFullYear() === currentDate.getFullYear()
-														? "size-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground -mt-0.5 -mr-0.5"
-														: ""
-												}`}
+												className={cn(
+													"absolute right-1 top-1 text-xs",
+													isToday(dayObj.day) &&
+														"-mr-0.5 -mt-0.5 flex size-5 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground"
+												)}
 											>
 												{dayObj.day}
 											</div>
 											{dayObj.events && dayObj.events.length > 0 && (
-												<div className="mt-4 flex max-h-[80px] flex-col gap-1 overflow-y-auto">
+												<div className="mt-4 flex max-h-20 flex-col gap-1 overflow-y-auto">
 													{dayObj.events.map((event) => (
 														<Link
-															className="block rounded-md border border-primary/20 bg-primary/10 p-1 text-[10px] leading-tight text-primary transition-standard hover:bg-primary/15"
+															className="block rounded-md border border-primary/20 bg-primary/10 p-1 text-[10px] leading-tight text-primary transition-fast hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 															href={
 																event.type === "board-card" && event.boardCard
 																	? getBoardCardHref(event.boardCard.channelId)
@@ -369,7 +408,9 @@ const CalendarContent = ({
 															}
 														>
 															{event.time && (
-																<span className="font-bold">{event.time}</span>
+																<span className="font-medium tabular-nums">
+																	{event.time}
+																</span>
 															)}
 															<div className="truncate">
 																{event.type === "board-card" &&
@@ -378,23 +419,25 @@ const CalendarContent = ({
 																		<div className="font-medium">
 																			{event.boardCard.title}
 																		</div>
-																		{event.type === "board-card" &&
-																			"boardCard" in event &&
-																			event.boardCard?.description && (
-																				<div className="text-[10px] text-muted-foreground truncate">
-																					{event.boardCard.description}
-																				</div>
-																			)}
+																		{event.boardCard.description && (
+																			<div className="truncate text-[10px] text-muted-foreground">
+																				{event.boardCard.description}
+																			</div>
+																		)}
 																	</>
 																) : event.type === "task" && event.task ? (
 																	<>
 																		<div
-																			className={`font-medium ${event.task.completed ? "line-through text-muted-foreground" : ""}`}
+																			className={cn(
+																				"font-medium",
+																				event.task.completed &&
+																					"text-muted-foreground line-through"
+																			)}
 																		>
 																			{event.task.title}
 																		</div>
 																		{event.task.description && (
-																			<div className="text-[10px] text-muted-foreground truncate">
+																			<div className="truncate text-[10px] text-muted-foreground">
 																				{event.task.description}
 																			</div>
 																		)}
@@ -408,11 +451,11 @@ const CalendarContent = ({
 																	"Event"
 																)}
 															</div>
-															<div className="text-[10px] text-muted-foreground flex items-center justify-between">
+															<div className="flex items-center justify-between text-[10px] text-muted-foreground">
 																<span>
 																	{event.type === "board-card" ? (
 																		<>
-																			Board Card in {event.boardCard?.listTitle}
+																			Board card in {event.boardCard?.listTitle}
 																		</>
 																	) : event.type === "task" ? (
 																		<>
@@ -423,8 +466,7 @@ const CalendarContent = ({
 																		</>
 																	) : (
 																		<>
-																			Calendar Event by{" "}
-																			{event?.user?.name || "Unknown"}
+																			Event by {event?.user?.name || "Unknown"}
 																		</>
 																	)}
 																</span>

@@ -324,37 +324,34 @@ export const LiveHeader = ({
 
 			{/* Second Row - Tags */}
 			{((showTags && onTagsChange) || (showSearch && onSearchChange)) && (
-				<div className="flex items-center justify-between gap-4">
-					{/* Right - Tags or Search */}
-					<div className="flex items-center gap-4">
-						{/* Tags for both notes and canvas */}
-						{showTags && onTagsChange && (
-							<div className="flex items-center gap-2">
-								<Tag className="size-4 text-muted-foreground" />
-								<TagInput
-									className="max-w-md"
-									onTagsChange={onTagsChange}
-									placeholder="Add tags..."
-									tags={tags}
+				<div className="flex items-center gap-4">
+					{/* Tags for both notes and canvas */}
+					{showTags && onTagsChange && (
+						<div className="flex items-center gap-2">
+							<Tag className="size-4 text-muted-foreground" />
+							<TagInput
+								className="max-w-md"
+								onTagsChange={onTagsChange}
+								placeholder="Add tags..."
+								tags={tags}
+							/>
+						</div>
+					)}
+
+					{/* Search Bar (if enabled) */}
+					{showSearch && onSearchChange && (
+						<div className="flex items-center gap-2 max-w-sm">
+							<div className="relative">
+								<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+								<Input
+									className="pl-9"
+									onChange={(e) => onSearchChange(e.target.value)}
+									placeholder={`Search ${type}...`}
+									value={searchQuery}
 								/>
 							</div>
-						)}
-
-						{/* Search Bar (if enabled) */}
-						{showSearch && onSearchChange && (
-							<div className="flex items-center gap-2 max-w-sm">
-								<div className="relative">
-									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
-									<Input
-										className="pl-9"
-										onChange={(e) => onSearchChange(e.target.value)}
-										placeholder={`Search ${type}...`}
-										value={searchQuery}
-									/>
-								</div>
-							</div>
-						)}
-					</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
