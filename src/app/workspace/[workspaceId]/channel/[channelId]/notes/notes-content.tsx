@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, FileText } from "lucide-react";
+import { Brain, FileText, Loader2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -240,19 +240,27 @@ export const NotesContent = ({
 								isLoading={false}
 								note={memoizedNote}
 							/>
+						) : activeNoteId ? (
+							// A note is selected but its content is still loading — show a
+							// quiet loader rather than flashing the empty-state CTA.
+							<div className="flex size-full items-center justify-center">
+								<div className="flex flex-col items-center gap-3 text-muted-foreground">
+									<Loader2 className="size-6 animate-spin text-primary" />
+									<span className="text-sm">Loading note…</span>
+								</div>
+							</div>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">
 								<div className="text-center space-y-4 max-w-sm px-4">
-									<div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-										<FileText className="h-8 w-8 text-primary" />
+									<div className="mx-auto size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+										<FileText className="size-8 text-primary" />
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold mb-1">
+										<h3 className="text-lg font-semibold mb-1 text-foreground">
 											No note selected
 										</h3>
 										<p className="text-sm text-muted-foreground">
-											Choose a note from the sidebar or create a new one to
-											start writing.
+											Choose a note from the sidebar, or start a new one below.
 										</p>
 									</div>
 									<Button
@@ -265,7 +273,7 @@ export const NotesContent = ({
 										}}
 										variant="primary"
 									>
-										<Brain className="h-4 w-4" />
+										<Brain className="size-4" />
 										Start AI Meeting Note
 									</Button>
 								</div>

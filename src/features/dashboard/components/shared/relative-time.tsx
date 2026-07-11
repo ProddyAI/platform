@@ -43,7 +43,7 @@ export const RelativeTime = ({
 				className
 			)}
 		>
-			<Clock className={cn("shrink-0", iconClassName ?? "h-3 w-3")} />
+			<Clock className={cn("shrink-0", iconClassName ?? "size-3")} />
 			{text}
 		</span>
 	);

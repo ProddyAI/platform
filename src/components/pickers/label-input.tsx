@@ -128,9 +128,9 @@ const LabelInput: React.FC<LabelInputProps> = ({
 				<div className="flex flex-wrap gap-1 mb-2">
 					{Array.from(new Set(selectedLabels)).map((label) => (
 						<Badge
-							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
+							className="flex items-center gap-1"
 							key={label}
-							variant="secondary"
+							variant="primarySoft"
 						>
 							{label}
 							<button
@@ -139,7 +139,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 								onClick={() => removeLabel(label)}
 								type="button"
 							>
-								<X className="h-3 w-3" />
+								<X className="size-3" />
 							</button>
 						</Badge>
 					))}
@@ -169,15 +169,15 @@ const LabelInput: React.FC<LabelInputProps> = ({
 			{/* Suggestions dropdown */}
 			{showSuggestions && (
 				<div
-					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-popover border rounded-md shadow-lg"
+					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-popover border rounded-xl shadow-lg"
 					ref={suggestionsRef}
 					role="listbox"
 				>
 					{filteredSuggestions.map((suggestion) => (
 						<button
 							className={cn(
-								"block w-full px-3 py-1.5 text-left cursor-pointer hover:bg-secondary/10",
-								"text-sm text-foreground focus:outline-none focus-visible:bg-secondary/10"
+								"block w-full px-3 py-1.5 text-left cursor-pointer hover:bg-accent",
+								"text-sm text-foreground focus:outline-none focus-visible:bg-accent"
 							)}
 							key={suggestion}
 							onClick={() => handleSuggestionClick(suggestion)}

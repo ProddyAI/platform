@@ -51,12 +51,12 @@ export const FeaturesSection = () => {
 								? { opacity: 1, y: 0 }
 								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 						}
-						className="bg-card rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
+						className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
 						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: 0.2 }}
 					>
 						<div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
-							<Search className="text-primary h-6 w-6" />
+							<Search className="text-primary size-6" />
 						</div>
 						<h3 className="text-xl font-semibold mb-2">Contextual Search</h3>
 						<p className="text-muted-foreground mb-4">
@@ -83,12 +83,12 @@ export const FeaturesSection = () => {
 								? { opacity: 1, y: 0 }
 								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 						}
-						className="bg-card rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
+						className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
 						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: 0.3 }}
 					>
 						<div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
-							<Calendar className="text-primary h-6 w-6" />
+							<Calendar className="text-primary size-6" />
 						</div>
 						<h3 className="text-xl font-semibold mb-2">
 							Schedule Intelligence
@@ -117,12 +117,12 @@ export const FeaturesSection = () => {
 								? { opacity: 1, y: 0 }
 								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 						}
-						className="bg-card rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
+						className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
 						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: 0.4 }}
 					>
 						<div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
-							<Brain className="text-primary h-6 w-6" />
+							<Brain className="text-primary size-6" />
 						</div>
 						<h3 className="text-xl font-semibold mb-2">Workspace Memory</h3>
 						<p className="text-muted-foreground mb-4">

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { PLANS, type PlanName } from "@/../convex/billing/plans";
+import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -143,19 +144,11 @@ export function BillingSection({
 
 	if (!canManageBilling) {
 		return (
-			<div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in duration-300">
-				<div className="bg-muted p-6 rounded-full mb-6">
-					<Lock className="size-12 text-muted-foreground" />
-				</div>
-				<h2 className="text-2xl font-bold text-foreground mb-2">
-					Billing is restricted to workspace owners.
-				</h2>
-				<p className="text-muted-foreground max-w-md mx-auto">
-					Only a workspace owner can view payment details, update plans, or
-					manage billing. Please contact the workspace owner if you need a
-					billing change.
-				</p>
-			</div>
+			<EmptyState
+				description="Only a workspace owner can view payment details, update plans, or manage billing. Please contact the workspace owner if you need a billing change."
+				icon={Lock}
+				title="Billing is restricted to workspace owners."
+			/>
 		);
 	}
 
@@ -362,7 +355,7 @@ export function BillingSection({
 	const billingDetails = showBillingSummary ? (
 		<div className="space-y-4">
 			{planName !== "free" && (
-				<div className="rounded-md border p-3">
+				<div className="rounded-xl border bg-card p-3">
 					<p className="text-xs text-muted-foreground">Current billing total</p>
 					<p className="text-lg font-semibold">
 						{formatMoney(
@@ -382,28 +375,28 @@ export function BillingSection({
 			)}
 
 			<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-				<div className="rounded-md border p-3">
+				<div className="rounded-xl border bg-card p-3">
 					<p className="text-xs text-muted-foreground">Plan amount</p>
 					<p className="text-lg font-semibold">
 						{formatMoney(planSubtotalForDisplay, billingSummary?.currency) ??
 							"$0.00"}
 					</p>
 				</div>
-				<div className="rounded-md border p-3">
+				<div className="rounded-xl border bg-card p-3">
 					<p className="text-xs text-muted-foreground">Tax paid</p>
 					<p className="text-lg font-semibold">
 						{formatMoney(taxTotalForDisplay, billingSummary?.currency) ??
 							"$0.00"}
 					</p>
 				</div>
-				<div className="rounded-md border p-3">
+				<div className="rounded-xl border bg-card p-3">
 					<p className="text-xs text-muted-foreground">Refunded</p>
 					<p className="text-lg font-semibold">
 						{formatMoney(refundedTotalForDisplay, billingSummary?.currency) ??
 							"$0.00"}
 					</p>
 				</div>
-				<div className="rounded-md border p-3">
+				<div className="rounded-xl border bg-card p-3">
 					<p className="text-xs text-muted-foreground">Paid after refunds</p>
 					<p className="text-lg font-semibold">
 						{formatMoney(netPaidForDisplay, billingSummary?.currency) ??
@@ -412,7 +405,7 @@ export function BillingSection({
 				</div>
 			</div>
 
-			<div className="flex items-center gap-3 rounded-md border p-3">
+			<div className="flex items-center gap-3 rounded-xl border bg-card p-3">
 				<CalendarDays className="size-5 text-muted-foreground" />
 				<div>
 					<p className="text-sm font-medium">
@@ -442,7 +435,7 @@ export function BillingSection({
 			<div className="space-y-2">
 				<p className="text-sm font-medium">Recent billing activity</p>
 				{billingHistory.length ? (
-					<div className="max-h-72 divide-y overflow-y-auto rounded-md border">
+					<div className="max-h-72 divide-y overflow-y-auto rounded-xl border bg-card">
 						{billingHistory.slice(0, 10).map((entry) => (
 							<div
 								className="flex items-center justify-between gap-4 p-3"
@@ -465,7 +458,7 @@ export function BillingSection({
 									<p
 										className={`text-sm font-semibold ${
 											entry.type === "refund"
-												? "text-emerald-600"
+												? "text-success"
 												: "text-foreground"
 										}`}
 									>
@@ -489,7 +482,7 @@ export function BillingSection({
 						))}
 					</div>
 				) : (
-					<p className="rounded-md border p-3 text-sm text-muted-foreground">
+					<p className="rounded-xl border bg-card p-3 text-sm text-muted-foreground">
 						No payments recorded yet. New Dodo payments and fair-billing refunds
 						will appear here.
 					</p>
@@ -530,7 +523,7 @@ export function BillingSection({
 									<h3 className="text-3xl font-semibold leading-none">
 										{currentPlan.label}
 									</h3>
-									<Badge className="bg-secondary px-3 py-1 text-white hover:bg-secondary">
+									<Badge className="px-3 py-1" variant="primarySoft">
 										{currentPriceLabel}
 									</Badge>
 								</div>
@@ -563,7 +556,7 @@ export function BillingSection({
 								)}
 								{planName !== "enterprise" ? (
 									<Button
-										className="bg-secondary px-5 text-white shadow-md hover:bg-secondary/90"
+										className="px-5"
 										onClick={() =>
 											openPlanChange(planName === "free" ? "pro" : "enterprise")
 										}
@@ -586,21 +579,21 @@ export function BillingSection({
 						</div>
 					</div>
 					<CardContent className="grid gap-3 p-6 sm:grid-cols-3">
-						<div className="rounded-md border bg-background p-4">
+						<div className="rounded-xl border bg-card p-3">
 							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
 								<Users className="size-4 text-primary" />
 								Seats
 							</div>
 							<p className="text-xl font-semibold">{seatLabel}</p>
 						</div>
-						<div className="rounded-md border bg-background p-4">
+						<div className="rounded-xl border bg-card p-3">
 							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
 								<CalendarDays className="size-4 text-primary" />
 								Billing
 							</div>
 							<p className="text-xl font-semibold">{nextBillingLabel}</p>
 						</div>
-						<div className="rounded-md border bg-background p-4">
+						<div className="rounded-xl border bg-card p-3">
 							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
 								<ShieldCheck className="size-4 text-primary" />
 								Status
@@ -689,12 +682,12 @@ function PlanOptionCard({
 	const isPaid = optionName !== "free";
 	return (
 		<div
-			className={`flex min-h-[250px] flex-col rounded-lg border p-5 transition-standard ${
+			className={`flex min-h-[250px] flex-col rounded-2xl border p-5 transition-standard ${
 				isCurrent
 					? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
 					: isPaid
 						? "border-primary/40 bg-primary/[0.03] hover:border-primary/70 hover:bg-primary/5"
-						: "border-border bg-background hover:border-primary/30"
+						: "border-border bg-card hover:border-primary/30"
 			}`}
 		>
 			<PlanOptionHeader
@@ -768,16 +761,12 @@ function PlanOptionAction({
 	return (
 		<div className="mt-5 border-t pt-4">
 			{isCurrent ? (
-				<div className="flex h-9 items-center justify-center rounded-[10px] border border-primary/20 bg-background text-sm font-medium text-primary">
+				<div className="flex h-9 items-center justify-center rounded-full border border-primary/20 bg-card text-sm font-medium text-primary">
 					Current Plan
 				</div>
 			) : (
 				<Button
-					className={`w-full ${
-						optionName !== "free" && planName !== "enterprise"
-							? "bg-secondary text-white shadow-md hover:bg-secondary/90"
-							: ""
-					}`}
+					className="w-full"
 					disabled={optionName === "free" && cancelLoading}
 					onClick={() => handlePlanAction(optionName)}
 					size="sm"

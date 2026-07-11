@@ -15,6 +15,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 // A due date only reads as overdue while the task is still open; matches the
 // overdue rule in task-item.tsx.
@@ -49,7 +50,7 @@ export const TasksWidget = ({
 	);
 
 	// Fetch your tasks
-	const { data: tasks } = useGetTasks({ workspaceId });
+	const { data: tasks, isLoading: tasksLoading } = useGetTasks({ workspaceId });
 	const { data: categories } = useGetTaskCategories({ workspaceId });
 	const updateTask = useUpdateTask();
 
@@ -120,28 +121,32 @@ export const TasksWidget = ({
 	const getPriorityBadge = (priority: string | undefined) => {
 		if (!priority) return null;
 
-		const priorityColors: Record<string, string> = {
-			low: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-			medium:
-				"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-			high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+		const priorityVariant: Record<
+			string,
+			"outline" | "warning" | "destructiveSoft"
+		> = {
+			low: "outline",
+			medium: "warning",
+			high: "destructiveSoft",
 		};
 
 		return (
-			<Badge
-				className={priorityColors[priority] || "bg-muted text-muted-foreground"}
-			>
+			<Badge variant={priorityVariant[priority] ?? "outline"}>
 				{priority.charAt(0).toUpperCase() + priority.slice(1)}
 			</Badge>
 		);
 	};
+
+	if (tasksLoading) {
+		return <WidgetLoading />;
+	}
 
 	return (
 		<div className="space-y-3">
 			<WidgetHeader
 				action={
 					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 						size="sm"
 						variant="ghost"
@@ -151,9 +156,7 @@ export const TasksWidget = ({
 				}
 				badge={sortedTasks.length > 0 ? sortedTasks.length : undefined}
 				controls={controls}
-				icon={
-					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<CheckSquare className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Your Tasks"
 			/>
@@ -164,7 +167,6 @@ export const TasksWidget = ({
 						{sortedTasks.map((task) => (
 							<WidgetCard
 								className={task.completed ? "bg-muted/20" : ""}
-								contentClassName="p-4"
 								key={task._id}
 							>
 								<div className="flex items-start gap-3">
@@ -172,7 +174,7 @@ export const TasksWidget = ({
 										aria-label={
 											task.completed ? "Mark as incomplete" : "Mark as complete"
 										}
-										className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
+										className="size-6 rounded-full flex-shrink-0 mt-0.5"
 										disabled={updatingTaskId === task._id}
 										onClick={() =>
 											handleToggleTaskCompletion(task._id, task.completed)
@@ -181,11 +183,11 @@ export const TasksWidget = ({
 										variant="ghost"
 									>
 										{updatingTaskId === task._id ? (
-											<Loader className="h-4 w-4 animate-spin" />
+											<Loader className="size-4 animate-spin" />
 										) : task.completed ? (
-											<CheckCircle2 className="h-5 w-5 text-green-500" />
+											<CheckCircle2 className="size-5 text-success" />
 										) : (
-											<div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+											<div className="size-5 rounded-full border-2 border-muted-foreground" />
 										)}
 									</Button>
 									<div className="flex-1 min-w-0 space-y-1.5">
@@ -205,7 +207,7 @@ export const TasksWidget = ({
 											{task.dueDate && (
 												<RelativeTime
 													className="text-[10px]"
-													iconClassName="h-2.5 w-2.5 flex-shrink-0"
+													iconClassName="size-2.5 flex-shrink-0"
 													overdue={isOverdue(task.dueDate, task.completed)}
 													timestamp={task.dueDate}
 												/>
@@ -213,7 +215,7 @@ export const TasksWidget = ({
 										</div>
 									</div>
 									<Button
-										className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
+										className="h-7 px-2 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary flex-shrink-0"
 										onClick={() => handleViewTask(task._id)}
 										size="sm"
 										variant="ghost"

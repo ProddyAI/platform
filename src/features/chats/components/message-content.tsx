@@ -107,7 +107,7 @@ export const MessageContent = ({
 				<div className={cn("flex flex-col gap-0.5", isAuthor && "items-end")}>
 					<div
 						className={cn(
-							"rounded-lg text-sm cursor-pointer",
+							"chat-bubble rounded-lg text-sm cursor-pointer",
 							// Apply different styling based on whether it's a custom message component
 							hasCustomMessageComponent
 								? "p-0 bg-transparent" // No padding, no background for custom components
@@ -152,10 +152,10 @@ export const MessageContent = ({
 									<div
 										className={cn(
 											"flex items-center gap-1 text-xs mt-1",
-											isAuthor ? "text-primary-foreground/80" : "text-secondary"
+											isAuthor ? "text-primary-foreground/80" : "text-primary"
 										)}
 									>
-										<CalendarIcon className="h-3 w-3" />
+										<CalendarIcon className="size-3" />
 										<span>
 											Calendar event:{" "}
 											{new Date(calendarEvent.date).toLocaleDateString()}

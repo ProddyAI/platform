@@ -388,19 +388,19 @@ export const AiNotemaker = ({
 			{isOpen && !isFocusMode && (
 				<button
 					aria-label="Close AI assistant"
-					className="fixed inset-0 bg-black/20 z-[90] md:hidden backdrop-blur-sm"
+					className="fixed inset-0 bg-black/50 z-[90] md:hidden"
 					onClick={() => setIsOpen(false)}
 					type="button"
 				/>
 			)}
 			<div
 				className={cn(
-					"relative z-[100] bg-card shadow-xl transition-all duration-300 ease-in-out border-border flex flex-col pointer-events-auto h-full w-full overflow-hidden shrink-0"
+					"relative z-[100] bg-card shadow-xl transition-all duration-300 ease-in-out border-border flex flex-col pointer-events-auto size-full overflow-hidden shrink-0"
 				)}
 			>
-				<div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/95 backdrop-blur-sm flex-shrink-0 z-20 sticky top-0 shadow-sm">
+				<div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card flex-shrink-0 z-20 sticky top-0 shadow-sm">
 					<div className="flex items-center gap-3">
-						<div className="p-2 bg-secondary/10 border border-secondary/20 rounded-lg shadow-sm">
+						<div className="p-2 bg-secondary/10 border border-secondary/20 rounded-xl shadow-sm">
 							<Sparkles className="size-5 text-secondary" />
 						</div>
 						<div>
@@ -415,7 +415,7 @@ export const AiNotemaker = ({
 					<div className="flex items-center gap-2">
 						{isFocusMode ? (
 							<Button
-								className="h-9 w-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
+								className="size-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
 								onClick={() => setIsFocusMode(false)}
 								size="icon"
 								title="Exit Focus Mode"
@@ -425,7 +425,7 @@ export const AiNotemaker = ({
 							</Button>
 						) : (
 							<Button
-								className="h-9 w-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
+								className="size-9 rounded-full hover:bg-muted text-muted-foreground transition-all hover:scale-105 active:scale-95"
 								onClick={() => setIsFocusMode(true)}
 								size="icon"
 								title="Enter Focus Mode"
@@ -436,7 +436,7 @@ export const AiNotemaker = ({
 						)}
 						<div className="w-px h-5 bg-border mx-1" />
 						<Button
-							className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all hover:scale-105 active:scale-95"
+							className="size-9 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all hover:scale-105 active:scale-95"
 							onClick={() => setIsOpen(false)}
 							size="icon"
 							title="Close AI Assistant"
@@ -461,7 +461,7 @@ export const AiNotemaker = ({
 					>
 						{showPeriodPicker ? (
 							<div className="flex flex-col items-center justify-center h-full space-y-6 pt-8">
-								<div className="p-3 bg-secondary/10 border border-secondary/20 rounded-lg shadow-sm">
+								<div className="p-3 bg-secondary/10 border border-secondary/20 rounded-xl shadow-sm">
 									<Sparkles className="size-8 text-secondary" />
 								</div>
 								<div className="text-center space-y-1">
@@ -484,7 +484,7 @@ export const AiNotemaker = ({
 										const isSelected = selectedPeriod === opt.key;
 										return (
 											<button
-												className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+												className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${
 													isSelected
 														? "border-secondary/40 bg-secondary/10 text-secondary"
 														: "border-border bg-card hover:border-secondary/30 text-foreground"
@@ -526,7 +526,7 @@ export const AiNotemaker = ({
 														: `${Math.round(ago / 1440)}d ago`;
 											return (
 												<button
-													className="w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border-secondary/30 bg-secondary/5 text-secondary hover:border-secondary/40"
+													className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border-secondary/30 bg-secondary/5 text-secondary hover:border-secondary/40"
 													disabled={count === 0}
 													onClick={() => {
 														setSelectedPeriod("since_last");
@@ -576,7 +576,6 @@ export const AiNotemaker = ({
 						) : isLoading ? (
 							<div className="flex flex-col items-center justify-center h-full space-y-6 pt-16">
 								<div className="relative inline-flex">
-									<div className="absolute inset-0 bg-secondary/15 rounded-full blur-xl animate-pulse motion-reduce:animate-none opacity-50" />
 									<Loader2 className="size-12 animate-spin motion-reduce:animate-none text-secondary relative z-10" />
 									<Sparkles className="size-5 text-secondary/70 absolute -top-1 -right-3 animate-pulse motion-reduce:animate-none z-20" />
 								</div>
@@ -607,7 +606,7 @@ export const AiNotemaker = ({
 											on {generatedAt.toLocaleDateString()}
 										</p>
 									)}
-									<div className="bg-muted/40 border border-border rounded-lg p-5 ml-7">
+									<div className="bg-muted/40 border border-border rounded-2xl p-5 ml-7">
 										<p className="text-foreground text-sm leading-relaxed font-medium">
 											{notesData.summary}
 										</p>
@@ -652,7 +651,7 @@ export const AiNotemaker = ({
 													return (
 														<div
 															className={cn(
-																"flex gap-3 p-4 bg-card border rounded-lg transition-all duration-300 select-none",
+																"flex gap-3 p-4 bg-card border rounded-2xl transition-all duration-300 select-none",
 																isPushed
 																	? "border-border opacity-50"
 																	: isSelected
@@ -698,7 +697,7 @@ export const AiNotemaker = ({
 																			disabled={isPushed}
 																		>
 																			<button
-																				className="flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-lg border cursor-pointer transition-colors bg-muted border-border hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+																				className="flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-full border cursor-pointer transition-colors bg-muted border-border hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 																				type="button"
 																			>
 																				<div className="size-5 rounded-full bg-secondary/15 flex items-center justify-center text-xs font-bold text-secondary shadow-sm flex-shrink-0">
@@ -766,12 +765,12 @@ export const AiNotemaker = ({
 																		>
 																			<button
 																				className={cn(
-																					"flex items-center gap-1.5 py-1 pl-2.5 pr-2 rounded-lg font-bold tracking-wide border cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed",
+																					"flex items-center gap-1.5 py-1 pl-2.5 pr-2 rounded-full font-bold tracking-wide border cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed",
 																					item.priority === "high"
 																						? "bg-destructive/10 border-destructive/20 text-destructive hover:bg-destructive/15"
 																						: item.priority === "medium"
-																							? "bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary/15"
-																							: "bg-muted border-border text-muted-foreground hover:bg-muted/70"
+																							? "bg-warning/10 border-warning/20 text-warning hover:bg-warning/15"
+																							: "bg-success/10 border-success/20 text-success hover:bg-success/15"
 																				)}
 																				type="button"
 																			>
@@ -835,7 +834,7 @@ export const AiNotemaker = ({
 												<MessageSquare className="size-5 text-primary" />
 												Key Decisions
 											</h3>
-											<div className="bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-5">
+											<div className="bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-5">
 												<ul className="space-y-4 text-sm text-foreground">
 													{notesData.decisions.map((d: string, i: number) => (
 														<li className="flex gap-3 items-start" key={i}>
@@ -853,7 +852,7 @@ export const AiNotemaker = ({
 
 								{/* Export Options (at the end of the intelligence section) */}
 								{notesData && (
-									<div className="flex items-center gap-3 bg-secondary/5 backdrop-blur-sm p-5 rounded-lg border border-secondary/15 group hover:bg-secondary/10 transition-all duration-300">
+									<div className="flex items-center gap-3 bg-secondary/5 p-5 rounded-2xl border border-secondary/15 group hover:bg-secondary/10 transition-all duration-300">
 										<div className="flex-1">
 											<p className="text-sm font-bold text-foreground">
 												Export notes
@@ -864,7 +863,7 @@ export const AiNotemaker = ({
 										</div>
 										<div className="flex items-center gap-2">
 											<Button
-												className="h-10 px-4 rounded-lg gap-2 bg-card border-secondary/20 text-secondary hover:bg-secondary/10 hover:border-secondary/30 shadow-sm transition-all active:scale-95"
+												className="h-10 px-4 gap-2 bg-card border-secondary/20 text-secondary hover:bg-secondary/10 hover:border-secondary/30 shadow-sm transition-all active:scale-95"
 												onClick={() => handleExport("pdf")}
 												variant="outline"
 											>
@@ -872,7 +871,7 @@ export const AiNotemaker = ({
 												<span className="font-semibold">PDF</span>
 											</Button>
 											<Button
-												className="h-10 px-4 rounded-lg gap-2 bg-card border-secondary/20 text-secondary hover:bg-secondary/10 hover:border-secondary/30 shadow-sm transition-all active:scale-95"
+												className="h-10 px-4 gap-2 bg-card border-secondary/20 text-secondary hover:bg-secondary/10 hover:border-secondary/30 shadow-sm transition-all active:scale-95"
 												onClick={() => handleExport("word")}
 												variant="outline"
 											>
@@ -923,15 +922,15 @@ export const AiNotemaker = ({
 												<div className="mr-auto p-4 rounded-lg bg-card rounded-bl-sm border border-border shadow-sm">
 													<div className="flex gap-1.5 items-center">
 														<span
-															className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+															className="size-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
 															style={{ animationDelay: "0ms" }}
 														/>
 														<span
-															className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+															className="size-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
 															style={{ animationDelay: "150ms" }}
 														/>
 														<span
-															className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+															className="size-2 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
 															style={{ animationDelay: "300ms" }}
 														/>
 													</div>
@@ -963,7 +962,7 @@ export const AiNotemaker = ({
 
 				{/* Sticky Footer Controls */}
 				{notesData && (
-					<div className="border-t border-border bg-card/95 backdrop-blur-md flex-shrink-0 flex flex-col items-center w-full shadow-[0_-4px_20px_-15px_rgba(0,0,0,0.1)] z-20">
+					<div className="border-t border-border bg-card flex-shrink-0 flex flex-col items-center w-full shadow-[0_-4px_20px_-15px_rgba(0,0,0,0.1)] z-20">
 						<div
 							className={cn(
 								"w-full flex flex-col",
@@ -983,7 +982,7 @@ export const AiNotemaker = ({
 									value={chatInput}
 								/>
 								<Button
-									className="bg-secondary hover:bg-secondary/90 h-12 w-12 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95"
+									className="bg-secondary hover:bg-secondary/90 size-12 shadow-sm transition-all hover:scale-105 active:scale-95"
 									disabled={isChatting || !chatInput.trim()}
 									size="icon"
 									type="submit"
@@ -1001,7 +1000,7 @@ export const AiNotemaker = ({
 							>
 								<Button
 									className={cn(
-										"bg-primary hover:bg-primary/90 text-primary-foreground h-12 rounded-lg font-semibold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 text-sm",
+										"bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-semibold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 text-sm",
 										isFocusMode ? "flex-1" : "w-full"
 									)}
 									disabled={
@@ -1024,7 +1023,7 @@ export const AiNotemaker = ({
 									)}
 								>
 									<Button
-										className="w-full px-8 h-12 bg-card border-2 border-border text-foreground hover:bg-muted hover:border-muted-foreground/30 rounded-lg font-semibold shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95 text-sm"
+										className="w-full px-8 h-12 bg-card border-2 border-border text-foreground hover:bg-muted hover:border-muted-foreground/30 font-semibold shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95 text-sm"
 										disabled={isSaving}
 										onClick={handleSaveToConvex}
 									>

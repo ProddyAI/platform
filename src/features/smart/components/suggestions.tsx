@@ -157,7 +157,7 @@ export const Suggestions = ({
 					>
 						{isLoading ? (
 							<>
-								<Loader className="mr-2 h-3 w-3 animate-spin" />
+								<Loader className="mr-2 size-3 animate-spin" />
 								Loading...
 							</>
 						) : (

@@ -54,10 +54,10 @@ export const CompactMessage = ({
 		<>
 			<div
 				className={cn(
-					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/60 transition-standard hover:shadow-sm rounded-[10px] motion-reduce:transition-none",
-					isEditing && "bg-secondary/20 hover:bg-secondary/20",
+					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/60 transition-standard hover:shadow-sm rounded-lg motion-reduce:transition-none",
+					isEditing && "bg-primary/10 hover:bg-primary/10",
 					isPending && "opacity-60 transition-standard",
-					isSelected && "bg-secondary/10 hover:bg-secondary/10",
+					isSelected && "bg-primary/5 hover:bg-primary/5",
 					isAuthor && "flex-row-reverse"
 				)}
 				onContextMenu={handleContextMenu}
@@ -65,12 +65,12 @@ export const CompactMessage = ({
 				{/* Timestamp (position mirrors via flex-row-reverse when isAuthor) */}
 				<div className="flex items-center gap-2 min-w-[40px] md:min-w-[50px]">
 					<Hint label={formatFullTime(new Date(createdAt))}>
-						<button
-							className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline focus-visible:opacity-100 group-hover:opacity-100"
-							type="button"
+						<time
+							className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 transition-opacity duration-fast group-hover:opacity-100 motion-reduce:transition-none"
+							dateTime={new Date(createdAt).toISOString()}
 						>
 							{format(new Date(createdAt), "h:mm a")}
-						</button>
+						</time>
 					</Hint>
 				</div>
 

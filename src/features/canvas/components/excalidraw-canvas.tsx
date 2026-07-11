@@ -97,13 +97,13 @@ const Excalidraw = dynamic(
 	{
 		ssr: false,
 		loading: () => (
-			<div className="relative h-full w-full bg-background">
+			<div className="relative size-full bg-background">
 				<div className="absolute inset-x-0 top-4 flex justify-center">
 					<Skeleton className="h-12 w-[420px] rounded-lg" />
 				</div>
 				<div className="absolute right-4 top-4 flex items-center gap-2">
 					<Skeleton className="h-7 w-16 rounded-full" />
-					<Skeleton className="h-7 w-7 rounded-full" />
+					<Skeleton className="size-7 rounded-full" />
 				</div>
 			</div>
 		),
@@ -822,8 +822,8 @@ export const ExcalidrawCanvas = ({
 	}, [saveStatus, onSaveStatusChange]);
 
 	return (
-		<div className="h-full w-full" ref={excalidrawHostRef}>
-			<div className="relative h-full w-full">
+		<div className="size-full" ref={excalidrawHostRef}>
+			<div className="relative size-full">
 				<Excalidraw
 					excalidrawAPI={(api) => {
 						excalidrawApiRef.current = api;
@@ -1180,7 +1180,7 @@ export const ExcalidrawCanvas = ({
 									type="button"
 								>
 									<div aria-hidden className="ToolIcon__icon">
-										<StickyNote size={20} />
+										<StickyNote className="size-5" />
 									</div>
 								</button>
 								<button
@@ -1191,13 +1191,13 @@ export const ExcalidrawCanvas = ({
 									type="button"
 								>
 									<div aria-hidden className="ToolIcon__icon">
-										<Network size={20} />
+										<Network className="size-5" />
 									</div>
 								</button>
 
 								<LiveParticipants />
 
-								<Avatar className="h-7 w-7 border-2 border-muted">
+								<Avatar className="size-7 border-2 border-muted">
 									<AvatarImage src={image} />
 									<AvatarFallback
 										className="text-xs font-semibold text-white"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Brain, FileText, Loader, Plus, TriangleAlert } from "lucide-react";
+import { Brain, FileText, Loader2, Plus, TriangleAlert } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -99,8 +99,8 @@ const NotesPage = () => {
 		return (
 			<div className="flex h-full items-center justify-center">
 				<div className="flex flex-col items-center gap-y-4">
-					<Loader className="size-6 animate-spin text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">Loading notes...</p>
+					<Loader2 className="size-6 animate-spin text-primary" />
+					<p className="text-sm text-muted-foreground">Loading notes…</p>
 				</div>
 			</div>
 		);
@@ -111,7 +111,7 @@ const NotesPage = () => {
 		return (
 			<div className="flex h-full items-center justify-center text-muted-foreground p-4">
 				<div className="text-center max-w-md">
-					<TriangleAlert className="h-10 w-10 mx-auto mb-4 text-amber-500" />
+					<TriangleAlert className="size-10 mx-auto mb-4 text-warning" />
 					<h3 className="text-lg font-medium mb-2">
 						Workspace context missing
 					</h3>
@@ -205,13 +205,13 @@ const NotesPage = () => {
 			<div className="flex h-full items-center justify-center">
 				<div className="text-center space-y-5 max-w-sm px-6">
 					{noteLimitReached && (
-						<div className="mb-4 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+						<div className="mb-4 flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
 							<span>You have reached the note limit for your plan.</span>
 							<LimitIndicator featureLabel="Notes" />
 						</div>
 					)}
-					<div className="mx-auto w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center shadow-sm">
-						<FileText className="h-10 w-10 text-primary" />
+					<div className="mx-auto size-20 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm">
+						<FileText className="size-10 text-primary" />
 					</div>
 					<div>
 						<h3 className="text-xl font-semibold mb-2">No notes yet</h3>
@@ -226,7 +226,7 @@ const NotesPage = () => {
 							onClick={() => handleCreateNote()}
 							variant="outline"
 						>
-							<Plus className="h-4 w-4 mr-2" />
+							<Plus className="size-4 mr-2" />
 							{noteLimitReached ? "Limit Reached" : "Standard Note"}
 						</Button>
 						<Button
@@ -234,7 +234,7 @@ const NotesPage = () => {
 							disabled={isCreating || noteLimitReached}
 							onClick={() => handleCreateNote(true)}
 						>
-							<Brain className="h-4 w-4" />
+							<Brain className="size-4" />
 							AI Meeting Note
 						</Button>
 					</div>
@@ -245,10 +245,7 @@ const NotesPage = () => {
 
 	return (
 		<LiveblocksRoom roomId={channelId} roomType="note">
-			<div
-				className="flex h-full w-full overflow-hidden"
-				ref={pageContainerRef}
-			>
+			<div className="flex size-full overflow-hidden" ref={pageContainerRef}>
 				<NotesContent
 					activeNote={activeNote || null}
 					activeNoteId={activeNoteId}

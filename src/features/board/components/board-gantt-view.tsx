@@ -253,13 +253,13 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const getPriorityColor = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "bg-red-500";
+				return "bg-destructive";
 			case "high":
-				return "bg-orange-500";
+				return "bg-warning";
 			case "medium":
-				return "bg-yellow-500";
+				return "bg-primary";
 			case "low":
-				return "bg-blue-400";
+				return "bg-muted-foreground";
 			default:
 				return "bg-muted-foreground/40";
 		}
@@ -268,43 +268,43 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const getPriorityBadgeBg = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "bg-red-500/10";
+				return "bg-destructive/10";
 			case "high":
-				return "bg-orange-500/10";
+				return "bg-warning/10";
 			case "medium":
-				return "bg-yellow-500/10";
+				return "bg-primary/10";
 			case "low":
-				return "bg-blue-400/10";
+				return "bg-muted-foreground/10";
 			default:
 				return "bg-muted-foreground/10";
 		}
 	};
 
-	const getSolidPriorityColor = (priority: IssuePriority | undefined) => {
+	const getPriorityBarClass = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "#ef4444";
+				return "bg-destructive border-destructive";
 			case "high":
-				return "#f97316";
+				return "bg-warning border-warning";
 			case "medium":
-				return "#eab308";
+				return "bg-primary border-primary";
 			case "low":
-				return "#60a5fa";
+				return "bg-muted-foreground border-muted-foreground";
 			default:
-				return "#9ca3af";
+				return "bg-muted-foreground/40 border-muted-foreground/40";
 		}
 	};
 
 	const getPriorityTextColor = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "text-red-500";
+				return "text-destructive";
 			case "high":
-				return "text-orange-500";
+				return "text-warning";
 			case "medium":
-				return "text-yellow-500";
+				return "text-primary";
 			case "low":
-				return "text-blue-400";
+				return "text-muted-foreground";
 			default:
 				return "text-muted-foreground";
 		}
@@ -361,7 +361,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	return (
 		<div className="h-full flex flex-col bg-card">
 			{/* Gantt Chart Controls */}
-			<div className="p-3 border-b border-border flex items-center justify-between bg-gradient-to-r from-secondary/5 to-secondary/5">
+			<div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
 				<div className="text-sm font-medium text-muted-foreground">
 					Showing {tasks.length} tasks with due dates across {statuses.length}{" "}
 					statuses
@@ -369,48 +369,48 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				<div className="flex items-center gap-2">
 					<div className="flex items-center border border-border rounded-md overflow-hidden">
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							onClick={goToPreviousWeek}
 							size="sm"
 							variant="ghost"
 						>
-							<ArrowLeft className="h-4 w-4" />
+							<ArrowLeft className="size-4" />
 						</Button>
 						<div className="px-2 text-xs font-medium border-l border-r border-border">
 							{format(currentStartDate, "MMM d")} -{" "}
 							{format(addDays(currentStartDate, zoomLevel - 1), "MMM d, yyyy")}
 						</div>
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							onClick={goToNextWeek}
 							size="sm"
 							variant="ghost"
 						>
-							<ArrowRight className="h-4 w-4" />
+							<ArrowRight className="size-4" />
 						</Button>
 					</div>
 
 					<div className="flex items-center border border-border rounded-md overflow-hidden ml-2">
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							disabled={zoomLevel >= 28}
 							onClick={zoomOut}
 							size="sm"
 							variant="ghost"
 						>
-							<ZoomOut className="h-4 w-4" />
+							<ZoomOut className="size-4" />
 						</Button>
 						<div className="px-2 text-xs font-medium border-l border-r border-border">
 							{zoomLevel} days
 						</div>
 						<Button
-							className="h-8 w-8 p-0 rounded-none"
+							className="size-8 p-0 rounded-none"
 							disabled={zoomLevel <= 7}
 							onClick={zoomIn}
 							size="sm"
 							variant="ghost"
 						>
-							<ZoomIn className="h-4 w-4" />
+							<ZoomIn className="size-4" />
 						</Button>
 					</div>
 
@@ -420,7 +420,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 						size="sm"
 						variant="outline"
 					>
-						<Calendar className="h-3.5 w-3.5" />
+						<Calendar className="size-3.5" />
 						<span className="text-xs">Today</span>
 					</Button>
 				</div>
@@ -441,17 +441,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
             background: transparent;
           }
           ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: hsl(var(--border));
             border-radius: 4px;
           }
-          .dark ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-          }
           ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-          }
-          .dark ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+            background: hsl(var(--muted-foreground));
           }
         `}</style>
 				{/* Timeline Header */}
@@ -469,7 +463,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 								<div
 									className={cn(
 										isSameDay(date, new Date())
-											? "bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-foreground rounded-full px-2 py-0.5 inline-block"
+											? "bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block"
 											: "text-foreground"
 									)}
 								>
@@ -497,7 +491,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										<div className="p-3 border-b border-border">
 											<div className="font-medium truncate flex items-center gap-2">
 												<span
-													className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+													className="size-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
 													style={{ backgroundColor: status.color }}
 												/>
 												<span className="truncate">{status.name}</span>
@@ -537,7 +531,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 													className={cn(
 														"flex-1 border-r border-border last:border-r-0",
 														isSameDay(date, new Date())
-															? "bg-secondary/5 dark:bg-secondary/10"
+															? "bg-primary/5"
 															: index % 2 === 0 && "bg-muted/30"
 													)}
 													key={date.getTime()}
@@ -566,7 +560,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 													>
 														<button
 															aria-label={`Open task ${row.task.title}`}
-															className="absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-default"
+															className={cn(
+																"absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-default",
+																getPriorityBarClass(row.task.priority)
+															)}
 															onClick={() => setSelectedTask(row.task || null)}
 															onKeyDown={(e) => {
 																if (e.key === "Enter" || e.key === " ") {
@@ -574,15 +571,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 																	setSelectedTask(row.task || null);
 																}
 															}}
-															style={{
-																...style,
-																backgroundColor: getSolidPriorityColor(
-																	row.task.priority
-																),
-																borderColor: getSolidPriorityColor(
-																	row.task.priority
-																),
-															}}
+															style={style}
 															type="button"
 														>
 															<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
@@ -615,12 +604,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 							</span>
 							<Button
 								aria-label="Close task details"
-								className="h-7 w-7 p-0 flex-shrink-0 hover:bg-muted"
+								className="size-7 p-0 flex-shrink-0 hover:bg-muted"
 								onClick={() => setSelectedTask(null)}
 								size="sm"
 								variant="ghost"
 							>
-								<X className="h-4 w-4 text-muted-foreground" />
+								<X className="size-4 text-muted-foreground" />
 							</Button>
 						</div>
 						<h3 className="text-lg font-semibold text-foreground">
@@ -634,7 +623,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 								<div className="text-xs text-muted-foreground mb-1">Status</div>
 								<div className="flex items-center gap-2 text-sm font-medium">
 									<span
-										className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+										className="size-2 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
 										style={{ backgroundColor: selectedTask.statusColor }}
 									/>
 									{selectedTask.statusTitle}
@@ -665,7 +654,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									>
 										<div
 											className={cn(
-												"w-2 h-2 rounded-full mr-1",
+												"size-2 rounded-full mr-1",
 												getPriorityColor(selectedTask.priority)
 											)}
 										/>
@@ -718,7 +707,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			{tasks.length === 0 && (
 				<div className="flex-1 flex items-center justify-center flex-col p-8">
 					<div className="bg-muted rounded-full p-3 mb-3">
-						<Calendar className="h-6 w-6 text-muted-foreground" />
+						<Calendar className="size-6 text-muted-foreground" />
 					</div>
 					<h3 className="text-lg font-medium mb-1">No tasks with due dates</h3>
 					<p className="text-sm text-muted-foreground text-center max-w-md">

@@ -10,13 +10,25 @@ interface PasswordStrengthIndicatorProps {
 	showRequirements?: boolean;
 }
 
-// Score-indexed label colors (>=4.5:1 contrast on the app background).
+// Score-indexed label colors (token-based, >=4.5:1 contrast on the app
+// background).
 const SCORE_LABEL_COLORS: Record<number, string> = {
-	0: "text-red-600",
-	1: "text-orange-700",
-	2: "text-yellow-700",
-	3: "text-blue-600",
-	4: "text-green-700",
+	0: "text-destructive",
+	1: "text-destructive",
+	2: "text-warning",
+	3: "text-primary",
+	4: "text-success",
+};
+
+// Score-indexed strength-bar fill colors — kept independent of
+// `strength.color` (raw `bg-*-500` utilities from the validation util) so the
+// meter stays on design tokens.
+const SCORE_BAR_COLORS: Record<number, string> = {
+	0: "bg-destructive",
+	1: "bg-destructive/70",
+	2: "bg-warning",
+	3: "bg-primary",
+	4: "bg-success",
 };
 
 export const PasswordStrengthIndicator = ({
@@ -47,7 +59,9 @@ export const PasswordStrengthIndicator = ({
 					{[...Array(5)].map((_, index) => (
 						<div
 							className={`flex-1 rounded-full transition-all duration-300 ${
-								index <= strength.score ? strength.color : "bg-muted"
+								index <= strength.score
+									? SCORE_BAR_COLORS[strength.score]
+									: "bg-muted"
 							}`}
 							key={`strength-bar-${index}`}
 						/>
@@ -64,13 +78,13 @@ export const PasswordStrengthIndicator = ({
 							key={requirement.label}
 						>
 							{requirement.met ? (
-								<Check className="size-3.5 text-green-700 flex-shrink-0" />
+								<Check className="size-3.5 text-success flex-shrink-0" />
 							) : (
 								<X className="size-3.5 text-muted-foreground flex-shrink-0" />
 							)}
 							<span
 								className={`${
-									requirement.met ? "text-green-700" : "text-muted-foreground"
+									requirement.met ? "text-success" : "text-muted-foreground"
 								} transition-colors duration-200`}
 							>
 								{requirement.label}

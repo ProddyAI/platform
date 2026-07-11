@@ -16,6 +16,7 @@ import { Thread } from "@/features/messages/components/thread";
 import { WorkspacePresenceTracker } from "@/features/presence/components/workspace-presence-tracker";
 import { useUpdateLastActiveWorkspace } from "@/features/workspaces/api/use-update-last-active-workspace";
 import { useSidebarCollapsed } from "@/features/workspaces/api/use-workspace-preferences";
+import { useSidebarWidth } from "@/features/workspaces/hooks/use-sidebar-width";
 import { usePanel } from "@/hooks/use-panel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { setupGlobalMentionHandler } from "@/lib/client/mention-handler";
@@ -46,6 +47,9 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
+
+	// Adjustable width (localStorage-backed) for the expanded sidebar.
+	const { width, isResizing, startResizing, resetWidth } = useSidebarWidth();
 
 	// Handle mobile menu toggle
 	const handleMobileMenuToggle = useCallback(() => {
@@ -115,21 +119,38 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<WorkspacePresenceTracker
 						workspaceId={workspaceId as Id<"workspaces">}
 					>
-						<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
+						<div className="size-full min-w-0 flex flex-col overflow-hidden">
 							<div className="flex h-full min-w-0 overflow-hidden">
-								{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
+								{/* Adjustable-width sidebar with collapse/expand - Hidden on mobile */}
 								<div
 									className={cn(
-										"h-full bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
-										"transition-all duration-300 ease-in-out flex-shrink-0 relative z-10",
-										"hidden md:block",
-										isCollapsed ? "w-[70px]" : "w-[280px]"
+										"h-full bg-sidebar overflow-y-auto overflow-x-hidden custom-scrollbar",
+										"flex-shrink-0 relative z-10 hidden md:block",
+										// Skip the width animation while actively dragging so the
+										// sidebar tracks the pointer instead of lagging behind it.
+										!isResizing && "transition-all duration-300 ease-in-out"
 									)}
+									style={{ width: isCollapsed ? 70 : width }}
 								>
 									<WorkspaceSidebar
 										isCollapsed={isCollapsed}
 										setIsCollapsed={setIsCollapsed}
 									/>
+
+									{/* Drag handle to resize the expanded sidebar. */}
+									{!isCollapsed && (
+										// biome-ignore lint/a11y/noStaticElementInteractions: a keyboard-operable collapse toggle already exists in the sidebar footer; this pointer-only affordance augments it for mouse users.
+										<div
+											aria-hidden="true"
+											className={cn(
+												"absolute inset-y-0 right-0 z-20 w-1.5 cursor-col-resize",
+												"transition-colors hover:bg-primary/40",
+												isResizing && "bg-primary/60"
+											)}
+											onDoubleClick={resetWidth}
+											onMouseDown={startResizing}
+										/>
+									)}
 								</div>
 
 								{/* Mobile Sidebar Overlay */}
@@ -138,7 +159,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 										{/* Backdrop */}
 										<button
 											aria-label="Close mobile sidebar"
-											className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+											className="md:hidden fixed inset-0 bg-black/50 z-40"
 											onClick={() => setShowMobileSidebar(false)}
 											type="button"
 										/>
@@ -146,7 +167,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 										<div
 											className={cn(
 												"md:hidden fixed left-0 z-50",
-												"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+												"bg-sidebar overflow-y-auto overflow-x-hidden custom-scrollbar",
 												"w-[280px] shadow-2xl",
 												"transform transition-transform duration-300 ease-in-out",
 												"overscroll-contain",

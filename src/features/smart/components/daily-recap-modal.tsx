@@ -189,7 +189,7 @@ export const DailyRecapModal = ({
 			<DialogContent className="max-w-3xl">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
-						<Sparkles aria-hidden="true" className="h-5 w-5 text-secondary" />
+						<Sparkles aria-hidden="true" className="size-5 text-secondary" />
 						<span>
 							{isCached ? "Cached Daily Recap" : "Daily Recap"}
 							<span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -221,9 +221,9 @@ export const DailyRecapModal = ({
 							variant="outline"
 						>
 							{isCopied ? (
-								<Check aria-hidden="true" className="h-3 w-3" />
+								<Check aria-hidden="true" className="size-3" />
 							) : (
-								<Copy aria-hidden="true" className="h-3 w-3" />
+								<Copy aria-hidden="true" className="size-3" />
 							)}
 							{isCopied ? "Copied" : "Copy"}
 						</Button>
@@ -233,7 +233,7 @@ export const DailyRecapModal = ({
 							size="sm"
 							variant="outline"
 						>
-							<File aria-hidden="true" className="h-3 w-3" />
+							<File aria-hidden="true" className="size-3" />
 							Export Word
 						</Button>
 						<Button
@@ -242,7 +242,7 @@ export const DailyRecapModal = ({
 							size="sm"
 							variant="outline"
 						>
-							<FileOutput aria-hidden="true" className="h-3 w-3" />
+							<FileOutput aria-hidden="true" className="size-3" />
 							Export PDF
 						</Button>
 					</div>

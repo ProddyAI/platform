@@ -153,7 +153,7 @@ export const UseCasesSection = () => {
 								<ul className="space-y-4">
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -168,7 +168,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -183,7 +183,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -198,10 +198,10 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-2xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-blue-100 text-blue-600">
-										<Bot className="h-6 w-6" />
+										<Bot className="size-6" />
 									</div>
 									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
@@ -269,7 +269,7 @@ export const UseCasesSection = () => {
 								<ul className="space-y-4">
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -284,7 +284,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -299,7 +299,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -314,10 +314,10 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-2xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-green-100 text-green-600">
-										<Bot className="h-6 w-6" />
+										<Bot className="size-6" />
 									</div>
 									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
@@ -372,7 +372,7 @@ export const UseCasesSection = () => {
 								<ul className="space-y-4">
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -387,7 +387,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -402,7 +402,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -416,10 +416,10 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-2xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-purple-100 text-purple-600">
-										<Bot className="h-6 w-6" />
+										<Bot className="size-6" />
 									</div>
 									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
@@ -483,7 +483,7 @@ export const UseCasesSection = () => {
 								<ul className="space-y-4">
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -498,7 +498,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -512,7 +512,7 @@ export const UseCasesSection = () => {
 									</li>
 									<li className="flex items-start">
 										<div className="flex-shrink-0 mt-1 bg-primary/10 p-1 rounded-full">
-											<CheckSquare className="h-4 w-4 text-primary" />
+											<CheckSquare className="size-4 text-primary" />
 										</div>
 										<div className="ml-3">
 											<p className="text-foreground font-medium">
@@ -526,10 +526,10 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-2xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-indigo-100 text-indigo-600">
-										<Bot className="h-6 w-6" />
+										<Bot className="size-6" />
 									</div>
 									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation

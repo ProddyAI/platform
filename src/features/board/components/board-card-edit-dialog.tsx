@@ -28,6 +28,47 @@ const STATUS_COLOR_PRESETS = [
 	"#f97316",
 ];
 
+interface StatusColorPickerProps {
+	color: string;
+	setColor: (v: string) => void;
+}
+
+const StatusColorPicker = ({ color, setColor }: StatusColorPickerProps) => (
+	<div className="space-y-2">
+		<p className="text-xs text-muted-foreground">Color</p>
+		<div className="flex gap-2 flex-wrap">
+			{STATUS_COLOR_PRESETS.map((c) => (
+				<button
+					aria-label={`Select color ${c}`}
+					aria-pressed={color === c}
+					className={cn(
+						"size-7 rounded-full border-2 transition-[transform,border-color] duration-fast motion-reduce:transition-none",
+						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+						color === c
+							? "border-foreground scale-110"
+							: "border-transparent hover:border-muted-foreground/40"
+					)}
+					key={c}
+					onClick={() => setColor(c)}
+					style={{ backgroundColor: c }}
+					type="button"
+				/>
+			))}
+		</div>
+		<div className="flex items-center gap-2">
+			<span className="text-xs text-muted-foreground">Custom:</span>
+			<input
+				aria-label="Custom status color"
+				className="size-8 rounded cursor-pointer border border-border"
+				onChange={(e) => setColor(e.target.value)}
+				type="color"
+				value={color}
+			/>
+			<span className="text-xs font-mono text-muted-foreground">{color}</span>
+		</div>
+	</div>
+);
+
 interface BoardAddStatusModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -59,7 +100,7 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Add Status</DialogTitle>
+					<DialogTitle>Add status</DialogTitle>
 					<DialogDescription>Create a new status column.</DialogDescription>
 				</DialogHeader>
 				<Input
@@ -69,45 +110,13 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 					ref={inputRef}
 					value={name}
 				/>
-				<div className="space-y-2">
-					<p className="text-xs text-muted-foreground">Color</p>
-					<div className="flex gap-2 flex-wrap">
-						{STATUS_COLOR_PRESETS.map((c) => (
-							<button
-								aria-label={`Select color ${c}`}
-								aria-pressed={color === c}
-								className={cn(
-									"w-7 h-7 rounded-full border-2 transition-all",
-									color === c
-										? "border-foreground scale-110"
-										: "border-transparent hover:scale-105"
-								)}
-								key={c}
-								onClick={() => setColor(c)}
-								style={{ backgroundColor: c }}
-								type="button"
-							/>
-						))}
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="text-xs text-muted-foreground">Custom:</span>
-						<input
-							className="w-8 h-8 rounded cursor-pointer border border-border"
-							onChange={(e) => setColor(e.target.value)}
-							type="color"
-							value={color}
-						/>
-						<span className="text-xs font-mono text-muted-foreground">
-							{color}
-						</span>
-					</div>
-				</div>
+				<StatusColorPicker color={color} setColor={setColor} />
 				<DialogFooter>
 					<DialogClose asChild>
 						<Button variant="outline">Cancel</Button>
 					</DialogClose>
 					<Button disabled={!name.trim()} onClick={onAdd}>
-						Add Status
+						Add status
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -146,7 +155,10 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Edit Status</DialogTitle>
+					<DialogTitle>Edit status</DialogTitle>
+					<DialogDescription>
+						Rename the status or change its color.
+					</DialogDescription>
 				</DialogHeader>
 				<Input
 					onChange={(e) => setName(e.target.value)}
@@ -155,39 +167,7 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 					ref={inputRef}
 					value={name}
 				/>
-				<div className="space-y-2">
-					<p className="text-xs text-muted-foreground">Color</p>
-					<div className="flex gap-2 flex-wrap">
-						{STATUS_COLOR_PRESETS.map((c) => (
-							<button
-								aria-label={`Select color ${c}`}
-								aria-pressed={color === c}
-								className={cn(
-									"w-7 h-7 rounded-full border-2 transition-all",
-									color === c
-										? "border-foreground scale-110"
-										: "border-transparent hover:scale-105"
-								)}
-								key={c}
-								onClick={() => setColor(c)}
-								style={{ backgroundColor: c }}
-								type="button"
-							/>
-						))}
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="text-xs text-muted-foreground">Custom:</span>
-						<input
-							className="w-8 h-8 rounded cursor-pointer border border-border"
-							onChange={(e) => setColor(e.target.value)}
-							type="color"
-							value={color}
-						/>
-						<span className="text-xs font-mono text-muted-foreground">
-							{color}
-						</span>
-					</div>
-				</div>
+				<StatusColorPicker color={color} setColor={setColor} />
 				<DialogFooter>
 					<DialogClose asChild>
 						<Button variant="outline">Cancel</Button>
@@ -218,7 +198,7 @@ export const BoardDeleteStatusModal: React.FC<BoardDeleteStatusModalProps> = ({
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Delete Status</DialogTitle>
+					<DialogTitle>Delete status</DialogTitle>
 					<DialogDescription>
 						Delete &ldquo;{statusName}&rdquo; and all its issues? This cannot be
 						undone.

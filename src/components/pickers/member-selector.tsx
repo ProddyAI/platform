@@ -80,9 +80,9 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 								<Badge
 									className="flex items-center gap-1"
 									key={member._id}
-									variant="secondary"
+									variant="primarySoft"
 								>
-									<Avatar className="h-4 w-4">
+									<Avatar className="size-4">
 										<AvatarImage
 											alt={member.user.name}
 											src={member.user.image}
@@ -99,7 +99,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 						</div>
 					) : (
 						<span className="text-muted-foreground flex items-center gap-1">
-							<Users className="h-4 w-4" />
+							<Users className="size-4" />
 							{placeholder}
 						</span>
 					)}
@@ -110,7 +110,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 					{/* Search input */}
 					<div className="p-2 border-b">
 						<div className="relative">
-							<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+							<Search className="absolute left-2 top-2.5 size-4 text-muted-foreground" />
 							<Input
 								className="pl-8"
 								onChange={(e) => setSearchTerm(e.target.value)}
@@ -131,13 +131,13 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 								filteredMembers.map((member) => (
 									<button
 										aria-pressed={selectedMemberIds.includes(member._id)}
-										className="flex w-full items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										className="flex w-full items-center justify-between p-2 hover:bg-muted rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										key={member._id}
 										onClick={() => toggleMember(member._id)}
 										type="button"
 									>
 										<div className="flex items-center gap-2">
-											<Avatar className="h-6 w-6">
+											<Avatar className="size-6">
 												<AvatarImage
 													alt={member.user.name}
 													src={member.user.image}
@@ -149,7 +149,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 											<span className="text-sm">{member.user.name}</span>
 										</div>
 										{selectedMemberIds.includes(member._id) ? (
-											<Check className="h-4 w-4 text-secondary" />
+											<Check className="size-4 text-primary" />
 										) : null}
 									</button>
 								))
@@ -168,9 +168,9 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 									<Badge
 										className="flex items-center gap-1"
 										key={member._id}
-										variant="secondary"
+										variant="primarySoft"
 									>
-										<Avatar className="h-4 w-4">
+										<Avatar className="size-4">
 											<AvatarImage
 												alt={member.user.name}
 												src={member.user.image}
@@ -188,7 +188,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 											onClick={(e) => removeMember(e, member._id)}
 											type="button"
 										>
-											<X className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
+											<X className="size-3 text-muted-foreground hover:text-foreground cursor-pointer" />
 										</button>
 									</Badge>
 								))}

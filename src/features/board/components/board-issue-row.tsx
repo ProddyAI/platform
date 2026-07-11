@@ -52,16 +52,16 @@ interface IssueRowProps {
 	dependencyIndicators?: { blockedByCount: number; blockingCount: number };
 }
 
-export function priorityIcon(priority?: IssuePriority, size = "w-3.5 h-3.5") {
+export function priorityIcon(priority?: IssuePriority, size = "size-3.5") {
 	switch (priority) {
 		case "urgent":
-			return <Flame className={cn(size, "text-red-500")} />;
+			return <Flame className={cn(size, "text-destructive")} />;
 		case "high":
-			return <ArrowUp className={cn(size, "text-orange-500")} />;
+			return <ArrowUp className={cn(size, "text-warning")} />;
 		case "medium":
-			return <ArrowRight className={cn(size, "text-yellow-500")} />;
+			return <ArrowRight className={cn(size, "text-primary")} />;
 		case "low":
-			return <ArrowDown className={cn(size, "text-blue-400")} />;
+			return <ArrowDown className={cn(size, "text-muted-foreground")} />;
 		default:
 			return <Circle className={cn(size, "text-muted-foreground/40")} />;
 	}
@@ -126,7 +126,7 @@ const LabelsDisplay = ({ labels, issueId }: LabelsDisplayProps) => {
 				<Badge
 					className="text-[10px] px-1.5 py-0 h-4 font-normal"
 					key={`${issueId}-lbl-${label}`}
-					variant="secondary"
+					variant="outline"
 				>
 					{label}
 				</Badge>
@@ -159,7 +159,7 @@ const DueDateDisplay = ({ dueDate }: DueDateDisplayProps) => {
 							overdue ? "text-destructive" : "text-muted-foreground"
 						)}
 					>
-						<Calendar className="w-3 h-3" />
+						<Calendar className="size-3" />
 						{format(new Date(dueDate), "MMM d")}
 					</span>
 				</TooltipTrigger>
@@ -188,7 +188,7 @@ const AssigneeAvatar = ({ memberId, member }: AssigneeAvatarProps) => (
 	<TooltipProvider key={memberId}>
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Avatar className="w-5 h-5 border-2 border-background">
+				<Avatar className="size-5 border-2 border-card">
 					<AvatarImage alt={member?.name} src={member?.image} />
 					<AvatarFallback className="text-[9px]">
 						{member?.name?.charAt(0).toUpperCase() || "?"}
@@ -208,7 +208,7 @@ const AssigneesDisplay = ({
 }: AssigneesDisplayProps) => {
 	if (!assignees || assignees.length === 0) {
 		return (
-			<div className="w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/20" />
+			<div className="size-5 rounded-full border-2 border-dashed border-muted-foreground/20" />
 		);
 	}
 
@@ -221,7 +221,7 @@ const AssigneesDisplay = ({
 				);
 			})}
 			{assignees.length > 3 && (
-				<Avatar className="w-5 h-5 border-2 border-background bg-muted">
+				<Avatar className="size-5 border-2 border-card bg-muted">
 					<AvatarFallback className="text-[9px]">
 						+{assignees.length - 3}
 					</AvatarFallback>
@@ -251,7 +251,7 @@ const BoardIssueRowContent = ({
 
 		<span
 			aria-hidden="true"
-			className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
+			className="flex-shrink-0 size-2 rounded-full ring-1 ring-inset ring-black/10"
 			style={{ backgroundColor: statusColor }}
 		/>
 
@@ -261,10 +261,10 @@ const BoardIssueRowContent = ({
 					<TooltipTrigger asChild>
 						<span
 							aria-label={`Blocked by ${dependencyIndicators?.blockedByCount} issue${dependencyIndicators?.blockedByCount === 1 ? "" : "s"}`}
-							className="flex-shrink-0 flex items-center justify-center text-blue-500"
+							className="flex-shrink-0 flex items-center justify-center text-warning"
 							role="img"
 						>
-							<Lock className="w-2.5 h-2.5" />
+							<Lock className="size-2.5" />
 						</span>
 					</TooltipTrigger>
 					<TooltipContent side="top">
@@ -281,7 +281,7 @@ const BoardIssueRowContent = ({
 					<TooltipTrigger asChild>
 						<span
 							aria-label={`Blocking ${dependencyIndicators?.blockingCount} issue${dependencyIndicators?.blockingCount === 1 ? "" : "s"}`}
-							className="flex-shrink-0 w-2 h-2 rounded-full bg-orange-500 ring-1 ring-inset ring-black/10"
+							className="flex-shrink-0 size-2 rounded-full bg-destructive ring-1 ring-inset ring-black/10"
 							role="img"
 						/>
 					</TooltipTrigger>
@@ -303,7 +303,7 @@ const BoardIssueRowContent = ({
 			</span>
 			{subIssueStats && subIssueStats.total > 0 && (
 				<div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-					<ListChecks className="w-3 h-3" />
+					<ListChecks className="size-3" />
 					<span>
 						{subIssueStats.completed}/{subIssueStats.total} sub-issues
 					</span>
@@ -345,12 +345,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 
 	if (isDragOverlay) {
 		return (
-			<div
-				className={cn(
-					"group flex items-center gap-2 px-3 py-2 rounded-md border transition-colors duration-100 select-none",
-					"shadow-lg bg-background border-border opacity-100"
-				)}
-			>
+			<div className="group flex items-center gap-2 rounded-2xl border bg-card px-3 py-2.5 shadow-lg select-none">
 				<BoardIssueRowContent
 					assigneeData={assigneeData}
 					dependencyIndicators={dependencyIndicators}
@@ -370,7 +365,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	return (
 		<div
 			className={cn(
-				"group flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/60 transition-colors duration-100 border border-transparent hover:border-border/40 select-none",
+				"group flex items-center gap-2 rounded-2xl border bg-card px-3 py-2.5 shadow-sm select-none",
+				"transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0",
 				isDragging && "opacity-40"
 			)}
 			ref={setNodeRef}
@@ -385,7 +381,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 					{...attributes}
 					{...listeners}
 				>
-					<GripVertical className="w-3.5 h-3.5" />
+					<GripVertical className="size-3.5" />
 				</button>
 			)}
 

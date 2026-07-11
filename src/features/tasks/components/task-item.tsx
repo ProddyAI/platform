@@ -3,6 +3,7 @@
 import { format, isBefore, startOfDay } from "date-fns";
 import { CheckCircle2, Circle, Clock, Edit, Trash } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
 	AlertDialog,
@@ -40,34 +41,27 @@ interface TaskItemProps {
 	workspaceId: Id<"workspaces">;
 }
 
+// Same ramp as board-issue-row.tsx (urgent/high/medium/low): high→warning,
+// medium→primary, low→muted-foreground. Tasks don't have an "urgent" tier.
 const PRIORITY_CONFIG: Record<
 	"low" | "medium" | "high",
 	{ label: string; dotClassName: string; badgeClassName: string }
 > = {
 	high: {
 		label: "High",
-		dotClassName: "bg-red-600",
-		badgeClassName:
-			"bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
+		dotClassName: "bg-warning",
+		badgeClassName: "bg-warning/10 text-warning border-transparent",
 	},
 	medium: {
 		label: "Medium",
-		dotClassName: "bg-amber-500",
-		badgeClassName:
-			"bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
+		dotClassName: "bg-primary",
+		badgeClassName: "bg-primary/10 text-primary border-transparent",
 	},
 	low: {
 		label: "Low",
-		dotClassName: "bg-blue-600",
-		badgeClassName:
-			"bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+		dotClassName: "bg-muted-foreground/60",
+		badgeClassName: "bg-muted text-muted-foreground border-transparent",
 	},
-};
-
-const PRIORITY_HOVER_BORDER: Record<"low" | "medium" | "high", string> = {
-	high: "hover:border-red-300 dark:hover:border-red-800",
-	medium: "hover:border-amber-300 dark:hover:border-amber-800",
-	low: "hover:border-blue-300 dark:hover:border-blue-800",
 };
 
 export const TaskItem = ({
@@ -93,7 +87,10 @@ export const TaskItem = ({
 		try {
 			await toggleCompletion({ id });
 		} catch (error) {
-			console.error("Failed to toggle task completion:", error);
+			toast.error("Couldn't update task", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
 		}
 	};
 
@@ -102,16 +99,19 @@ export const TaskItem = ({
 			setIsDeleting(true);
 			await deleteTask({ id });
 		} catch (error) {
-			console.error("Failed to delete task:", error);
+			toast.error("Couldn't delete task", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
 			setIsDeleting(false);
 		}
 	};
 
 	const getStatusIcon = (completed: boolean) => {
 		return completed ? (
-			<CheckCircle2 className="h-5 w-5 text-emerald-500" />
+			<CheckCircle2 className="size-5 text-success" />
 		) : (
-			<Circle className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-secondary" />
+			<Circle className="size-5 text-muted-foreground transition-colors duration-fast group-hover:text-primary" />
 		);
 	};
 
@@ -134,17 +134,14 @@ export const TaskItem = ({
 	return (
 		<div
 			className={cn(
-				"group p-5 rounded-xl border transition-all hover:shadow-md",
-				completed
-					? "bg-muted/50 border-border opacity-80"
-					: "bg-card border-border hover:border-secondary/30",
-				priority && !completed && PRIORITY_HOVER_BORDER[priority]
+				"group rounded-2xl border bg-card p-5 shadow-sm transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+				completed && "opacity-70"
 			)}
 		>
 			<div className="flex items-start gap-4">
 				<button
 					aria-label={completed ? "Mark as incomplete" : "Mark as complete"}
-					className="mt-0.5 flex-shrink-0 focus:outline-none group/checkbox"
+					className="mt-0.5 flex-shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 					onClick={handleToggleCompletion}
 					type="button"
 				>
@@ -162,7 +159,7 @@ export const TaskItem = ({
 						>
 							{title}
 						</h3>
-						<div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+						<div className="flex items-center gap-1.5 opacity-0 transition-opacity duration-fast group-hover:opacity-100 group-focus-within:opacity-100">
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -172,7 +169,7 @@ export const TaskItem = ({
 											size="iconSm"
 											variant="ghost"
 										>
-											<Edit className="h-3.5 w-3.5 text-muted-foreground" />
+											<Edit className="size-3.5 text-muted-foreground" />
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
@@ -191,7 +188,7 @@ export const TaskItem = ({
 											size="iconSm"
 											variant="ghost"
 										>
-											<Trash className="h-3.5 w-3.5" />
+											<Trash className="size-3.5" />
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
@@ -219,7 +216,6 @@ export const TaskItem = ({
 						{/* Category badge */}
 						{category && (
 							<Badge
-								className="text-xs font-medium px-2 py-0.5 rounded-full border-2"
 								style={{
 									borderColor: category.color,
 									color: category.color,
@@ -242,7 +238,7 @@ export const TaskItem = ({
 							>
 								<span
 									className={cn(
-										"h-2 w-2 rounded-full",
+										"size-2 rounded-full",
 										PRIORITY_CONFIG[priority].dotClassName
 									)}
 								/>
@@ -261,7 +257,7 @@ export const TaskItem = ({
 										: "text-muted-foreground bg-muted"
 								)}
 							>
-								<Clock className="h-3 w-3" />
+								<Clock className="size-3" />
 								<span>{format(new Date(dueDate), "MMM d, yyyy")}</span>
 							</div>
 						)}

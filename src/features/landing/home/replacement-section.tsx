@@ -44,7 +44,7 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 	const path = `M${startX},${startY} Q${midX},${startY + curveOffsetY} ${endX},${endY}`;
 
 	return (
-		<svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
+		<svg className="absolute top-0 left-0 size-full pointer-events-none z-20">
 			<title>Connection path</title>
 			<path
 				d={path}
@@ -146,11 +146,11 @@ export const ReplacementSection = () => {
 					animate={
 						isInView
 							? { opacity: 1, y: 0 }
-							: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
+							: { opacity: 0, y: shouldReduceMotion ? 0 : 12 }
 					}
 					className="text-3xl md:text-4xl font-bold text-center mb-6 text-foreground"
-					initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-					transition={{ duration: 0.5, delay: 0.1 }}
+					initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
+					transition={{ duration: 0.35, delay: 0.05 }}
 				>
 					Replace Multiple Tools with{" "}
 					<span className="text-primary">Proddy</span>
@@ -161,7 +161,7 @@ export const ReplacementSection = () => {
 					className="relative h-[400px] md:h-[500px] w-full"
 					initial={{ opacity: 0 }}
 					ref={containerRef}
-					transition={{ duration: 0.5, delay: 0.3 }}
+					transition={{ duration: 0.35, delay: 0.15 }}
 				>
 					{/* Left: Tools - Increased space-y to space-y-8 for more vertical separation */}
 					<div className="z-30 absolute left-0 top-1/2 transform -translate-y-1/2 w-1/3 flex flex-col items-center space-y-8">
@@ -174,26 +174,23 @@ export const ReplacementSection = () => {
 												opacity: 1,
 												scale: 1,
 											}
-										: { x: shouldReduceMotion ? 0 : -50, opacity: 0 }
+										: { x: shouldReduceMotion ? 0 : -24, opacity: 0 }
 								}
-								className="flex items-center p-3 rounded-lg shadow-md bg-card border border-border hover:border-primary/20"
-								initial={{ x: shouldReduceMotion ? 0 : -50, opacity: 0 }}
+								className="flex items-center p-3 rounded-2xl border bg-card shadow-sm hover:shadow-md hover:border-primary/20 transition-shadow duration-150"
+								initial={{ x: shouldReduceMotion ? 0 : -24, opacity: 0 }}
 								key={tool.name}
 								onAnimationComplete={measurePositions}
 								ref={(el) => {
 									toolRefs.current[index] = el;
 								}}
 								transition={{
-									duration: 0.5,
-									delay: 0.4 + index * 0.1,
+									duration: 0.35,
+									delay: 0.2 + index * 0.06,
 								}}
-								whileHover={{
-									scale: 1.05,
-									boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-								}}
+								whileHover={shouldReduceMotion ? undefined : { scale: 1.02 }}
 							>
 								<motion.div>
-									<tool.icon className="mr-2" color={tool.color} size={24} />
+									<tool.icon className="mr-2 size-6" color={tool.color} />
 								</motion.div>
 								<span className="font-medium text-card-foreground">
 									{tool.name}
@@ -226,19 +223,19 @@ export const ReplacementSection = () => {
 						animate={
 							isInView
 								? { x: 0, opacity: 1 }
-								: { x: shouldReduceMotion ? 0 : 50, opacity: 0 }
+								: { x: shouldReduceMotion ? 0 : 24, opacity: 0 }
 						}
 						className="absolute left-[70%] top-[40%] -translate-x-1/2 -translate-y-1/2 w-1/3 flex justify-center z-30"
-						initial={{ x: shouldReduceMotion ? 0 : 50, opacity: 0 }}
+						initial={{ x: shouldReduceMotion ? 0 : 24, opacity: 0 }}
 						onAnimationComplete={measurePositions}
-						transition={{ duration: 0.7, delay: 0.5 }}
+						transition={{ duration: 0.4, delay: 0.25 }}
 					>
 						<div
 							className="bg-primary text-primary-foreground p-6 md:p-8 rounded-2xl shadow-lg flex flex-col items-center justify-center"
 							ref={logoRef}
 						>
-							<div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
-								<div className="relative w-full h-full">
+							<div className="size-16 md:w-20 md:h-20 flex items-center justify-center">
+								<div className="relative size-full">
 									<Image
 										alt="Proddy Logo"
 										className="object-contain"

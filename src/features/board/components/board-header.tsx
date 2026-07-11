@@ -42,7 +42,7 @@ interface StatusStatsProps {
 const StatusStats = ({ totalIssues, statusCount }: StatusStatsProps) => (
 	<div className="flex items-center gap-3 text-xs text-muted-foreground">
 		<span className="flex items-center gap-1.5">
-			<span className="w-2 h-2 rounded-full bg-primary/60" />
+			<span className="size-2 rounded-full bg-primary/60" />
 			<span>
 				<strong className="text-foreground">{statusCount}</strong>{" "}
 				{statusCount === 1 ? "status" : "statuses"}
@@ -62,7 +62,7 @@ interface ViewSwitcherProps {
 }
 
 const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
-	<div className="flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/40">
+	<div className="flex items-center bg-muted rounded-full p-1">
 		{(
 			[
 				{ id: "kanban", icon: LayoutGrid, label: "Board" },
@@ -72,9 +72,9 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 			<Button
 				aria-label={label}
 				className={cn(
-					"h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs transition-all",
+					"h-7 px-3 flex items-center gap-1.5 rounded-full text-xs transition-colors duration-fast",
 					view === id
-						? "bg-background text-foreground shadow-sm"
+						? "bg-card text-foreground shadow-sm"
 						: "text-muted-foreground hover:text-foreground"
 				)}
 				key={id}
@@ -82,7 +82,7 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 				size="sm"
 				variant="ghost"
 			>
-				<Icon className="w-3.5 h-3.5" />
+				<Icon className="size-3.5" />
 				<span className="hidden sm:inline">{label}</span>
 			</Button>
 		))}
@@ -99,12 +99,12 @@ const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Add status"
-					className="h-8 gap-1.5 text-xs border-border/50 bg-transparent hover:bg-muted/60"
+					className="h-8 gap-1.5 text-xs"
 					onClick={onClick}
 					size="sm"
 					variant="outline"
 				>
-					<Plus className="w-3.5 h-3.5" />
+					<Plus className="size-3.5" />
 					<span className="hidden md:inline">Add status</span>
 				</Button>
 			</TooltipTrigger>
@@ -123,12 +123,12 @@ const SearchButton = ({ onClick }: SearchButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Search issues"
-					className="h-8 w-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
+					className="size-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
 					onClick={onClick}
 					size="icon"
 					variant="ghost"
 				>
-					<Search className="w-4 h-4" />
+					<Search className="size-4" />
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>Search issues (⌘K)</TooltipContent>
@@ -146,12 +146,12 @@ const LinkageDiagramButton = ({ onClick }: LinkageDiagramButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="View linkage diagram"
-					className="h-8 w-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
+					className="size-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
 					onClick={onClick}
 					size="icon"
 					variant="ghost"
 				>
-					<Network className="w-4 h-4" />
+					<Network className="size-4" />
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>View issue linkage diagram</TooltipContent>
@@ -180,18 +180,16 @@ const ConnectChannelButton = ({
 							: "Connect status updates channel"
 					}
 					className={cn(
-						"h-8 w-8 p-0 flex-shrink-0 relative transition-colors",
-						isConnected
-							? "text-emerald-500 hover:bg-emerald-500/10"
-							: "hover:bg-muted"
+						"size-8 p-0 flex-shrink-0 relative transition-colors",
+						isConnected ? "text-success hover:bg-success/10" : "hover:bg-muted"
 					)}
 					onClick={onClick}
 					size="icon"
 					variant="ghost"
 				>
-					<Link2 className="w-4 h-4" />
+					<Link2 className="size-4" />
 					{isConnected && (
-						<Check className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-background text-emerald-500" />
+						<Check className="absolute bottom-0.5 right-0.5 size-2.5 rounded-full bg-background text-success" />
 					)}
 				</Button>
 			</TooltipTrigger>
@@ -218,7 +216,7 @@ const AnalyzeBlockersButton = ({
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Detect blockers"
-					className="h-8 gap-1.5 text-xs border-border/50 bg-transparent hover:bg-muted/60"
+					className="h-8 gap-1.5 text-xs"
 					disabled={loading}
 					onClick={onClick}
 					size="sm"
@@ -226,12 +224,12 @@ const AnalyzeBlockersButton = ({
 				>
 					{loading ? (
 						<>
-							<Loader2 className="w-3.5 h-3.5 animate-spin" />
+							<Loader2 className="size-3.5 animate-spin" />
 							<span className="hidden md:inline">Detecting…</span>
 						</>
 					) : (
 						<>
-							<Bot className="w-3.5 h-3.5" />
+							<Bot className="size-3.5" />
 							<span className="hidden md:inline">Detect blockers</span>
 						</>
 					)}

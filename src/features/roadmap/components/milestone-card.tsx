@@ -46,13 +46,11 @@ export const MILESTONE_STATUS_CONFIG: Record<
 	},
 	in_progress: {
 		label: "In Progress",
-		className:
-			"bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+		className: "bg-primary/10 text-primary border-primary/20",
 	},
 	completed: {
 		label: "Completed",
-		className:
-			"bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+		className: "bg-success/10 text-success border-success/20",
 	},
 	archived: {
 		label: "Archived",
@@ -111,7 +109,7 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 	return (
 		<div
 			className={cn(
-				"group w-full overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md",
+				"group w-full overflow-hidden rounded-2xl border bg-card shadow-sm transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0",
 				milestone.status === "archived" && "opacity-60"
 			)}
 		>
@@ -165,7 +163,7 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 								<DropdownMenuItem
 									onClick={() => handleStatusChange("in_progress")}
 								>
-									<Play className="mr-2 size-4 text-blue-500" />
+									<Play className="mr-2 size-4 text-primary" />
 									Mark in progress
 								</DropdownMenuItem>
 							)}
@@ -173,7 +171,7 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 								<DropdownMenuItem
 									onClick={() => handleStatusChange("completed")}
 								>
-									<CheckCircle className="mr-2 size-4 text-emerald-500" />
+									<CheckCircle className="mr-2 size-4 text-success" />
 									Mark completed
 								</DropdownMenuItem>
 							)}
@@ -208,7 +206,7 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 									daysUntil < 0
 										? "text-destructive"
 										: daysUntil < 7
-											? "text-orange-500"
+											? "text-warning"
 											: "text-muted-foreground"
 								)}
 							>

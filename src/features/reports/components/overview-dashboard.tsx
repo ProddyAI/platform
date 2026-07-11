@@ -8,15 +8,14 @@ import {
 	CheckSquare,
 	Hash,
 	MessageSquare,
-	Minus,
-	TrendingDown,
-	TrendingUp,
 	Users,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
+import { AnimatedNumber } from "@/components/animated-number";
+import { getDeltaVisual, StatCard } from "@/components/stat-card";
 import {
 	Card,
 	CardContent,
@@ -44,37 +43,6 @@ const TIME_RANGE_LABEL: Record<"1d" | "7d" | "30d", string> = {
 	"1d": "in the last 24 hours",
 	"7d": "in the last 7 days",
 	"30d": "in the last 30 days",
-};
-
-type TrendVisual = {
-	Icon: typeof TrendingUp;
-	className: string;
-	label: string;
-};
-
-// Shared trend styling so a positive/negative/flat change always renders the
-// same icon and color everywhere it appears, and a 0% change reads as
-// neutral rather than a false-positive green "up" arrow.
-const getTrendVisual = (change: number): TrendVisual => {
-	const label = `${Math.abs(change)}%`;
-
-	if (change > 0) {
-		return {
-			Icon: TrendingUp,
-			className: "text-green-700 dark:text-green-400",
-			label,
-		};
-	}
-
-	if (change < 0) {
-		return {
-			Icon: TrendingDown,
-			className: "text-red-600 dark:text-red-400",
-			label,
-		};
-	}
-
-	return { Icon: Minus, className: "text-muted-foreground", label };
 };
 
 // Keeps the last successfully loaded value on screen while a query is
@@ -235,15 +203,9 @@ export const OverviewDashboard = ({
 		};
 	}, [stableOverviewData, stablePreviousOverviewData]);
 
-	const trendVisuals = useMemo(() => {
-		if (!trends) return null;
-
-		return {
-			activeUsers: getTrendVisual(trends.activeUsers),
-			messages: getTrendVisual(trends.messages),
-			tasks: getTrendVisual(trends.tasks),
-		};
-	}, [trends]);
+	// Chip visual for the Active Users tile, which stays a hand-built Card
+	// (rather than StatCard) because it doubles as a Tooltip trigger.
+	const activeUsersDelta = trends ? getDeltaVisual(trends.activeUsers) : null;
 
 	// Prepare data for activity trend chart
 	const activityTrendData = useMemo(() => {
@@ -330,8 +292,8 @@ export const OverviewDashboard = ({
 	if (!stableOverviewData) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg">
-				<BarChartIcon className="h-12 w-12 text-muted-foreground mb-2" />
-				<h3 className="text-lg font-medium">No Overview Data</h3>
+				<BarChartIcon className="size-12 text-muted-foreground mb-2" />
+				<h3 className="text-lg font-medium">No overview data</h3>
 				<p className="text-sm text-muted-foreground">
 					There is no data available for the selected time period.
 				</p>
@@ -352,39 +314,38 @@ export const OverviewDashboard = ({
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Card className="cursor-help border-border" tabIndex={0}>
-								<CardHeader className="pb-2">
-									<CardTitle className="text-sm font-medium text-muted-foreground/90">
-										Active Users
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center">
-											<Users className="h-5 w-5 text-secondary mr-2" />
-											<div className="text-2xl font-bold text-foreground">
-												{stableActiveUsersData?.activeUserCount || 0}
-											</div>
-										</div>
-										{trendVisuals && (
-											<div
-												className={`flex items-center text-sm font-medium ${trendVisuals.activeUsers.className}`}
-											>
-												<trendVisuals.activeUsers.Icon className="h-4 w-4 mr-1" />
-												{trendVisuals.activeUsers.label}
-											</div>
-										)}
+							{/* Hand-built to match StatCard's layout: this tile also acts as
+							    a Tooltip trigger, and StatCard isn't a forwardRef component
+							    so it can't safely receive the trigger's ref + handlers. */}
+							<Card className="cursor-help p-5" tabIndex={0}>
+								<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+									<Users className="size-4" />
+									Active Users
+								</div>
+								<div className="mt-2 flex items-center justify-between gap-2">
+									<div className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+										<AnimatedNumber
+											value={stableActiveUsersData?.activeUserCount || 0}
+										/>
 									</div>
-									<CardDescription className="text-muted-foreground/80">
-										{stableActiveUsersData?.activeUserPercentage || 0}% of{" "}
-										{stableActiveUsersData?.totalMembers || 0} total users
-									</CardDescription>
-								</CardContent>
+									{activeUsersDelta && (
+										<span
+											className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${activeUsersDelta.chipClass}`}
+										>
+											<activeUsersDelta.Icon className="size-3" />
+											{activeUsersDelta.label}
+										</span>
+									)}
+								</div>
+								<div className="mt-2 text-xs text-muted-foreground">
+									{stableActiveUsersData?.activeUserPercentage || 0}% of{" "}
+									{stableActiveUsersData?.totalMembers || 0} total users
+								</div>
 							</Card>
 						</TooltipTrigger>
 						<TooltipContent className="max-w-xs" side="top">
 							<div className="space-y-1">
-								<p className="font-medium text-sm">Active Users:</p>
+								<p className="font-medium text-sm">Active users</p>
 								{stableActiveUsersData?.activeUsers &&
 								stableActiveUsersData.activeUsers.length > 0 ? (
 									<div className="space-y-1">
@@ -415,91 +376,45 @@ export const OverviewDashboard = ({
 					</Tooltip>
 				</TooltipProvider>
 
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Total Messages
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center">
-								<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-								<div className="text-2xl font-bold text-foreground">
-									{stableOverviewData.totalMessages
-										? stableOverviewData.totalMessages.toLocaleString()
-										: 0}
-								</div>
-							</div>
-							{trendVisuals && (
-								<div
-									className={`flex items-center text-sm font-medium ${trendVisuals.messages.className}`}
-								>
-									<trendVisuals.messages.Icon className="h-4 w-4 mr-1" />
-									{trendVisuals.messages.label}
-								</div>
-							)}
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							{stableOverviewData.activeUserCount > 0
-								? `${Math.round(stableOverviewData.totalMessages / stableOverviewData.activeUserCount)} per active user`
-								: "No active users"}{" "}
-							{TIME_RANGE_LABEL[timeRange]}
-						</CardDescription>
-					</CardContent>
-				</Card>
+				<StatCard
+					delta={trends?.messages}
+					deltaLabel={TIME_RANGE_LABEL[timeRange]}
+					icon={MessageSquare}
+					label="Total Messages"
+					value={
+						<AnimatedNumber value={stableOverviewData.totalMessages || 0} />
+					}
+				/>
 
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Tasks Created
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center">
-								<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-								<div className="text-2xl font-bold text-foreground">
-									{stableOverviewData.totalTasks}
-								</div>
-							</div>
-							{trendVisuals && (
-								<div
-									className={`flex items-center text-sm font-medium ${trendVisuals.tasks.className}`}
-								>
-									<trendVisuals.tasks.Icon className="h-4 w-4 mr-1" />
-									{trendVisuals.tasks.label}
-								</div>
-							)}
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							{stableTaskData && stableTaskData.completedTasks > 0
-								? `${Math.round((stableTaskData.completedTasks / stableTaskData.totalTasks) * 100)}% completion rate`
-								: "0% completion rate"}
-						</CardDescription>
-					</CardContent>
-				</Card>
+				<StatCard
+					delta={trends?.tasks}
+					deltaLabel={
+						stableTaskData && stableTaskData.completedTasks > 0
+							? `${Math.round((stableTaskData.completedTasks / stableTaskData.totalTasks) * 100)}% completion rate`
+							: "0% completion rate"
+					}
+					icon={CheckSquare}
+					label="Tasks Created"
+					value={<AnimatedNumber value={stableOverviewData.totalTasks} />}
+				/>
 
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Active Channels
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold text-foreground">
-								{stableOverviewData.totalChannels}
-							</div>
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							{stableOverviewData.totalMessages > 0 &&
-							stableOverviewData.totalChannels > 0
-								? `${Math.round(stableOverviewData.totalMessages / stableOverviewData.totalChannels)} messages per channel`
-								: "No messages"}
-						</CardDescription>
-					</CardContent>
+				{/* No previous-period comparison exists for this metric, so it stays
+				    a plain tile (StatCard's caption only renders alongside a delta
+				    chip) rather than a full StatCard. */}
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Hash className="size-4" />
+						Active Channels
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber value={stableOverviewData.totalChannels} />
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{stableOverviewData.totalMessages > 0 &&
+						stableOverviewData.totalChannels > 0
+							? `${Math.round(stableOverviewData.totalMessages / stableOverviewData.totalChannels)} messages per channel`
+							: "No messages"}
+					</div>
 				</Card>
 			</div>
 
@@ -509,7 +424,7 @@ export const OverviewDashboard = ({
 				<Card className="flex flex-col">
 					<CardHeader className="pb-4 flex-shrink-0">
 						<CardTitle className="flex items-center gap-2">
-							<Activity className="h-5 w-5 text-secondary" />
+							<Activity className="size-5 text-muted-foreground" />
 							Activity Trend
 						</CardTitle>
 						<CardDescription>
@@ -520,7 +435,7 @@ export const OverviewDashboard = ({
 						{activityTrendData.length > 0 ? (
 							<div className="flex-1 flex items-center justify-center h-[400px] max-h-[400px] overflow-hidden">
 								<LineChart
-									className="w-full h-full"
+									className="size-full"
 									data={activityTrendData}
 									formatValue={(value) => `${value} messages`}
 									height={350}
@@ -529,11 +444,11 @@ export const OverviewDashboard = ({
 						) : (
 							<div className="flex-1 flex items-center justify-center h-[400px]">
 								<div className="text-center p-8 bg-muted/20 rounded-lg w-full">
-									<Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+									<Activity className="size-12 text-muted-foreground mx-auto mb-4" />
 									<h3 className="text-lg font-medium text-muted-foreground mb-2">
 										No activity data available
 									</h3>
-									<p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
+									<p className="text-sm text-muted-foreground max-w-sm mx-auto">
 										Messages will appear here once users start chatting in this
 										workspace
 									</p>
@@ -547,7 +462,7 @@ export const OverviewDashboard = ({
 				<Card className="flex flex-col">
 					<CardHeader className="pb-4 flex-shrink-0">
 						<CardTitle className="flex items-center gap-2">
-							<CheckSquare className="h-5 w-5 text-secondary" />
+							<CheckSquare className="size-5 text-muted-foreground" />
 							Task Completion
 						</CardTitle>
 						<CardDescription>
@@ -568,8 +483,8 @@ export const OverviewDashboard = ({
 								{/* Task Statistics */}
 								<div className="w-full space-y-2 px-2">
 									<div className="grid grid-cols-2 gap-2">
-										<div className="text-center p-2 bg-chart-2/10 dark:bg-chart-2/20 rounded-lg border border-chart-2/30">
-											<div className="text-xl font-bold text-foreground">
+										<div className="text-center p-2 bg-success/10 dark:bg-success/20 rounded-lg border border-success/30">
+											<div className="text-xl font-semibold tabular-nums text-foreground">
 												{stableTaskData.completedTasks}
 											</div>
 											<div className="text-xs text-muted-foreground">
@@ -577,7 +492,7 @@ export const OverviewDashboard = ({
 											</div>
 										</div>
 										<div className="text-center p-2 bg-muted/40 rounded-lg border border-muted-foreground/20">
-											<div className="text-xl font-bold text-foreground">
+											<div className="text-xl font-semibold tabular-nums text-foreground">
 												{stableTaskData.totalTasks -
 													stableTaskData.completedTasks}
 											</div>
@@ -598,7 +513,7 @@ export const OverviewDashboard = ({
 										</div>
 										<div className="w-full bg-muted rounded-full h-1.5">
 											<div
-												className="bg-chart-2 h-1.5 rounded-full transition-all duration-500"
+												className="bg-success h-1.5 rounded-full transition-[width] duration-slow ease-out"
 												style={{
 													width: `${stableTaskData.totalTasks > 0 ? (stableTaskData.completedTasks / stableTaskData.totalTasks) * 100 : 0}%`,
 												}}
@@ -610,11 +525,11 @@ export const OverviewDashboard = ({
 						) : (
 							<div className="flex-1 flex items-center justify-center h-[400px]">
 								<div className="text-center p-8 bg-muted/20 rounded-lg w-full">
-									<CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+									<CheckSquare className="size-12 text-muted-foreground mx-auto mb-4" />
 									<h3 className="text-lg font-medium text-muted-foreground mb-2">
 										No task data available
 									</h3>
-									<p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
+									<p className="text-sm text-muted-foreground max-w-sm mx-auto">
 										Tasks will appear here once they are created in this
 										workspace
 									</p>

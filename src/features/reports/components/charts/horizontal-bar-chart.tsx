@@ -45,7 +45,7 @@ export const HorizontalBarChart = ({
 	const maxValue = Math.max(...data.map((item) => item.value));
 
 	return (
-		<div className={cn("w-full h-full overflow-auto", className)}>
+		<div className={cn("size-full overflow-auto", className)}>
 			<div className="space-y-4 min-h-0">
 				{data.map((item, index) => {
 					const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
@@ -56,20 +56,23 @@ export const HorizontalBarChart = ({
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>
 								{showValues && (
-									<span className="text-sm text-muted-foreground tabular-nums">
+									<span className="text-sm tabular-nums text-muted-foreground">
 										{formatValue(item.value)}
 									</span>
 								)}
 							</div>
 
 							<div
-								className="w-full bg-muted rounded-full overflow-hidden"
-								style={{ height: `${height ?? 12}px` }}
+								className={cn(
+									"w-full overflow-hidden rounded-full bg-muted",
+									!height && "h-2"
+								)}
+								style={height ? { height: `${height}px` } : undefined}
 							>
 								<div
 									className={cn(
-										"h-full rounded-full transition-all duration-500",
-										item.color || "bg-secondary",
+										"h-full rounded-full transition-[width,opacity] duration-slow ease-out",
+										item.color || "bg-primary",
 										isHovered ? "opacity-80" : "opacity-100",
 										animate &&
 											"animate-in slide-in-from-left motion-reduce:animate-none",
@@ -85,9 +88,11 @@ export const HorizontalBarChart = ({
 						return (
 							<button
 								aria-label={`${item.label}: ${formatValue(item.value)}`}
-								className="w-full space-y-1 text-left"
+								className="w-full space-y-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 								key={item.id ?? item.label}
+								onBlur={() => setHoveredIndex(null)}
 								onClick={() => onBarClick(item.label, item.value, index)}
+								onFocus={() => setHoveredIndex(index)}
 								onKeyDown={(event) => {
 									if (event.key === "Enter" || event.key === " ") {
 										event.preventDefault();

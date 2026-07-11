@@ -239,7 +239,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	if (isMessageLoading || status === "LoadingFirstPage") {
 		return (
-			<div className="flex h-full flex-col border-l border-border">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Thread</p>
 
@@ -257,7 +257,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	if (!message) {
 		return (
-			<div className="flex h-full flex-col border-l border-border">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Thread</p>
 
@@ -276,7 +276,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	return (
 		<ContextMenuProvider>
-			<div className="flex h-full flex-col border-l border-border">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-auto flex-col border-b px-4 py-3">
 					<div className="flex items-center justify-between mb-2">
 						{isEditingTitle ? (
@@ -302,7 +302,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 								/>
 								<Button
 									aria-label="Save thread title"
-									className="h-6 w-6"
+									className="size-6"
 									onClick={handleSaveTitle}
 									size="iconSm"
 									variant="ghost"
@@ -311,7 +311,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 								</Button>
 								<Button
 									aria-label="Cancel editing thread title"
-									className="h-6 w-6"
+									className="size-6"
 									onClick={handleCancelEditTitle}
 									size="iconSm"
 									variant="ghost"
@@ -324,7 +324,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 								<p className="text-lg font-bold">{savedTitle || "Thread"}</p>
 								<Button
 									aria-label="Edit thread title"
-									className="h-6 w-6"
+									className="size-6"
 									onClick={handleEditTitle}
 									size="iconSm"
 									variant="ghost"

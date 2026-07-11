@@ -39,22 +39,22 @@ export const SidebarItem = ({
 	const content = (
 		<div
 			className={cn(
-				"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
+				"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-full px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
 				isActive
-					? "bg-secondary-foreground/20 text-secondary-foreground shadow-sm hover:bg-secondary-foreground/30"
-					: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
-				isCollapsed && "justify-center px-1 md:px-2"
+					? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+					: "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground",
+				isCollapsed && "mx-auto size-9 justify-center px-0 md:px-0"
 			)}
 		>
 			{isCollapsed ? (
 				<div className="relative flex-shrink-0">
 					<Hint align="center" label={label} side="right">
-						<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+						<Icon className="size-4 md:size-5 flex-shrink-0" />
 					</Hint>
 				</div>
 			) : (
 				<>
-					<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+					<Icon className="size-4 md:size-5 flex-shrink-0" />
 					<span className="truncate min-w-0">{label}</span>
 				</>
 			)}
@@ -113,12 +113,12 @@ export const MemberItem = ({
 		<Button
 			asChild
 			className={cn(
-				"group py-2 md:py-2.5 flex items-center gap-2 md:gap-3 font-medium h-9 md:h-10 text-sm overflow-hidden rounded-[10px] transition-standard w-full",
+				"group py-2 md:py-2.5 flex items-center gap-2 md:gap-3 font-medium h-9 md:h-10 text-sm overflow-hidden rounded-full transition-standard w-full",
 				isActive
-					? "text-secondary-foreground bg-secondary-foreground/20 hover:bg-secondary-foreground/30 shadow-sm"
-					: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
+					? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+					: "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground",
 				isCollapsed
-					? "justify-center px-1 md:px-2"
+					? "mx-auto size-9 justify-center px-0"
 					: "justify-start px-2 md:px-4"
 			)}
 			size="sm"
@@ -132,7 +132,7 @@ export const MemberItem = ({
 					<div className="relative flex-shrink-0">
 						<Hint align="center" label={label} side="right">
 							<div className="relative">
-								<Avatar className="size-6 md:size-7 transition-transform duration-200 group-hover:scale-110">
+								<Avatar className="size-6 md:size-7">
 									<AvatarImage alt={label} src={image} />
 									<AvatarFallback
 										className="text-xs font-medium text-white"
@@ -143,7 +143,7 @@ export const MemberItem = ({
 								</Avatar>
 								{member && (
 									<PresenceIndicator
-										className="w-2 h-2 md:w-2.5 md:h-2.5"
+										className="size-2 md:w-2.5 md:h-2.5"
 										status={status}
 									/>
 								)}
@@ -153,7 +153,7 @@ export const MemberItem = ({
 				) : (
 					<>
 						<div className="relative mr-2 md:mr-3 flex-shrink-0">
-							<Avatar className="size-6 md:size-7 transition-transform duration-200 group-hover:scale-110">
+							<Avatar className="size-6 md:size-7">
 								<AvatarImage alt={label} src={image} />
 								<AvatarFallback
 									className="text-xs font-medium text-white"
@@ -164,7 +164,7 @@ export const MemberItem = ({
 							</Avatar>
 							{member && (
 								<PresenceIndicator
-									className="w-2 h-2 md:w-2.5 md:h-2.5"
+									className="size-2 md:w-2.5 md:h-2.5"
 									status={status}
 								/>
 							)}
@@ -205,7 +205,7 @@ export const ChannelItem = ({
 			return (
 				<Image
 					alt={`Channel icon for ${label}`}
-					className="h-full w-full rounded-full object-cover"
+					className="size-full rounded-full object-cover"
 					height={28}
 					onError={() => setImageLoadError(true)}
 					src={iconImageUrl}
@@ -217,7 +217,7 @@ export const ChannelItem = ({
 			return <span className="text-base">{icon}</span>;
 		}
 		return (
-			<span className="text-xs font-medium text-gray-600">
+			<span className="text-xs font-medium text-muted-foreground">
 				{channelFallback}
 			</span>
 		);
@@ -230,24 +230,24 @@ export const ChannelItem = ({
 		>
 			<div
 				className={cn(
-					"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
+					"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-full px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
 					isActive
-						? "bg-secondary-foreground/20 text-secondary-foreground shadow-sm hover:bg-secondary-foreground/30"
-						: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
-					isCollapsed && "justify-center px-1 md:px-2"
+						? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+						: "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground",
+					isCollapsed && "mx-auto size-9 justify-center px-0"
 				)}
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
 						<Hint align="center" label={label} side="right">
-							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
+							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-muted overflow-hidden">
 								{renderIcon()}
 							</div>
 						</Hint>
 					</div>
 				) : (
 					<>
-						<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden mr-2 md:mr-3 flex-shrink-0">
+						<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-muted overflow-hidden mr-2 md:mr-3 flex-shrink-0">
 							{renderIcon()}
 						</div>
 						<span className="truncate min-w-0">{label}</span>
@@ -285,7 +285,7 @@ export const ProjectItem = ({
 			return (
 				<Image
 					alt={`Project icon for ${label}`}
-					className="h-full w-full rounded-full object-cover"
+					className="size-full rounded-full object-cover"
 					height={28}
 					onError={() => setImageLoadError(true)}
 					src={iconImageUrl}
@@ -297,7 +297,7 @@ export const ProjectItem = ({
 			return <span className="text-base">{icon}</span>;
 		}
 		return (
-			<span className="text-xs font-medium text-gray-600">
+			<span className="text-xs font-medium text-muted-foreground">
 				{projectFallback}
 			</span>
 		);
@@ -310,24 +310,24 @@ export const ProjectItem = ({
 		>
 			<div
 				className={cn(
-					"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
+					"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-full px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
 					isActive
-						? "bg-secondary-foreground/20 text-secondary-foreground shadow-sm hover:bg-secondary-foreground/30"
-						: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
-					isCollapsed && "justify-center px-1 md:px-2"
+						? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+						: "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground",
+					isCollapsed && "mx-auto size-9 justify-center px-0"
 				)}
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
 						<Hint align="center" label={label} side="right">
-							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
+							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-muted overflow-hidden">
 								{renderIcon()}
 							</div>
 						</Hint>
 					</div>
 				) : (
 					<>
-						<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden mr-2 md:mr-3 flex-shrink-0">
+						<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-muted overflow-hidden mr-2 md:mr-3 flex-shrink-0">
 							{renderIcon()}
 						</div>
 						<span className="truncate min-w-0">{label}</span>

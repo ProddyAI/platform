@@ -118,9 +118,9 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 
 	if (isMemberLoading || isCurrentMemberLoading) {
 		return (
-			<div className="flex h-full flex-col">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
-					<p className="text-lg font-bold">Profile</p>
+					<p className="text-lg font-semibold">Profile</p>
 
 					<Button
 						aria-label="Close profile panel"
@@ -141,9 +141,9 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 
 	if (!member || !currentMember) {
 		return (
-			<div className="flex h-full flex-col">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
-					<p className="text-lg font-bold">Profile</p>
+					<p className="text-lg font-semibold">Profile</p>
 
 					<Button
 						aria-label="Close profile panel"
@@ -171,9 +171,9 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 			<UpdateDialog />
 			<RemoveDialog />
 
-			<div className="flex h-full flex-col">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
-					<p className="text-lg font-bold">Profile</p>
+					<p className="text-lg font-semibold">Profile</p>
 
 					<Button
 						aria-label="Close profile panel"
@@ -196,7 +196,7 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 				</div>
 
 				<div className="flex flex-col p-4">
-					<p className="text-xl font-bold">{member.user.name}</p>
+					<p className="text-xl font-semibold">{member.user.name}</p>
 
 					{currentMember.role === "admin" && currentMember._id !== memberId ? (
 						<div className="mt-4 flex items-center gap-2">
@@ -243,10 +243,12 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 				<Separator />
 
 				<div className="flex flex-col p-4">
-					<p className="mb-4 text-sm font-bold">Contact information</p>
+					<p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+						Contact information
+					</p>
 
 					<div className="flex items-center gap-2">
-						<div className="flex size-9 items-center justify-center rounded-md bg-muted">
+						<div className="flex size-9 items-center justify-center rounded-full bg-muted">
 							<MailIcon className="size-4" />
 						</div>
 

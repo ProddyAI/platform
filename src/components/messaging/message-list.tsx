@@ -167,7 +167,7 @@ export const MessageList = ({
 
 	return (
 		<ContextMenuProvider>
-			<div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4 px-1 md:px-4">
+			<div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4 px-1 md:px-5">
 				{recapData && (
 					<DailyRecapModal
 						date={recapData.date}
@@ -192,13 +192,13 @@ export const MessageList = ({
 								<Hint label="Generate daily recap">
 									<Button
 										aria-label="Generate daily recap"
-										className="h-7 w-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground"
+										className="size-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground"
 										disabled={isGeneratingRecap}
 										onClick={() => handleGenerateRecap(dateKey, messages)}
 										size="iconSm"
 										variant="ghost"
 									>
-										<Sparkles className="size-3 text-amber-500 dark:text-amber-400" />
+										<Sparkles className="size-3 text-secondary" />
 									</Button>
 								</Hint>
 							</div>

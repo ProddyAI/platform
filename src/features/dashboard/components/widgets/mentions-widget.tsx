@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, CheckCircle, Hash, Loader } from "lucide-react";
+import { AtSign, CheckCircle, Hash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -18,6 +18,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 interface MentionsWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -141,34 +142,29 @@ export const MentionsWidget = ({
 	};
 
 	if (isLoading || countsLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
-		<div className="space-y-4 pb-4">
+		<div className="space-y-3">
 			<WidgetHeader
 				action={
 					counts &&
 					counts.total > 0 && (
 						<Button
-							className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 							onClick={handleMarkAllAsRead}
 							size="sm"
 							variant="ghost"
 						>
-							<CheckCircle className="mr-2 h-4 w-4" />
+							<CheckCircle className="mr-2 size-4" />
 							Mark all as read
 						</Button>
 					)
 				}
 				badge={counts && counts.total > 0 ? counts.total : undefined}
-				className="pr-2"
 				controls={controls}
-				icon={<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />}
+				icon={<AtSign className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Mentions"
 			/>
@@ -186,7 +182,7 @@ export const MentionsWidget = ({
 								<WidgetCard key={mention.id}>
 									<div className="flex items-start gap-3">
 										<div className="relative">
-											<Avatar className="h-8 w-8">
+											<Avatar className="size-8">
 												<AvatarImage
 													alt={mention.author.name || "User avatar"}
 													src={mention.author.image}
@@ -212,7 +208,7 @@ export const MentionsWidget = ({
 															className="flex shrink-0 items-center gap-1 border-2"
 															variant="outline"
 														>
-															<Hash className="h-3 w-3" />
+															<Hash className="size-3" />
 															{mention.source.name}
 														</Badge>
 													)}
@@ -234,7 +230,7 @@ export const MentionsWidget = ({
 												})()}
 											</p>
 											<Button
-												className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+												className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 												onClick={() => handleViewMention(mention)}
 												size="sm"
 												variant="ghost"

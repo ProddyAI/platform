@@ -105,14 +105,14 @@ interface SeatWarningHeaderProps {
 const SeatWarningHeader = ({ seatChangePending }: SeatWarningHeaderProps) => {
 	return (
 		<div className="flex items-center gap-3">
-			<div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
+			<div className="size-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
 				<AlertTriangle className="size-5" />
 			</div>
 			<div className="flex flex-col">
-				<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
+				<span className="text-sm font-semibold text-foreground">
 					{seatChangePending ? "Billing pending" : "You're out of seats"}
 				</span>
-				<span className="text-[12px] text-amber-700 dark:text-amber-300">
+				<span className="text-[12px] text-muted-foreground">
 					{seatChangePending
 						? "Your new seat is processing."
 						: "You've reached your seat limit."}
@@ -189,7 +189,7 @@ const SeatQuantityControls = ({
 }: SeatQuantityControlsProps) => {
 	return (
 		<div className="space-y-1">
-			<Label className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+			<Label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-warning">
 				Seats to add
 			</Label>
 			<SeatStepper
@@ -198,7 +198,7 @@ const SeatQuantityControls = ({
 				seatsToAdd={seatsToAdd}
 				updateSeatsToAdd={updateSeatsToAdd}
 			/>
-			<p className="text-xs text-amber-700 dark:text-amber-300">
+			<p className="text-xs text-muted-foreground">
 				Your plan will have {newTotalSeats} seats
 			</p>
 		</div>
@@ -224,7 +224,7 @@ const AddSeatsButton = ({
 
 	return (
 		<Button
-			className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+			className="bg-warning hover:bg-warning/90 text-warning-foreground font-semibold"
 			disabled={addingSeats || seatChangePending}
 			loading={addingSeats}
 			onClick={handleAddSeat}
@@ -253,7 +253,7 @@ const SeatFullWarningBanner = ({
 	};
 
 	return (
-		<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2 duration-slow motion-reduce:animate-none">
+		<div className="p-4 bg-warning/10 border border-warning/30 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2 duration-slow motion-reduce:animate-none">
 			<SeatWarningHeader seatChangePending={seatChangePending} />
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 				<SeatQuantityControls

@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
 	Select,
@@ -121,6 +122,12 @@ export const RoadmapPanel = ({ projectId, workspaceId }: RoadmapPanelProps) => {
 	const timelineEntries =
 		view === "timeline" && filtered ? buildTimelineEntries(filtered) : [];
 
+	const pillClass = (status: StatusFilter) =>
+		cn(
+			"flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs transition-standard hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+			filter === status && "border-primary/50 bg-primary/10"
+		);
+
 	return (
 		<div className="flex h-full flex-col">
 			<div className="flex items-center justify-between border-b p-4">
@@ -160,70 +167,37 @@ export const RoadmapPanel = ({ projectId, workspaceId }: RoadmapPanelProps) => {
 				<div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
 					<button
 						aria-pressed={filter === "planned"}
-						className={cn(
-							"flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-							filter === "planned"
-								? "border-transparent bg-secondary text-secondary-foreground"
-								: "bg-background hover:bg-accent hover:text-accent-foreground"
-						)}
+						className={pillClass("planned")}
 						onClick={() => setFilter(filter === "planned" ? "all" : "planned")}
 						type="button"
 					>
 						<span className="inline-block size-1.5 rounded-full bg-muted-foreground/40" />
 						<span className="font-medium">{countOf("planned")}</span>
-						<span
-							className={
-								filter === "planned" ? undefined : "text-muted-foreground"
-							}
-						>
-							planned
-						</span>
+						<span className="text-muted-foreground">planned</span>
 					</button>
 					<button
 						aria-pressed={filter === "in_progress"}
-						className={cn(
-							"flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-							filter === "in_progress"
-								? "border-transparent bg-secondary text-secondary-foreground"
-								: "bg-background hover:bg-accent hover:text-accent-foreground"
-						)}
+						className={pillClass("in_progress")}
 						onClick={() =>
 							setFilter(filter === "in_progress" ? "all" : "in_progress")
 						}
 						type="button"
 					>
-						<span className="inline-block size-1.5 rounded-full bg-blue-400" />
+						<span className="inline-block size-1.5 rounded-full bg-primary" />
 						<span className="font-medium">{countOf("in_progress")}</span>
-						<span
-							className={
-								filter === "in_progress" ? undefined : "text-muted-foreground"
-							}
-						>
-							in progress
-						</span>
+						<span className="text-muted-foreground">in progress</span>
 					</button>
 					<button
 						aria-pressed={filter === "completed"}
-						className={cn(
-							"flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-							filter === "completed"
-								? "border-transparent bg-secondary text-secondary-foreground"
-								: "bg-background hover:bg-accent hover:text-accent-foreground"
-						)}
+						className={pillClass("completed")}
 						onClick={() =>
 							setFilter(filter === "completed" ? "all" : "completed")
 						}
 						type="button"
 					>
-						<span className="inline-block size-1.5 rounded-full bg-emerald-400" />
+						<span className="inline-block size-1.5 rounded-full bg-success" />
 						<span className="font-medium">{countOf("completed")}</span>
-						<span
-							className={
-								filter === "completed" ? undefined : "text-muted-foreground"
-							}
-						>
-							completed
-						</span>
+						<span className="text-muted-foreground">completed</span>
 					</button>
 
 					<Select
@@ -249,35 +223,34 @@ export const RoadmapPanel = ({ projectId, workspaceId }: RoadmapPanelProps) => {
 					<div className="space-y-3">
 						{/* Fixed-size decorative placeholders with no underlying data (JS-0437 exemption) — index is a safe key here */}
 						{Array.from({ length: 3 }).map((_, index) => (
-							<Skeleton className="h-40 w-full rounded-lg" key={index} />
+							<Skeleton className="h-40 w-full rounded-2xl" key={index} />
 						))}
 					</div>
 				) : !filtered || filtered.length === 0 ? (
-					<div className="flex h-full flex-col items-center justify-center py-16 text-center">
-						<div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
-							<Flag className="size-6 text-muted-foreground" />
-						</div>
-						<h3 className="font-medium text-sm">
-							{filter === "all"
-								? "No milestones yet"
-								: `No ${filter.replace("_", " ")} milestones`}
-						</h3>
-						<p className="mt-1 max-w-xs text-muted-foreground text-xs">
-							{filter === "all"
-								? "Define milestones to map out your product roadmap."
-								: "No milestones with this status found."}
-						</p>
-						{filter === "all" && (
-							<Button
-								className="mt-4"
-								onClick={() => setCreateOpen(true)}
-								size="sm"
-								variant="outline"
-							>
-								<Plus className="mr-1 size-4" />
-								Create milestone
-							</Button>
-						)}
+					<div className="flex h-full items-center justify-center">
+						<EmptyState
+							action={
+								filter === "all"
+									? {
+											label: "Create milestone",
+											icon: Plus,
+											onClick: () => setCreateOpen(true),
+										}
+									: undefined
+							}
+							description={
+								filter === "all"
+									? "Define milestones to map out your product roadmap."
+									: "No milestones with this status found."
+							}
+							icon={Flag}
+							size="sm"
+							title={
+								filter === "all"
+									? "No milestones yet"
+									: `No ${filter.replace("_", " ")} milestones`
+							}
+						/>
 					</div>
 				) : view === "grid" ? (
 					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

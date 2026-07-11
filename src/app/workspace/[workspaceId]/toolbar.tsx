@@ -14,7 +14,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -42,7 +42,6 @@ import {
 	CommandSeparator,
 } from "@/components/ui/command";
 import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
-import { UserButton } from "@/features/auth/components/user-button";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
@@ -188,7 +187,7 @@ const SearchDialogContent = ({
 					title="Toggle AI Search"
 					variant="ghost"
 				>
-					<Sparkles className="h-4 w-4" />
+					<Sparkles className="size-4" />
 				</Button>
 				<div className="flex-1">
 					{useAI ? (
@@ -230,7 +229,7 @@ const SearchDialogContent = ({
 									onSelect={onAiResultSelect}
 									value="ai-answer"
 								>
-									<div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+									<div className="bg-muted/50 border border-border rounded-lg p-3">
 										<p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
 											{aiResult.answer}
 										</p>
@@ -388,7 +387,7 @@ const SearchDialogContent = ({
 											value={`status:${status._id}:${status.channelId}`}
 										>
 											<div
-												className="w-2 h-2 rounded-full mr-2"
+												className="size-2 rounded-full mr-2"
 												style={{ backgroundColor: status.color }}
 											/>
 											<span className="truncate">{status.name}</span>
@@ -469,17 +468,12 @@ const SearchDialogContent = ({
 
 export const WorkspaceToolbar = () => {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	const params = useParams<{ channelId?: string }>();
 	const workspaceId = useWorkspaceId();
 	const title = useWorkspaceTitleSlot();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
 	const [isMac, setIsMac] = useState(true);
-	const [forceOpenUserSettings, setForceOpenUserSettings] = useState(false);
-	const [userSettingsTab, setUserSettingsTab] = useState<
-		"profile" | "notifications"
-	>("profile");
 
 	const { setIsOpen: setAiNotemakerOpen, generateNotes } =
 		useAiNotemakerStore();
@@ -494,6 +488,10 @@ export const WorkspaceToolbar = () => {
 	);
 	const channelId = params?.channelId as Id<"channels"> | undefined;
 	const activeBoardChannelId = channelId ?? boardSearchChannelId ?? undefined;
+	const pathname = usePathname();
+	// AI notes are generated from channel messages, so the action only makes
+	// sense on the channel chats page.
+	const isChannelChatsPage = Boolean(channelId) && pathname.endsWith("/chats");
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
@@ -530,7 +528,7 @@ export const WorkspaceToolbar = () => {
 			const projectId = projectIdByBoardChannelId.get(channelId);
 			const baseRoute = projectId
 				? `/workspace/${workspaceId}/project/${projectId}/board`
-				: `/workspace/${workspaceId}/issues`;
+				: `/workspace/${workspaceId}/tasks`;
 
 			return focusParam ? `${baseRoute}?${focusParam}` : baseRoute;
 		},
@@ -589,27 +587,6 @@ export const WorkspaceToolbar = () => {
 			aiInputRef.current?.focus();
 		}
 	}, [searchOpen, useAI]);
-
-	// Handle URL parameter for opening user settings
-	useEffect(() => {
-		const openUserSettings = searchParams.get("openUserSettings");
-		if (
-			openUserSettings === "profile" ||
-			openUserSettings === "notifications"
-		) {
-			setUserSettingsTab(openUserSettings);
-			setForceOpenUserSettings(true);
-
-			// Clean up URL parameter
-			const newUrl = new URL(window.location.href);
-			newUrl.searchParams.delete("openUserSettings");
-			router.replace(newUrl.pathname + newUrl.search);
-		}
-	}, [searchParams, router]);
-
-	const handleUserSettingsClose = () => {
-		setForceOpenUserSettings(false);
-	};
 
 	const onChannelClick = useCallback(
 		(channelId: Id<"channels">) => {
@@ -782,24 +759,23 @@ export const WorkspaceToolbar = () => {
 	}, [setSearchOpen]);
 
 	return (
-		// ml-[-2px] offsets the workspace sidebar's border-r-2 (see sidebar.tsx) so the
-		// same-color topbar and sidebar meet with no visible seam.
-		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 w-full min-w-0 max-w-full items-center overflow-x-hidden overflow-y-visible border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
+		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 w-full min-w-0 max-w-full items-center overflow-x-hidden overflow-y-visible border-b border-border bg-card">
 			{/* Left section - Entity info (Channel/Member/etc), supplied by the routed page */}
 			<div className="flex items-center px-2 md:px-6">{title}</div>
 
 			{/* Middle section - Search - Hidden on mobile */}
 			<div className="hidden md:block min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
 				<Button
-					className="h-9 w-full justify-start bg-white/10 px-3 hover:bg-white/20 transition-standard border border-white/10 rounded-[10px]"
+					className="h-9 w-full justify-start rounded-full border border-border bg-muted/50 px-4 text-muted-foreground hover:bg-muted transition-standard"
 					onClick={handleSearchOpen}
 					size="sm"
+					variant="ghost"
 				>
-					<Search className="mr-2 size-4 text-white" />
-					<span className="text-xs text-white">
+					<Search className="mr-2 size-4 text-muted-foreground" />
+					<span className="text-sm text-muted-foreground">
 						Search {workspace?.name ?? "workspace"}...
 					</span>
-					<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-90">
+					<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded-md border border-border bg-card px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
 						{isMac ? <span className="text-xs">⌘</span> : "Ctrl+"}K
 					</kbd>
 				</Button>
@@ -836,19 +812,19 @@ export const WorkspaceToolbar = () => {
 
 			{/* Right section - Actions */}
 			<div className="ml-auto flex flex-1 items-center justify-end gap-x-1.5 md:gap-x-3 px-3 md:px-6">
-				{/* AI Notemaker Component - only shown on channel pages */}
-				{channelId && (
+				{/* AI Notemaker Component - only shown on channel chats pages */}
+				{isChannelChatsPage && (
 					<div className="hidden md:flex">
 						<Button
-							className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
+							className="gap-2 h-9"
 							onClick={() => {
 								setAiNotemakerOpen(true);
 								generateNotes();
 							}}
 							size="sm"
-							variant="outline"
+							variant="secondary"
 						>
-							<Sparkles className="size-4" />
+							<Sparkles className="size-4 text-secondary" />
 							<span className="hidden sm:inline">Generate AI Notes</span>
 						</Button>
 					</div>
@@ -858,7 +834,7 @@ export const WorkspaceToolbar = () => {
 				<div className="md:hidden">
 					<Button
 						aria-label="Open search"
-						className="text-white relative hover:bg-white/15 transition-colors"
+						className="relative rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 						onClick={handleSearchOpen}
 						size="iconSm"
 						variant="ghost"
@@ -871,10 +847,10 @@ export const WorkspaceToolbar = () => {
 				<Hint label="Upgrade" side="bottom">
 					<Button
 						aria-label="Upgrade"
-						className="h-8 gap-1.5 px-2 text-white hover:bg-white/15 transition-colors sm:px-3"
+						className="h-8 gap-1.5 px-2 sm:px-3"
 						onClick={handleUpgradeClick}
 						size="sm"
-						variant="ghost"
+						variant="outline"
 					>
 						<ArrowUpCircle className="size-4" />
 						<span className="hidden text-xs font-medium sm:inline">
@@ -885,7 +861,7 @@ export const WorkspaceToolbar = () => {
 
 				<Hint label="Notifications" side="bottom">
 					<Button
-						className="text-white relative hover:bg-white/15 transition-colors"
+						className="relative rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 						onClick={handleNotificationsOpen}
 						size="iconSm"
 						variant="ghost"
@@ -894,7 +870,7 @@ export const WorkspaceToolbar = () => {
 							<Bell className="size-5" />
 							{!isLoadingMentions && counts && counts.total > 0 && (
 								<Badge
-									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500 border border-white shadow-sm text-[10px]"
+									className="absolute -top-2 -right-2 size-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground ring-2 ring-card shadow-sm text-[10px]"
 									variant="default"
 								>
 									{counts.total > 9 ? "9+" : counts.total}
@@ -913,13 +889,6 @@ export const WorkspaceToolbar = () => {
 				<PomodoroTimer />
 
 				<ThemeToggle />
-
-				{/* UserButton - Always visible (moved from footer on mobile) */}
-				<UserButton
-					defaultTab={userSettingsTab}
-					forceOpenSettings={forceOpenUserSettings}
-					onSettingsClose={handleUserSettingsClose}
-				/>
 			</div>
 		</nav>
 	);

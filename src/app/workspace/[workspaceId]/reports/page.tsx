@@ -43,8 +43,7 @@ import {
 	WorkspaceTitle,
 } from "../workspace-title-context";
 
-const TAB_TRIGGER_CLASS =
-	"data-[state=active]:bg-secondary/20 data-[state=active]:border-2 data-[state=active]:border-secondary data-[state=active]:text-secondary text-xs md:text-sm px-2 md:px-3";
+const TAB_TRIGGER_CLASS = "text-xs md:text-sm px-2 md:px-3";
 
 const ReportsPage = () => {
 	// Set document title
@@ -54,10 +53,8 @@ const ReportsPage = () => {
 
 	const workspaceId = useWorkspaceId();
 	const router = useRouter();
-	const [_searchQuery, _setSearchQuery] = useState("");
 	const [timeRange, setTimeRange] = useState<"1d" | "7d" | "30d">("7d");
 	const [isExporting, setIsExporting] = useState(false);
-	const [_activeTab, setActiveTab] = useState("overview");
 	const [exportFormat, setExportFormat] = useState<"json" | "pdf">("pdf");
 
 	// Get current member to check permissions
@@ -159,7 +156,7 @@ const ReportsPage = () => {
 			if (exportFormat === "pdf") {
 				// Export as PDF
 				await exportReportToPDF(exportData);
-				toast.success("Report exported as PDF successfully!");
+				toast.success("Report exported as PDF.");
 			} else {
 				// Export as JSON
 				const jsonData = JSON.stringify(exportData, null, 2);
@@ -172,7 +169,7 @@ const ReportsPage = () => {
 				link.click();
 				document.body.removeChild(link);
 				URL.revokeObjectURL(url);
-				toast.success("Report exported as JSON successfully!");
+				toast.success("Report exported as JSON.");
 			}
 		} catch (error) {
 			console.error("Failed to export data:", error);
@@ -188,7 +185,7 @@ const ReportsPage = () => {
 	if (memberLoading) {
 		return (
 			<div className="flex h-full items-center justify-center">
-				<Loader className="h-8 w-8 animate-spin text-primary" />
+				<Loader className="size-6 animate-spin text-muted-foreground" />
 			</div>
 		);
 	}
@@ -196,11 +193,11 @@ const ReportsPage = () => {
 	// Show access denied if no member data
 	if (!member) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center">
-				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
-				<h2 className="text-2xl font-bold">Access Denied</h2>
-				<p className="text-muted-foreground">
-					You don&apos;t have permission to access this page.
+			<div className="flex h-full flex-col items-center justify-center gap-y-2">
+				<Shield className="size-12 text-muted-foreground" />
+				<h2 className="text-lg font-semibold text-foreground">Access denied</h2>
+				<p className="text-sm text-muted-foreground">
+					You don&apos;t have permission to view reports.
 				</p>
 			</div>
 		);
@@ -212,39 +209,46 @@ const ReportsPage = () => {
 			<div className="border-b border-border bg-card px-4 py-4 flex-shrink-0">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
-						<h1 className="text-2xl font-bold tracking-tight text-foreground">
-							Reports & Analytics
+						<h1 className="text-2xl font-semibold tracking-tight text-foreground">
+							Reports
 						</h1>
-						<p className="text-muted-foreground/90">
-							Track workspace activity and performance metrics
+						<p className="text-sm text-muted-foreground">
+							Track workspace activity and performance over time
 						</p>
 					</div>
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 						{/* Time Range Filter */}
 						<div className="flex items-center gap-2 flex-wrap">
 							<span className="text-xs md:text-sm font-medium text-foreground">
-								Time Range:
+								Time range
 							</span>
-							<div className="flex rounded-md border border-input bg-background overflow-hidden">
+							<div
+								aria-label="Time range"
+								className="inline-flex items-center gap-1 rounded-full bg-muted p-1"
+								role="group"
+							>
 								<Button
-									className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
+									className="rounded-full text-xs md:text-sm px-2 md:px-4"
 									onClick={() => setTimeRange("1d")}
+									size="sm"
 									type="button"
 									variant={timeRange === "1d" ? "default" : "ghost"}
 								>
 									1 day
 								</Button>
 								<Button
-									className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
+									className="rounded-full text-xs md:text-sm px-2 md:px-4"
 									onClick={() => setTimeRange("7d")}
+									size="sm"
 									type="button"
 									variant={timeRange === "7d" ? "default" : "ghost"}
 								>
 									7 days
 								</Button>
 								<Button
-									className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
+									className="rounded-full text-xs md:text-sm px-2 md:px-4"
 									onClick={() => setTimeRange("30d")}
+									size="sm"
 									type="button"
 									variant={timeRange === "30d" ? "default" : "ghost"}
 								>
@@ -260,9 +264,9 @@ const ReportsPage = () => {
 									variant="outline"
 								>
 									{isExporting ? (
-										<Loader className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />
+										<Loader className="mr-1 md:mr-2 size-3 md:size-4 animate-spin" />
 									) : (
-										<Download className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+										<Download className="mr-1 md:mr-2 size-3 md:size-4" />
 									)}
 									<span className="hidden sm:inline">
 										Export {exportFormat.toUpperCase()}
@@ -272,12 +276,13 @@ const ReportsPage = () => {
 								<Popover>
 									<PopoverTrigger asChild>
 										<Button
+											aria-label="Choose export format"
 											className="rounded-l-none px-2"
 											disabled={isExporting || isOverviewLoading}
 											size="sm"
 											variant="outline"
 										>
-											<ChevronDown className="h-4 w-4" />
+											<ChevronDown className="size-4" />
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent className="w-40 p-2">
@@ -288,7 +293,7 @@ const ReportsPage = () => {
 												size="sm"
 												variant={exportFormat === "pdf" ? "default" : "ghost"}
 											>
-												<FileText className="mr-2 h-4 w-4" />
+												<FileText className="mr-2 size-4" />
 												PDF
 											</Button>
 											<Button
@@ -297,7 +302,7 @@ const ReportsPage = () => {
 												size="sm"
 												variant={exportFormat === "json" ? "default" : "ghost"}
 											>
-												<Download className="mr-2 h-4 w-4" />
+												<Download className="mr-2 size-4" />
 												JSON
 											</Button>
 										</div>
@@ -330,37 +335,33 @@ const ReportsPage = () => {
 								<TabsTrigger
 									aria-label="Overview"
 									className={TAB_TRIGGER_CLASS}
-									onClick={() => setActiveTab("overview")}
 									value="overview"
 								>
-									<BarChart className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<BarChart className="size-3 md:size-4 md:mr-2" />
 									<span className="hidden md:inline">Overview</span>
 								</TabsTrigger>
 								<TabsTrigger
 									aria-label="People"
 									className={TAB_TRIGGER_CLASS}
-									onClick={() => setActiveTab("people")}
 									value="people"
 								>
-									<Users className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<Users className="size-3 md:size-4 md:mr-2" />
 									<span className="hidden md:inline">People</span>
 								</TabsTrigger>
 								<TabsTrigger
 									aria-label="Content"
 									className={TAB_TRIGGER_CLASS}
-									onClick={() => setActiveTab("content")}
 									value="content"
 								>
-									<FileText className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<FileText className="size-3 md:size-4 md:mr-2" />
 									<span className="hidden md:inline">Content</span>
 								</TabsTrigger>
 								<TabsTrigger
 									aria-label="Performance"
 									className={TAB_TRIGGER_CLASS}
-									onClick={() => setActiveTab("performance")}
 									value="performance"
 								>
-									<Activity className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+									<Activity className="size-3 md:size-4 md:mr-2" />
 									<span className="hidden md:inline">Performance</span>
 								</TabsTrigger>
 							</TabsList>
@@ -375,7 +376,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="size-6 animate-spin text-muted-foreground" />
 								</div>
 							)}
 						</TabsContent>
@@ -387,11 +388,11 @@ const ReportsPage = () => {
 								<Tabs className="space-y-4" defaultValue="users">
 									<TabsList>
 										<TabsTrigger value="users">
-											<Users className="h-4 w-4 mr-2" />
+											<Users className="size-4 mr-2" />
 											Users
 										</TabsTrigger>
 										<TabsTrigger value="channels">
-											<Hash className="h-4 w-4 mr-2" />
+											<Hash className="size-4 mr-2" />
 											Channels
 										</TabsTrigger>
 									</TabsList>
@@ -412,7 +413,7 @@ const ReportsPage = () => {
 								</Tabs>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="size-6 animate-spin text-muted-foreground" />
 								</div>
 							)}
 						</TabsContent>
@@ -427,7 +428,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="size-6 animate-spin text-muted-foreground" />
 								</div>
 							)}
 						</TabsContent>
@@ -442,7 +443,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="size-6 animate-spin text-muted-foreground" />
 								</div>
 							)}
 						</TabsContent>

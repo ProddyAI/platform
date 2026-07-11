@@ -27,43 +27,30 @@ export type CalendarFilterOptions = {
 	eventTypes: EventType[];
 };
 
-// Single source of truth for per-event-type color and copy, shared by the
-// filter trigger dots and the toggle rows below. Keep in sync with the
-// count-badge colors in calendar-header.tsx.
+// Single source of truth for per-event-type copy, shared by the filter
+// trigger dots and the toggle rows below. Event types are told apart by icon
+// + label, not color — quiet chips. Labels match the count chips in
+// calendar-header.tsx and the event-card meta lines in page.tsx, so each
+// event type has one name everywhere. Switches fall back to the Switch
+// primitive's default (primary when checked).
 const EVENT_TYPE_META: Record<
 	EventType,
 	{
 		label: string;
 		icon: LucideIcon;
-		dotColor: string;
-		iconColor: string;
-		labelColor: string;
-		switchColor: string;
 	}
 > = {
 	message: {
-		label: "Message Events",
+		label: "Messages",
 		icon: MessageSquare,
-		dotColor: "bg-blue-500",
-		iconColor: "text-blue-500 dark:text-blue-400",
-		labelColor: "text-blue-700 dark:text-blue-400",
-		switchColor: "data-[state=checked]:bg-blue-500",
 	},
 	"board-card": {
-		label: "Board Assignments",
+		label: "Board cards",
 		icon: LayoutGrid,
-		dotColor: "bg-purple-500",
-		iconColor: "text-purple-500 dark:text-purple-400",
-		labelColor: "text-purple-700 dark:text-purple-400",
-		switchColor: "data-[state=checked]:bg-purple-500",
 	},
 	task: {
-		label: "My Tasks",
+		label: "Tasks",
 		icon: CheckSquare,
-		dotColor: "bg-green-500",
-		iconColor: "text-green-500 dark:text-green-400",
-		labelColor: "text-green-700 dark:text-green-400",
-		switchColor: "data-[state=checked]:bg-green-500",
 	},
 };
 
@@ -98,7 +85,10 @@ export const CalendarFilter = ({
 		return filterOptions.eventTypes.includes(type);
 	};
 
-	const allTypesSelected = filterOptions.eventTypes.length === 3; // All 3 types selected
+	const allTypesSelected =
+		filterOptions.eventTypes.length === EVENT_TYPE_ORDER.length;
+	const someTypesHidden =
+		filterOptions.eventTypes.length > 0 && !allTypesSelected;
 
 	return (
 		<div className="flex items-center gap-2">
@@ -106,42 +96,33 @@ export const CalendarFilter = ({
 				<DropdownMenuTrigger asChild>
 					<Button
 						className={cn(
-							"flex items-center gap-1.5 border rounded-md transition-all",
-							filterOptions.eventTypes.length > 0 &&
-								filterOptions.eventTypes.length < 3 &&
-								"bg-muted border-border"
+							"flex items-center gap-1.5 transition-standard",
+							someTypesHidden && "border-border bg-muted"
 						)}
 						variant="outline"
 					>
-						<Filter className="h-4 w-4" />
+						<Filter className="size-4" />
 						<span>Filter</span>
-						{filterOptions.eventTypes.length > 0 &&
-							filterOptions.eventTypes.length < 3 && (
-								<div
-									aria-label={`${filterOptions.eventTypes.length} of 3 event types shown`}
-									className="flex ml-1 gap-1"
-									role="img"
-								>
-									{EVENT_TYPE_ORDER.filter((type) =>
-										filterOptions.eventTypes.includes(type)
-									).map((type) => (
-										<div
-											className={cn(
-												"w-2 h-2 rounded-full",
-												EVENT_TYPE_META[type].dotColor
-											)}
-											key={type}
-										/>
-									))}
-								</div>
-							)}
+						{someTypesHidden && (
+							<div
+								aria-label={`${filterOptions.eventTypes.length} of ${EVENT_TYPE_ORDER.length} event types shown`}
+								className="ml-1 flex gap-1"
+								role="img"
+							>
+								{EVENT_TYPE_ORDER.filter((type) =>
+									filterOptions.eventTypes.includes(type)
+								).map((type) => (
+									<div className="size-2 rounded-full bg-primary" key={type} />
+								))}
+							</div>
+						)}
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuLabel className="flex items-center justify-between">
-						<span>Event Types</span>
+						<span>Event types</span>
 						<Button
-							className="h-7 text-xs px-2"
+							className="h-7 px-2 text-xs"
 							onClick={() =>
 								onFilterChange({
 									eventTypes: allTypesSelected ? [] : EVENT_TYPE_ORDER,
@@ -150,7 +131,7 @@ export const CalendarFilter = ({
 							size="sm"
 							variant="ghost"
 						>
-							{allTypesSelected ? "Clear All" : "Select All"}
+							{allTypesSelected ? "Clear all" : "Select all"}
 						</Button>
 					</DropdownMenuLabel>
 					<DropdownMenuSeparator />
@@ -163,21 +144,17 @@ export const CalendarFilter = ({
 
 							return (
 								<div
-									className="flex items-center justify-between space-x-2"
+									className="flex items-center justify-between gap-2"
 									key={type}
 								>
-									<div className="flex items-center space-x-2">
-										<Icon className={cn("h-4 w-4", meta.iconColor)} />
-										<Label
-											className={cn("cursor-pointer", meta.labelColor)}
-											htmlFor={id}
-										>
+									<div className="flex items-center gap-2">
+										<Icon className="size-4 text-muted-foreground" />
+										<Label className="cursor-pointer" htmlFor={id}>
 											{meta.label}
 										</Label>
 									</div>
 									<Switch
 										checked={isEventTypeSelected(type)}
-										className={meta.switchColor}
 										id={id}
 										onCheckedChange={() => toggleEventType(type)}
 									/>

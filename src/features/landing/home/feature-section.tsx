@@ -60,18 +60,18 @@ export const FeatureSection = () => {
 			<div className="w-full px-6 md:px-8 relative z-10">
 				<div className="text-center mb-10 max-w-7xl mx-auto">
 					<motion.h2
-						animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+						animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
 						className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
+						transition={{ duration: 0.35, delay: 0.05 }}
 					>
 						Powerful <span className="text-primary">Tools</span> for Every Need
 					</motion.h2>
 					<motion.p
-						animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+						animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
 						className="text-lg text-muted-foreground max-w-[800px] mx-auto mb-6"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.2 }}
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
+						transition={{ duration: 0.35, delay: 0.1 }}
 					>
 						Each tool works on its own or as part of the integrated ecosystem.
 					</motion.p>
@@ -79,10 +79,10 @@ export const FeatureSection = () => {
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto h-full">
 					<motion.div
-						animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-						className="lg:col-span-1 bg-card rounded-xl shadow-md p-6 h-full flex flex-col"
-						initial={{ opacity: 0, x: shouldReduceMotion ? 0 : -20 }}
-						transition={{ duration: 0.5, delay: 0.3 }}
+						animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -12 }}
+						className="lg:col-span-1 rounded-2xl border bg-card shadow-sm p-6 h-full flex flex-col"
+						initial={{ opacity: 0, x: shouldReduceMotion ? 0 : -12 }}
+						transition={{ duration: 0.35, delay: 0.15 }}
 					>
 						<h3
 							className="text-lg font-bold mb-4 text-foreground"
@@ -124,14 +124,14 @@ export const FeatureSection = () => {
 					</motion.div>
 
 					<motion.div
-						animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+						animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
 						aria-labelledby={`module-tab-${activeFeature.id}`}
-						className="lg:col-span-2 bg-card rounded-xl shadow-md overflow-hidden h-full"
+						className="lg:col-span-2 rounded-2xl border bg-card shadow-sm overflow-hidden h-full"
 						id="active-module-panel"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 12 }}
 						role="tabpanel"
 						tabIndex={0}
-						transition={{ duration: 0.5, delay: 0.4 }}
+						transition={{ duration: 0.35, delay: 0.2 }}
 					>
 						<div className="grid grid-cols-1 md:grid-cols-2 h-full">
 							<div className="p-6 flex flex-col justify-between">

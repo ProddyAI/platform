@@ -18,7 +18,8 @@ import {
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { isUnlimited } from "@/../convex/billing/plans";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -47,48 +48,43 @@ function usageState(used: number, limit: number) {
 	if (isUnlimited(limit)) {
 		return {
 			badge: "Unlimited",
-			barClass: "bg-muted-foreground/40",
+			badgeVariant: "outline" as BadgeProps["variant"],
 			badgeClass: "border-border bg-muted text-foreground",
+			barClass: "bg-muted-foreground/40",
 			iconClass: "bg-muted text-foreground",
 			text: "Unlimited quota",
-			tone: "neutral" as const,
 		};
 	}
 
 	if (percent >= 100 || used >= limit) {
 		return {
 			badge: "Limit reached",
-			barClass: "bg-rose-500",
-			badgeClass:
-				"border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300",
-			iconClass:
-				"bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
+			badgeVariant: "destructiveSoft" as BadgeProps["variant"],
+			badgeClass: "",
+			barClass: "bg-destructive",
+			iconClass: "bg-destructive/10 text-destructive",
 			text: "No quota remaining",
-			tone: "danger" as const,
 		};
 	}
 
 	if (percent >= 80) {
 		return {
 			badge: "Near limit",
-			barClass: "bg-amber-500",
-			badgeClass:
-				"border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300",
-			iconClass:
-				"bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+			badgeVariant: "warning" as BadgeProps["variant"],
+			badgeClass: "",
+			barClass: "bg-warning",
+			iconClass: "bg-warning/10 text-warning",
 			text: `${Math.max(limit - used, 0).toLocaleString()} remaining`,
-			tone: "warning" as const,
 		};
 	}
 
 	return {
 		badge: "Healthy",
-		barClass: percent === 0 ? "bg-muted-foreground/30" : "bg-emerald-500",
-		badgeClass:
-			"border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300",
-		iconClass: "bg-muted text-muted-foreground",
+		badgeVariant: "success" as BadgeProps["variant"],
+		badgeClass: "",
+		barClass: percent === 0 ? "bg-muted-foreground/30" : "bg-success",
+		iconClass: "bg-success/10 text-success",
 		text: `${Math.max(limit - used, 0).toLocaleString()} remaining`,
-		tone: "good" as const,
 	};
 }
 
@@ -99,7 +95,7 @@ function MetricRow({ item }: { item: UsageItem }) {
 	const state = usageState(item.used, item.limit);
 
 	return (
-		<div className="grid gap-4 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-primary/30 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
+		<div className="grid gap-4 rounded-2xl border bg-card p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
 			<div className="flex min-w-0 items-start gap-3">
 				<div
 					className={cn(
@@ -107,7 +103,7 @@ function MetricRow({ item }: { item: UsageItem }) {
 						state.iconClass
 					)}
 				>
-					<Icon className="size-4" />
+					<Icon aria-hidden="true" className="size-4" />
 				</div>
 				<div className="min-w-0">
 					<div className="flex flex-wrap items-center gap-2">
@@ -115,11 +111,8 @@ function MetricRow({ item }: { item: UsageItem }) {
 							{item.label}
 						</p>
 						<Badge
-							className={cn(
-								"h-5 rounded-full border px-2 text-[11px] font-medium",
-								state.badgeClass
-							)}
-							variant="outline"
+							className={cn("h-5 px-2", state.badgeClass)}
+							variant={state.badgeVariant}
 						>
 							{state.badge}
 						</Badge>
@@ -139,26 +132,30 @@ function MetricRow({ item }: { item: UsageItem }) {
 							{unlimited ? "Unlimited" : item.limit.toLocaleString()}
 						</span>
 					</p>
-					<p className="text-xs font-medium tabular-nums text-muted-foreground">
-						{unlimited ? "Open" : `${Math.round(percent)}%`}
-					</p>
+					{!unlimited && (
+						<p className="text-xs font-medium tabular-nums text-muted-foreground">
+							{`${Math.round(percent)}%`}
+						</p>
+					)}
 				</div>
 				{unlimited ? (
-					<div className="h-2 rounded-full bg-muted">
-						<div className="h-full w-full rounded-full bg-muted-foreground/30" />
+					<div aria-hidden="true" className="h-2 rounded-full bg-muted">
+						<div className="size-full rounded-full bg-muted-foreground/30" />
 					</div>
 				) : (
-					<div className="h-2 overflow-hidden rounded-full bg-muted">
+					<div
+						aria-label={`${item.label} usage`}
+						aria-valuemax={item.limit}
+						aria-valuemin={0}
+						aria-valuenow={item.used}
+						className="h-2 overflow-hidden rounded-full bg-muted"
+						role="progressbar"
+					>
 						<div
-							aria-label={`${item.label} usage`}
-							aria-valuemax={item.limit}
-							aria-valuemin={0}
-							aria-valuenow={item.used}
 							className={cn(
-								"h-full rounded-full transition-all",
+								"h-full rounded-full transition-[width] duration-slow ease-out motion-reduce:transition-none",
 								state.barClass
 							)}
-							role="progressbar"
 							style={{ width: `${percent}%` }}
 						/>
 					</div>
@@ -185,15 +182,13 @@ function UsageSection({
 	);
 
 	return (
-		<section className="rounded-lg border bg-muted/20 p-3 shadow-sm">
-			<div className="flex min-w-0 items-start gap-3 px-2 pb-3 pt-1">
-				<div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-foreground ring-1 ring-inset ring-black/5 dark:ring-white/10">
-					<Icon className="size-5" />
-				</div>
-				<div className="min-w-0">
+		<section className="min-w-0 space-y-3">
+			<div className="min-w-0">
+				<div className="flex items-center gap-2">
+					<Icon aria-hidden="true" className="size-5 text-primary" />
 					<h3 className="text-base font-semibold text-foreground">{title}</h3>
-					<p className="mt-1 text-sm text-muted-foreground">{description}</p>
 				</div>
+				<p className="mt-1 text-sm text-muted-foreground">{description}</p>
 			</div>
 			<div className="space-y-2">
 				{sortedItems.map((item) => (
@@ -213,11 +208,8 @@ function StatusBadge({
 }) {
 	if (reachedLimits > 0) {
 		return (
-			<Badge
-				className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
-				variant="outline"
-			>
-				<AlertTriangle className="mr-1.5 size-3.5" />
+			<Badge className="h-7 px-3" variant="destructiveSoft">
+				<AlertTriangle aria-hidden="true" className="mr-1.5 size-3.5" />
 				Limit reached
 			</Badge>
 		);
@@ -225,22 +217,16 @@ function StatusBadge({
 
 	if (attentionItems > 0) {
 		return (
-			<Badge
-				className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
-				variant="outline"
-			>
-				<AlertTriangle className="mr-1.5 size-3.5" />
+			<Badge className="h-7 px-3" variant="warning">
+				<AlertTriangle aria-hidden="true" className="mr-1.5 size-3.5" />
 				Needs attention
 			</Badge>
 		);
 	}
 
 	return (
-		<Badge
-			className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
-			variant="outline"
-		>
-			<CheckCircle2 className="mr-1.5 size-3.5" />
+		<Badge className="h-7 px-3" variant="success">
+			<CheckCircle2 aria-hidden="true" className="mr-1.5 size-3.5" />
 			Healthy
 		</Badge>
 	);
@@ -257,7 +243,7 @@ export function UsageDashboard({
 	if (usage === undefined) {
 		return (
 			<div className="space-y-5">
-				<div className="rounded-lg border bg-card p-5 shadow-sm lg:p-6">
+				<div className="rounded-2xl border bg-card p-5 shadow-sm lg:p-6">
 					<div className="flex flex-wrap items-center gap-2">
 						<Skeleton className="h-6 w-24 rounded-full" />
 						<Skeleton className="h-7 w-28 rounded-full" />
@@ -267,16 +253,19 @@ export function UsageDashboard({
 					<Skeleton className="mt-2 h-4 w-full max-w-md" />
 				</div>
 				<div className="grid gap-5 xl:grid-cols-2">
-					<div className="space-y-2 rounded-lg border bg-muted/20 p-3 shadow-sm">
-						<Skeleton className="h-16 w-full rounded-lg" />
-						<Skeleton className="h-16 w-full rounded-lg" />
-						<Skeleton className="h-16 w-full rounded-lg" />
-					</div>
-					<div className="space-y-2 rounded-lg border bg-muted/20 p-3 shadow-sm">
-						<Skeleton className="h-16 w-full rounded-lg" />
-						<Skeleton className="h-16 w-full rounded-lg" />
-						<Skeleton className="h-16 w-full rounded-lg" />
-					</div>
+					{[0, 1].map((column) => (
+						<div className="space-y-3" key={column}>
+							<div className="space-y-2">
+								<Skeleton className="h-5 w-40" />
+								<Skeleton className="h-4 w-56" />
+							</div>
+							<div className="space-y-2">
+								<Skeleton className="h-24 w-full rounded-2xl" />
+								<Skeleton className="h-24 w-full rounded-2xl" />
+								<Skeleton className="h-24 w-full rounded-2xl" />
+							</div>
+						</div>
+					))}
 				</div>
 			</div>
 		);
@@ -284,16 +273,11 @@ export function UsageDashboard({
 
 	if (!usage?.plan || !usage.ai || !usage.collaboration) {
 		return (
-			<div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-center shadow-sm">
-				<AlertTriangle className="size-6 text-muted-foreground" />
-				<p className="text-sm font-medium text-foreground">
-					Couldn't load usage data
-				</p>
-				<p className="max-w-sm text-sm text-muted-foreground">
-					You may not have access to this workspace, or something went wrong.
-					Try refreshing the page.
-				</p>
-			</div>
+			<EmptyState
+				description="You may not have access to this workspace, or something went wrong. Try refreshing the page."
+				icon={AlertTriangle}
+				title="Couldn't load usage data"
+			/>
 		);
 	}
 
@@ -306,14 +290,14 @@ export function UsageDashboard({
 		{
 			description: "Assistant messages, tool calls, and AI replies",
 			icon: Bot,
-			label: "AI Requests",
+			label: "AI requests",
 			limit: ai.requests.limit,
 			used: ai.requests.used,
 		},
 		{
 			description: "Canvas diagrams and generated flowcharts",
 			icon: Sparkles,
-			label: "Diagram Generations",
+			label: "Diagram generations",
 			limit: ai.diagrams.limit,
 			used: ai.diagrams.used,
 		},
@@ -351,7 +335,7 @@ export function UsageDashboard({
 		{
 			description: "Cards across boards and project workflows",
 			icon: LayoutGrid,
-			label: "Board Cards",
+			label: "Board cards",
 			limit: collab.boards.limit,
 			used: collab.boards.used,
 		},
@@ -376,7 +360,7 @@ export function UsageDashboard({
 
 	return (
 		<div className="space-y-5">
-			<section className="rounded-lg border bg-card p-5 shadow-sm lg:p-6">
+			<section className="rounded-2xl border bg-card p-5 shadow-sm lg:p-6">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="min-w-0">
 						<div className="flex flex-wrap items-center gap-2">
@@ -384,12 +368,12 @@ export function UsageDashboard({
 								attentionItems={attentionItems}
 								reachedLimits={reachedLimits}
 							/>
-							<Badge className="h-7 rounded-full px-3" variant="outline">
-								<Crown className="mr-1.5 size-3.5" />
-								{planLabel} Plan
+							<Badge className="h-7 px-3" variant="outline">
+								<Crown aria-hidden="true" className="mr-1.5 size-3.5" />
+								{planLabel} plan
 							</Badge>
-							<Badge className="h-7 rounded-full px-3" variant="outline">
-								<CalendarDays className="mr-1.5 size-3.5" />
+							<Badge className="h-7 px-3" variant="outline">
+								<CalendarDays aria-hidden="true" className="mr-1.5 size-3.5" />
 								{usage.month}
 							</Badge>
 						</div>
@@ -403,25 +387,25 @@ export function UsageDashboard({
 					</div>
 					{showUpgrade && (
 						<Button className="shrink-0" onClick={onUpgradeClick}>
-							<TrendingUp className="mr-1.5 size-3.5" />
+							<TrendingUp aria-hidden="true" className="mr-1.5 size-3.5" />
 							Upgrade plan
 						</Button>
 					)}
 				</div>
 			</section>
 
-			<div className="grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
+			<div className="grid gap-5 xl:grid-cols-2">
 				<UsageSection
 					description="Monthly AI quota and generation limits"
 					icon={Bot}
 					items={aiItems}
-					title="AI Usage"
+					title="AI usage"
 				/>
 				<UsageSection
 					description="Workspace activity and collaboration limits"
 					icon={MessageSquare}
 					items={collaborationItems}
-					title="Collaboration Usage"
+					title="Collaboration usage"
 				/>
 			</div>
 		</div>

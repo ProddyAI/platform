@@ -1,21 +1,39 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import * as React from "react";
 import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-	const { theme = "system" } = useTheme();
+	const [isDark, setIsDark] = React.useState(false);
+
+	React.useEffect(() => {
+		const root = document.documentElement;
+
+		const updateIsDark = () => {
+			setIsDark(root.classList.contains("dark"));
+		};
+
+		updateIsDark();
+
+		const observer = new MutationObserver(updateIsDark);
+		observer.observe(root, {
+			attributeFilter: ["class"],
+			attributes: true,
+		});
+
+		return () => observer.disconnect();
+	}, []);
 
 	return (
 		<Sonner
 			className="toaster group"
-			theme={theme as ToasterProps["theme"]}
+			theme={isDark ? "dark" : "light"}
 			toastOptions={{
 				classNames: {
 					toast:
-						"group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+						"group toast group-[.toaster]:bg-popover group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
 					description: "group-[.toast]:text-muted-foreground",
 					actionButton:
 						"group-[.toast]:bg-secondary group-[.toast]:text-secondary-foreground",

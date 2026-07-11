@@ -21,11 +21,11 @@ import {
 	sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { useQuery } from "convex/react";
-import { Plus } from "lucide-react";
+import { LayoutGrid, Plus } from "lucide-react";
 import React, { useCallback, useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
 import BoardHeader from "./board-header";
 import type { IssuePriority } from "./board-issue-row";
 import BoardIssueRow from "./board-issue-row";
@@ -314,7 +314,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	}, [activeItem, statuses]);
 
 	return (
-		<div className="h-full w-full min-w-0 max-w-full flex flex-col overflow-hidden">
+		<div className="size-full min-w-0 max-w-full flex flex-col overflow-hidden">
 			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
@@ -346,23 +346,23 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 						strategy={rectSortingStrategy}
 					>
 						{sortedStatuses.length === 0 ? (
-							<div className="flex flex-col items-center justify-center gap-3 text-center text-muted-foreground py-20">
-								<p className="text-sm">No statuses yet.</p>
-								<p className="text-xs">
-									Add a status to start tracking issues.
-								</p>
-								{onAddStatus && (
-									<Button
-										aria-label="Add status"
-										className="gap-1.5 text-xs"
-										onClick={onAddStatus}
-										size="sm"
-										variant="outline"
-									>
-										<Plus className="w-3.5 h-3.5" />
-										Add status
-									</Button>
-								)}
+							<div className="flex h-full items-center justify-center p-8">
+								<EmptyState
+									action={
+										onAddStatus
+											? {
+													label: "Add status",
+													onClick: onAddStatus,
+													icon: Plus,
+												}
+											: undefined
+									}
+									className="w-full max-w-sm"
+									description="Add a status to start tracking issues."
+									icon={LayoutGrid}
+									size="sm"
+									title="No statuses yet"
+								/>
 							</div>
 						) : (
 							<div className="flex w-max min-w-max gap-4 px-4">
@@ -405,10 +405,10 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 							/>
 						)}
 						{activeItem?.type === "status" && (
-							<div className="bg-background border border-primary/40 rounded-xl shadow-xl opacity-90 p-3">
+							<div className="bg-card border border-primary/40 rounded-2xl shadow-lg opacity-90 p-3">
 								<div className="flex items-center gap-2">
 									<span
-										className="w-2.5 h-2.5 rounded-full"
+										className="size-2.5 rounded-full"
 										style={{ backgroundColor: activeItem.item.color }}
 									/>
 									<span className="text-sm font-semibold">

@@ -61,7 +61,7 @@ export const MobileFooter = ({ onMenuClick }: MobileFooterProps) => {
 	];
 
 	return (
-		<div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary border-t border-border/20 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] mobile-footer-safe">
+		<div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] mobile-footer-safe">
 			<nav className="flex items-center justify-around h-16 px-2">
 				{footerItems.map((item) =>
 					item.onClick ? (
@@ -69,19 +69,14 @@ export const MobileFooter = ({ onMenuClick }: MobileFooterProps) => {
 							className={cn(
 								"flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all duration-200",
 								item.isActive
-									? "text-secondary-foreground bg-secondary-foreground/20"
-									: "text-secondary-foreground/60 hover:text-secondary-foreground hover:bg-secondary-foreground/10"
+									? "text-primary bg-primary/10"
+									: "text-muted-foreground hover:text-foreground hover:bg-muted"
 							)}
 							key={item.label}
 							onClick={item.onClick}
 							type="button"
 						>
-							<item.icon
-								className={cn(
-									"size-5 transition-transform duration-200",
-									item.isActive && "scale-110"
-								)}
-							/>
+							<item.icon className="size-5" />
 							<span
 								className={cn(
 									"text-[10px] font-medium transition-all duration-200",
@@ -96,18 +91,13 @@ export const MobileFooter = ({ onMenuClick }: MobileFooterProps) => {
 							className={cn(
 								"flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all duration-200",
 								item.isActive
-									? "text-secondary-foreground bg-secondary-foreground/20"
-									: "text-secondary-foreground/60 hover:text-secondary-foreground hover:bg-secondary-foreground/10"
+									? "text-primary bg-primary/10"
+									: "text-muted-foreground hover:text-foreground hover:bg-muted"
 							)}
 							href={item.href}
 							key={item.label}
 						>
-							<item.icon
-								className={cn(
-									"size-5 transition-transform duration-200",
-									item.isActive && "scale-110"
-								)}
-							/>
+							<item.icon className="size-5" />
 							<span
 								className={cn(
 									"text-[10px] font-medium transition-all duration-200",

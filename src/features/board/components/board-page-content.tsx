@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import { Loader } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -500,9 +501,9 @@ export const BoardPageContent = ({
 	}
 
 	return (
-		<div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
+		<div className="size-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
 			{boardLimitReached && (
-				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-600 dark:text-amber-400">
+				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-xl border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
 					<span>
 						You have reached the board card limit for your plan. Upgrade to
 						create more cards/issues.
@@ -512,8 +513,9 @@ export const BoardPageContent = ({
 			)}
 			{view === "kanban" ? (
 				statuses === undefined ? (
-					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-						Loading board…
+					<div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+						<Loader className="size-4 animate-spin" />
+						<span>Loading board…</span>
 					</div>
 				) : (
 					<BoardKanbanView

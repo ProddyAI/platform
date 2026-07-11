@@ -258,7 +258,7 @@ export const NotificationSettings = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
-						<Bell className="h-5 w-5" />
+						<Bell className="size-5" />
 						Notification Settings
 					</CardTitle>
 					<CardDescription>
@@ -330,7 +330,7 @@ export const NotificationSettings = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
-						<Bell className="h-5 w-5" />
+						<Bell className="size-5" />
 						Notifications
 					</CardTitle>
 					<CardDescription>
@@ -367,19 +367,19 @@ export const NotificationSettings = () => {
 							>
 								{testPushState === "sending" ? (
 									<>
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										<Loader2 className="mr-2 size-4 animate-spin" />
 										Sending...
 									</>
 								) : (
 									<>
-										<Send className="mr-2 h-4 w-4" />
+										<Send className="mr-2 size-4" />
 										Send Test Notification
 									</>
 								)}
 							</Button>
 							{testPushState === "sent" && (
 								<span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-									<Check className="h-4 w-4" />
+									<Check className="size-4" />
 									Sent
 								</span>
 							)}
@@ -435,7 +435,7 @@ export const NotificationSettings = () => {
 						</div>
 						{!browserNotificationsEnabled && (
 							<Alert>
-								<BellOff className="h-4 w-4" />
+								<BellOff className="size-4" />
 								<AlertDescription>
 									Browser channel is off. Push notifications will not be
 									delivered.
@@ -455,9 +455,9 @@ export const NotificationSettings = () => {
 									htmlFor="all-browser-notifications-toggle"
 								>
 									{allNotificationsEnabled ? (
-										<Bell className="h-5 w-5 text-primary" />
+										<Bell className="size-5 text-primary" />
 									) : (
-										<BellOff className="h-5 w-5 text-muted-foreground" />
+										<BellOff className="size-5 text-muted-foreground" />
 									)}
 									All Browser Notifications
 								</Label>
@@ -479,7 +479,7 @@ export const NotificationSettings = () => {
 
 						{!allNotificationsEnabled && (
 							<Alert>
-								<BellOff className="h-4 w-4" />
+								<BellOff className="size-4" />
 								<AlertDescription>
 									All instant notifications are currently disabled. You can
 									still enable individual notifications below or use the toggle
@@ -495,7 +495,7 @@ export const NotificationSettings = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
-						<Bell className="h-5 w-5" />
+						<Bell className="size-5" />
 						Individual Notification Settings
 					</CardTitle>
 					<CardDescription>
@@ -509,7 +509,7 @@ export const NotificationSettings = () => {
 							<div className="flex items-center justify-between">
 								<div className="space-y-1">
 									<Label className="flex items-center gap-2 text-base font-medium">
-										<notification.icon className="h-4 w-4" />
+										<notification.icon className="size-4" />
 										{notification.title}
 									</Label>
 									<p className="text-sm text-muted-foreground">
@@ -574,7 +574,7 @@ export const NotificationSettings = () => {
 								className="flex items-center gap-2 text-base font-medium"
 								htmlFor="online-status-toggle"
 							>
-								<UserCheck className="h-4 w-4" />
+								<UserCheck className="size-4" />
 								Online/Offline Status
 							</Label>
 							<p className="text-sm text-muted-foreground">
@@ -605,7 +605,7 @@ export const NotificationSettings = () => {
 									className="flex items-center gap-2 text-base font-medium"
 									htmlFor="weekly-digest-toggle"
 								>
-									<Calendar className="h-4 w-4" />
+									<Calendar className="size-4" />
 									Weekly Digest
 								</Label>
 								<p className="text-sm text-muted-foreground">
@@ -701,7 +701,7 @@ export const NotificationSettings = () => {
 
 					{/* Privacy Notice */}
 					<Alert>
-						<Shield className="h-4 w-4" />
+						<Shield className="size-4" />
 						<AlertTitle>Email Notifications</AlertTitle>
 						<AlertDescription>
 							Enable email notifications above to receive instant emails and
@@ -712,13 +712,13 @@ export const NotificationSettings = () => {
 					<div aria-live="polite" className="text-xs text-muted-foreground">
 						{saveStatus === "saving" && (
 							<span className="inline-flex items-center gap-1">
-								<Loader2 className="h-3 w-3 animate-spin" />
+								<Loader2 className="size-3 animate-spin" />
 								Saving...
 							</span>
 						)}
 						{saveStatus === "saved" && (
 							<span className="inline-flex items-center gap-1">
-								<Check className="h-3 w-3" />
+								<Check className="size-3" />
 								Saved
 							</span>
 						)}

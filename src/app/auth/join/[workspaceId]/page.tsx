@@ -127,7 +127,7 @@ const JoinWorkspaceIdPage = () => {
 	// Show error state for email invite flow
 	if (inviteHash && inviteError) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-card p-8 shadow-md">
+			<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-2xl border bg-card p-8 shadow-xl">
 				<Image alt="Logo" height={60} src="/logo-nobg.png" width={60} />
 
 				<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
@@ -152,7 +152,7 @@ const JoinWorkspaceIdPage = () => {
 
 	// Show join code input (default flow)
 	return (
-		<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-card p-8 shadow-md">
+		<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-2xl border bg-card p-8 shadow-xl">
 			<Image alt="Logo" height={60} src="/logo-nobg.png" width={60} />
 
 			<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
@@ -173,7 +173,7 @@ const JoinWorkspaceIdPage = () => {
 							isPending && "opacity-50 cursor-not-allowed pointer-events-none"
 						),
 						character:
-							"uppercase h-auto rounded-md border border-border outline-secondary flex items-center justify-center text-lg font-medium text-muted-foreground",
+							"uppercase h-auto rounded-md border border-border outline-primary flex items-center justify-center text-lg font-medium text-muted-foreground",
 						characterInactive: "bg-muted",
 						characterSelected: "bg-background text-foreground",
 						characterFilled: "bg-background text-foreground",

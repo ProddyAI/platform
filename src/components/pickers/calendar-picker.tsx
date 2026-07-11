@@ -293,7 +293,7 @@ export const CalendarPicker = ({
 										)}
 										variant="outline"
 									>
-										<CalendarIcon className="mr-2 h-4 w-4" />
+										<CalendarIcon className="mr-2 size-4" />
 										{date ? format(date, "PPP") : <span>Pick a date</span>}
 									</Button>
 								</PopoverTrigger>
@@ -315,7 +315,7 @@ export const CalendarPicker = ({
 					<div className="grid gap-2">
 						<Label htmlFor="time">Time (optional)</Label>
 						<div className="flex items-center gap-2">
-							<Clock className="h-4 w-4 text-muted-foreground" />
+							<Clock className="size-4 text-muted-foreground" />
 							{timeOptions.length > 0 ? (
 								<Select onValueChange={setSelectedTime} value={selectedTime}>
 									<SelectTrigger id="time">
@@ -331,7 +331,7 @@ export const CalendarPicker = ({
 								</Select>
 							) : (
 								<div
-									className="flex h-10 w-full items-center justify-center rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+									className="flex h-10 w-full items-center justify-center rounded-lg border border-input bg-card px-3 py-2 text-sm text-muted-foreground"
 									id="time"
 								>
 									Loading time options...

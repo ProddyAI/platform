@@ -29,27 +29,29 @@ export const ProjectNavTabs = () => {
 	};
 
 	return (
-		<div className="flex items-center gap-1 border-b bg-background px-4">
-			{TABS.map(({ label, icon: Icon, segment }) => {
-				const isActive = activeSegment === segment;
-				return (
-					<button
-						aria-current={isActive ? "page" : undefined}
-						className={cn(
-							"flex items-center gap-1.5 border-b-2 px-3 py-2.5 font-medium text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-							isActive
-								? "border-primary text-primary"
-								: "border-transparent text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
-						)}
-						key={segment}
-						onClick={() => navigate(segment)}
-						type="button"
-					>
-						<Icon className="size-3.5" />
-						{label}
-					</button>
-				);
-			})}
+		<div className="flex items-center border-b bg-background px-4 py-2">
+			<div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+				{TABS.map(({ label, icon: Icon, segment }) => {
+					const isActive = activeSegment === segment;
+					return (
+						<button
+							aria-current={isActive ? "page" : undefined}
+							className={cn(
+								"flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium text-sm transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+								isActive
+									? "bg-card text-foreground shadow-sm"
+									: "text-muted-foreground hover:text-foreground"
+							)}
+							key={segment}
+							onClick={() => navigate(segment)}
+							type="button"
+						>
+							<Icon className="size-3.5" />
+							{label}
+						</button>
+					);
+				})}
+			</div>
 		</div>
 	);
 };

@@ -9,6 +9,7 @@ import {
 	SortDesc,
 	X,
 } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,67 @@ interface TaskSidebarProps {
 	categoriesLoading: boolean;
 }
 
+// Collapsible section header (label + chevron).
+const SectionHeader = ({
+	expanded,
+	label,
+	onToggle,
+}: {
+	expanded: boolean;
+	label: string;
+	onToggle: () => void;
+}) => (
+	<Button
+		aria-expanded={expanded}
+		className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
+		onClick={onToggle}
+		size="sm"
+		variant="ghost"
+	>
+		<span>{label}</span>
+		{expanded ? (
+			<ChevronDown className="size-4 text-muted-foreground" />
+		) : (
+			<ChevronRight className="size-4 text-muted-foreground" />
+		)}
+	</Button>
+);
+
+// Single filter row. Inactive rows are quiet ghosts; the active row gets a
+// soft tinted pill (primary by default, or a semantic tint per option).
+const FilterOption = ({
+	active,
+	activeClassName = "bg-primary/10 text-foreground hover:bg-primary/15",
+	children,
+	onClick,
+	style,
+}: {
+	active: boolean;
+	activeClassName?: string;
+	children: ReactNode;
+	onClick: () => void;
+	style?: CSSProperties;
+}) => (
+	<Button
+		className={cn(
+			"w-full justify-start text-sm h-9 rounded-full",
+			active ? cn("font-medium", activeClassName) : "text-foreground"
+		)}
+		onClick={onClick}
+		size="sm"
+		style={active ? style : undefined}
+		variant={active ? "secondary" : "ghost"}
+	>
+		{children}
+	</Button>
+);
+
 export const TaskSidebar = ({
 	filterOptions,
 	onFilterChange,
 	categories,
 	categoriesLoading,
 }: TaskSidebarProps) => {
-	// State to track which sections are expanded
 	const [expandedSections, setExpandedSections] = useState({
 		priority: true,
 		dueDate: false,
@@ -45,7 +100,6 @@ export const TaskSidebar = ({
 		sort: false,
 	});
 
-	// Toggle section visibility
 	const toggleSection = (section: keyof typeof expandedSections) => {
 		setExpandedSections((prev) => ({
 			...prev,
@@ -53,16 +107,11 @@ export const TaskSidebar = ({
 		}));
 	};
 
-	// Helper to check if a filter is active
-	const isFilterActive = () => {
-		return (
-			filterOptions.priority !== "all" ||
-			filterOptions.dueDate !== "all" ||
-			filterOptions.categoryId !== null
-		);
-	};
+	const isFilterActive =
+		filterOptions.priority !== "all" ||
+		filterOptions.dueDate !== "all" ||
+		filterOptions.categoryId !== null;
 
-	// Reset all filters
 	const resetAllFilters = () => {
 		onFilterChange({
 			priority: "all",
@@ -75,308 +124,175 @@ export const TaskSidebar = ({
 		<div className="w-[300px] h-full border-l bg-muted/70 p-6 overflow-y-auto flex-shrink-0">
 			<div className="flex items-center justify-between mb-6">
 				<h3 className="font-semibold text-base flex items-center text-foreground">
-					<Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+					<Filter className="size-4 mr-2 text-muted-foreground" />
 					Filters
 				</h3>
-				{isFilterActive() && (
+				{isFilterActive && (
 					<Button
-						className="h-8 text-xs px-3 py-1 text-muted-foreground rounded-md"
+						className="h-8 text-xs px-3 py-1 text-muted-foreground rounded-full"
 						onClick={resetAllFilters}
 						size="sm"
 						variant="ghost"
 					>
-						<X className="h-3.5 w-3.5 mr-1" /> Clear all
+						<X className="size-3.5 mr-1" /> Clear all
 					</Button>
 				)}
 			</div>
 
-			{/* Priority Filter */}
+			{/* Priority */}
 			<div className="mb-6">
-				<Button
-					aria-expanded={expandedSections.priority}
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
-					onClick={() => toggleSection("priority")}
-					size="sm"
-					variant="ghost"
-				>
-					<span>Priority</span>
-					{expandedSections.priority ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
-					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
-					)}
-				</Button>
+				<SectionHeader
+					expanded={expandedSections.priority}
+					label="Priority"
+					onToggle={() => toggleSection("priority")}
+				/>
 
 				{expandedSections.priority && (
 					<div className="space-y-1 mt-2 px-1">
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.priority === "all"
-									? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-									: "text-foreground"
-							)}
+						<FilterOption
+							active={filterOptions.priority === "all"}
 							onClick={() => onFilterChange({ priority: "all" })}
-							size="sm"
-							variant={filterOptions.priority === "all" ? "secondary" : "ghost"}
 						>
 							All
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.priority === "high"
-									? "bg-red-100 text-red-700 font-medium hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.priority === "high"}
+							activeClassName="bg-warning/10 text-warning hover:bg-warning/15"
 							onClick={() => onFilterChange({ priority: "high" })}
-							size="sm"
-							variant={
-								filterOptions.priority === "high" ? "secondary" : "ghost"
-							}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-red-600" />
+							<div className="mr-2 size-3 rounded-full bg-warning" />
 							High
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.priority === "medium"
-									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.priority === "medium"}
+							activeClassName="bg-primary/10 text-primary hover:bg-primary/15"
 							onClick={() => onFilterChange({ priority: "medium" })}
-							size="sm"
-							variant={
-								filterOptions.priority === "medium" ? "secondary" : "ghost"
-							}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-amber-500" />
+							<div className="mr-2 size-3 rounded-full bg-primary" />
 							Medium
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.priority === "low"
-									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.priority === "low"}
+							activeClassName="bg-muted text-foreground hover:bg-muted/80"
 							onClick={() => onFilterChange({ priority: "low" })}
-							size="sm"
-							variant={filterOptions.priority === "low" ? "secondary" : "ghost"}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-blue-600" />
+							<div className="mr-2 size-3 rounded-full bg-muted-foreground/60" />
 							Low
-						</Button>
+						</FilterOption>
 					</div>
 				)}
 			</div>
 
-			{/* Due Date Filter */}
+			{/* Due date */}
 			<div className="mb-6">
-				<Button
-					aria-expanded={expandedSections.dueDate}
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
-					onClick={() => toggleSection("dueDate")}
-					size="sm"
-					variant="ghost"
-				>
-					<span>Due date</span>
-					{expandedSections.dueDate ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
-					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
-					)}
-				</Button>
+				<SectionHeader
+					expanded={expandedSections.dueDate}
+					label="Due date"
+					onToggle={() => toggleSection("dueDate")}
+				/>
 
 				{expandedSections.dueDate && (
 					<div className="space-y-1 mt-2 px-1">
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.dueDate === "all"
-									? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-									: "text-foreground"
-							)}
+						<FilterOption
+							active={filterOptions.dueDate === "all"}
 							onClick={() => onFilterChange({ dueDate: "all" })}
-							size="sm"
-							variant={filterOptions.dueDate === "all" ? "secondary" : "ghost"}
 						>
 							All
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.dueDate === "overdue"
-									? "bg-red-100 text-red-700 font-medium hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.dueDate === "overdue"}
+							activeClassName="bg-destructive/10 text-destructive hover:bg-destructive/15"
 							onClick={() => onFilterChange({ dueDate: "overdue" })}
-							size="sm"
-							variant={
-								filterOptions.dueDate === "overdue" ? "secondary" : "ghost"
-							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-red-600" />
+							<Clock className="mr-2 size-4 text-destructive" />
 							Overdue
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.dueDate === "today"
-									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.dueDate === "today"}
+							activeClassName="bg-warning/10 text-warning hover:bg-warning/15"
 							onClick={() => onFilterChange({ dueDate: "today" })}
-							size="sm"
-							variant={
-								filterOptions.dueDate === "today" ? "secondary" : "ghost"
-							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-amber-500" />
+							<Clock className="mr-2 size-4 text-warning" />
 							Today
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.dueDate === "upcoming"
-									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.dueDate === "upcoming"}
+							activeClassName="bg-primary/10 text-primary hover:bg-primary/15"
 							onClick={() => onFilterChange({ dueDate: "upcoming" })}
-							size="sm"
-							variant={
-								filterOptions.dueDate === "upcoming" ? "secondary" : "ghost"
-							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-blue-600" />
+							<Clock className="mr-2 size-4 text-primary" />
 							Upcoming
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.dueDate === "no-date"
-									? "bg-muted text-foreground font-medium hover:bg-muted/80"
-									: "text-foreground"
-							)}
+						</FilterOption>
+						<FilterOption
+							active={filterOptions.dueDate === "no-date"}
+							activeClassName="bg-muted text-foreground hover:bg-muted/80"
 							onClick={() => onFilterChange({ dueDate: "no-date" })}
-							size="sm"
-							variant={
-								filterOptions.dueDate === "no-date" ? "secondary" : "ghost"
-							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+							<Clock className="mr-2 size-4 text-muted-foreground" />
 							No due date
-						</Button>
+						</FilterOption>
 					</div>
 				)}
 			</div>
 
-			{/* Categories Filter */}
+			{/* Categories */}
 			<div className="mb-6">
-				<Button
-					aria-expanded={expandedSections.categories}
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
-					onClick={() => toggleSection("categories")}
-					size="sm"
-					variant="ghost"
-				>
-					<span>Categories</span>
-					{expandedSections.categories ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
-					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
-					)}
-				</Button>
+				<SectionHeader
+					expanded={expandedSections.categories}
+					label="Categories"
+					onToggle={() => toggleSection("categories")}
+				/>
 
 				{expandedSections.categories &&
 					(categoriesLoading ? (
 						<div className="mt-2 space-y-1.5 px-1">
-							<Skeleton className="h-9 w-full rounded-md" />
-							<Skeleton className="h-9 w-full rounded-md" />
-							<Skeleton className="h-9 w-full rounded-md" />
+							<Skeleton className="h-9 w-full rounded-full" />
+							<Skeleton className="h-9 w-full rounded-full" />
+							<Skeleton className="h-9 w-full rounded-full" />
 						</div>
 					) : categories && categories.length > 0 ? (
 						<div className="space-y-1 mt-2 px-1">
-							<Button
-								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
-									filterOptions.categoryId === null
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-										: "text-foreground"
-								)}
+							<FilterOption
+								active={filterOptions.categoryId === null}
 								onClick={() => onFilterChange({ categoryId: null })}
-								size="sm"
-								variant={
-									filterOptions.categoryId === null ? "secondary" : "ghost"
-								}
 							>
 								All categories
-							</Button>
+							</FilterOption>
 							{categories.map((category) => (
-								<Button
-									className={cn(
-										"w-full justify-start text-sm h-9 rounded-md",
-										filterOptions.categoryId === category._id
-											? "font-medium"
-											: "text-foreground"
-									)}
+								<FilterOption
+									active={filterOptions.categoryId === category._id}
+									activeClassName=""
 									key={category._id}
 									onClick={() => onFilterChange({ categoryId: category._id })}
-									size="sm"
-									style={
-										filterOptions.categoryId === category._id
-											? {
-													backgroundColor: `${category.color}30`,
-													color: category.color,
-													borderWidth: "2px",
-													borderColor: category.color,
-												}
-											: {}
-									}
-									variant={
-										filterOptions.categoryId === category._id
-											? "secondary"
-											: "ghost"
-									}
+									style={{
+										backgroundColor: `${category.color}30`,
+										color: category.color,
+									}}
 								>
 									<div
-										className="mr-2 h-3 w-3 rounded-full border-2"
-										style={{
-											backgroundColor: category.color,
-											borderColor: category.color,
-										}}
+										className="mr-2 size-3 rounded-full"
+										style={{ backgroundColor: category.color }}
 									/>
 									{category.name}
-								</Button>
+								</FilterOption>
 							))}
 						</div>
 					) : (
 						<div className="text-sm text-muted-foreground mt-3 px-2">
-							No categories available
+							No categories yet
 						</div>
 					))}
 			</div>
 
-			{/* Separator */}
 			<Separator className="my-6" />
 
-			{/* Sort Options */}
+			{/* Sort */}
 			<div>
-				<Button
-					aria-expanded={expandedSections.sort}
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
-					onClick={() => toggleSection("sort")}
-					size="sm"
-					variant="ghost"
-				>
-					<span>Sort</span>
-					{expandedSections.sort ? (
-						<ChevronDown className="h-4 w-4 text-muted-foreground" />
-					) : (
-						<ChevronRight className="h-4 w-4 text-muted-foreground" />
-					)}
-				</Button>
+				<SectionHeader
+					expanded={expandedSections.sort}
+					label="Sort"
+					onToggle={() => toggleSection("sort")}
+				/>
 
 				{expandedSections.sort && (
 					<div className="mt-2 px-1">
@@ -384,89 +300,44 @@ export const TaskSidebar = ({
 							Sort by
 						</p>
 						<div className="space-y-1">
-							<Button
-								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
-									filterOptions.sortBy === "created"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-										: "text-foreground"
-								)}
+							<FilterOption
+								active={filterOptions.sortBy === "created"}
 								onClick={() => onFilterChange({ sortBy: "created" })}
-								size="sm"
-								variant={
-									filterOptions.sortBy === "created" ? "secondary" : "ghost"
-								}
 							>
 								Date created
-							</Button>
-							<Button
-								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
-									filterOptions.sortBy === "dueDate"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-										: "text-foreground"
-								)}
+							</FilterOption>
+							<FilterOption
+								active={filterOptions.sortBy === "dueDate"}
 								onClick={() => onFilterChange({ sortBy: "dueDate" })}
-								size="sm"
-								variant={
-									filterOptions.sortBy === "dueDate" ? "secondary" : "ghost"
-								}
 							>
 								Due date
-							</Button>
-							<Button
-								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
-									filterOptions.sortBy === "priority"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-										: "text-foreground"
-								)}
+							</FilterOption>
+							<FilterOption
+								active={filterOptions.sortBy === "priority"}
 								onClick={() => onFilterChange({ sortBy: "priority" })}
-								size="sm"
-								variant={
-									filterOptions.sortBy === "priority" ? "secondary" : "ghost"
-								}
 							>
 								Priority
-							</Button>
+							</FilterOption>
 						</div>
 
 						<p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">
 							Direction
 						</p>
 						<div className="space-y-1">
-							<Button
-								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
-									filterOptions.sortDirection === "asc"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-										: "text-foreground"
-								)}
+							<FilterOption
+								active={filterOptions.sortDirection === "asc"}
 								onClick={() => onFilterChange({ sortDirection: "asc" })}
-								size="sm"
-								variant={
-									filterOptions.sortDirection === "asc" ? "secondary" : "ghost"
-								}
 							>
-								<SortAsc className="mr-2 h-4 w-4" />
+								<SortAsc className="mr-2 size-4" />
 								Ascending
-							</Button>
-							<Button
-								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
-									filterOptions.sortDirection === "desc"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
-										: "text-foreground"
-								)}
+							</FilterOption>
+							<FilterOption
+								active={filterOptions.sortDirection === "desc"}
 								onClick={() => onFilterChange({ sortDirection: "desc" })}
-								size="sm"
-								variant={
-									filterOptions.sortDirection === "desc" ? "secondary" : "ghost"
-								}
 							>
-								<SortDesc className="mr-2 h-4 w-4" />
+								<SortDesc className="mr-2 size-4" />
 								Descending
-							</Button>
+							</FilterOption>
 						</div>
 					</div>
 				)}

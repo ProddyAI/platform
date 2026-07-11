@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader, MessageSquare, Users } from "lucide-react";
+import { MessageSquare, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -16,6 +16,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 interface TeamStatusWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -90,20 +91,15 @@ export const TeamStatusWidget = ({
 	};
 
 	if (membersLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-3">
 			<WidgetHeader
 				badge={onlineCount > 0 ? `${onlineCount} online` : undefined}
-				className="pr-2"
 				controls={controls}
-				icon={<Users className="h-5 w-5 text-primary dark:text-purple-400" />}
+				icon={<Users className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Team Status"
 			/>
@@ -115,7 +111,7 @@ export const TeamStatusWidget = ({
 							<WidgetCard key={teamMember._id}>
 								<div className="flex items-start gap-3">
 									<div className="relative">
-										<Avatar className="h-8 w-8">
+										<Avatar className="size-8">
 											<AvatarImage
 												alt={teamMember.user?.name ?? "User avatar"}
 												src={teamMember.user?.image}
@@ -149,12 +145,12 @@ export const TeamStatusWidget = ({
 											/>
 										</div>
 										<Button
-											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 											onClick={() => handleStartChat(teamMember.userId)}
 											size="sm"
 											variant="ghost"
 										>
-											<MessageSquare className="mr-2 h-3.5 w-3.5" />
+											<MessageSquare className="mr-2 size-3.5" />
 											Message
 										</Button>
 									</div>

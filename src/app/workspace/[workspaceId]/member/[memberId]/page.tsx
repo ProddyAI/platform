@@ -54,7 +54,7 @@ const MemberIdPage = () => {
 	const memberTitle = useMemo(
 		() => (
 			<Button
-				className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
+				className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-foreground hover:bg-muted transition-standard"
 				onClick={() => onOpenProfile(memberId)}
 				size="sm"
 				variant="ghost"

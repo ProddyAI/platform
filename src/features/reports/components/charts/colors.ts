@@ -33,7 +33,7 @@ export const NEUTRAL_COLOR = "hsl(var(--muted-foreground))";
 
 // Task status -> CSS color, for PieChart/BarChart.
 export const STATUS_COLORS: Record<TaskStatus, string> = {
-	completed: "hsl(var(--chart-2))",
+	completed: "hsl(var(--success))",
 	in_progress: "hsl(var(--chart-3))",
 	not_started: NEUTRAL_COLOR,
 	on_hold: "hsl(var(--chart-5))",
@@ -95,13 +95,13 @@ export const seriesColorClass = (index: number): string =>
 // unrelated hues, since these are one measurement at different levels, not
 // distinct categories.
 export const INTENSITY_COLOR_CLASSES = {
-	high: "bg-secondary",
-	medium: "bg-secondary/60",
-	low: "bg-secondary/30",
+	high: "bg-primary",
+	medium: "bg-primary/60",
+	low: "bg-primary/30",
 } as const;
 
 export const INTENSITY_COLORS = {
-	high: "hsl(var(--secondary))",
-	medium: "hsl(var(--secondary) / 60%)",
-	low: "hsl(var(--secondary) / 30%)",
+	high: "hsl(var(--primary))",
+	medium: "hsl(var(--primary) / 60%)",
+	low: "hsl(var(--primary) / 30%)",
 } as const;

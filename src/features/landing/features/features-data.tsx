@@ -7,6 +7,7 @@ import {
 	LayoutGrid,
 	MessageSquare,
 	PaintBucket,
+	Video,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -27,7 +28,7 @@ export const featureGroups = [
 		title: "Communication & Collaboration",
 		description:
 			"Tools that help your team communicate and work together effectively",
-		features: ["messaging", "canvas"],
+		features: ["messaging", "meetings", "canvas"],
 	},
 	{
 		title: "Task & Project Management",
@@ -72,6 +73,31 @@ export const features: Feature[] = [
 			"Quick decision-making and feedback gathering",
 		],
 		imageSrc: "/messages.png",
+	},
+	{
+		id: "meetings",
+		name: "Meetings",
+		description:
+			"Video meetings with channels or teammates, complete with AI-generated notes, transcripts, and action items.",
+		detailedDescription:
+			"Proddy Meetings brings your team face to face without leaving your workspace. Start an instant video meeting with any channel or teammate, record it live, or upload a recording afterwards — and let AI turn every conversation into structured notes, transcripts, key decisions, and action items you can push straight to your task board.",
+		icon: <Video className="size-6" />,
+		color: "bg-chart-1",
+		features: [
+			"Instant video meetings with channels or individuals",
+			"Live recording and transcription",
+			"AI-generated summaries, decisions, and action items",
+			"Upload recordings to generate notes",
+			"Push action items directly to tasks",
+		],
+
+		useCases: [
+			"Team standups and syncs",
+			"One-on-one check-ins",
+			"Client and stakeholder calls",
+			"Design and planning reviews",
+			"Async catch-up via AI meeting notes",
+		],
 	},
 	{
 		id: "tasks",

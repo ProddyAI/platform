@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Loader2 } from "lucide-react";
+import { Loader } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -416,14 +416,20 @@ const ChannelBoardPage = () => {
 
 	// ── Search filter is now handled by global search via boardSearchQuery ──
 
-	if (!channelId) return <div className="p-4">No channel selected.</div>;
+	if (!channelId) {
+		return (
+			<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+				No channel selected.
+			</div>
+		);
+	}
 
 	return (
-		<div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
+		<div className="size-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
 			{view === "kanban" ? (
 				statuses === undefined ? (
-					<div className="flex items-center justify-center gap-2 h-full text-sm text-muted-foreground">
-						<Loader2 className="size-4 animate-spin" />
+					<div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+						<Loader className="size-4 animate-spin" />
 						<span>Loading board…</span>
 					</div>
 				) : (

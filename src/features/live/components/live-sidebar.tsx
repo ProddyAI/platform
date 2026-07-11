@@ -213,7 +213,7 @@ export const LiveSidebar = ({
 						size="sm"
 						variant="ghost"
 					>
-						<ChevronRight className="h-4 w-4" />
+						<ChevronRight className="size-4" />
 					</Button>
 				</div>
 
@@ -229,7 +229,7 @@ export const LiveSidebar = ({
 								: `Create ${type === "notes" ? "Note" : "Canvas"}`
 						}
 					>
-						<Plus className="h-4 w-4" />
+						<Plus className="size-4" />
 					</Button>
 				</div>
 			</div>
@@ -248,27 +248,27 @@ export const LiveSidebar = ({
 				<div className="flex items-center justify-between mb-3">
 					<h2 className="font-semibold text-sm flex items-center gap-2">
 						{type === "notes" ? (
-							<FileText className="h-4 w-4" />
+							<FileText className="size-4" />
 						) : (
-							<Palette className="h-4 w-4" />
+							<Palette className="size-4" />
 						)}
 						{type === "notes" ? "Notes" : "Canvas"}
 					</h2>
 
 					<Button
-						className="h-6 w-6 p-0"
+						className="size-6 p-0"
 						onClick={onToggleCollapse}
 						size="sm"
 						variant="ghost"
 					>
-						<ChevronLeft className="h-4 w-4" />
+						<ChevronLeft className="size-4" />
 					</Button>
 				</div>
 
 				{/* Search and Create */}
 				<div className="flex gap-2">
 					<div className="relative flex-1">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 						<Input
 							className="pl-9"
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -286,7 +286,7 @@ export const LiveSidebar = ({
 								title={disableCreate ? "Note limit reached" : "New Note"}
 								variant="outline"
 							>
-								<Plus className="h-4 w-4" />
+								<Plus className="size-4" />
 							</Button>
 							<Button
 								className="h-9 px-3 gap-1.5 font-medium"
@@ -299,7 +299,7 @@ export const LiveSidebar = ({
 										: "Create AI Meeting Note"
 								}
 							>
-								<Brain className="h-4 w-4" />
+								<Brain className="size-4" />
 								<span className="text-xs">AI Note</span>
 							</Button>
 						</div>
@@ -310,7 +310,7 @@ export const LiveSidebar = ({
 							size="sm"
 							title={disableCreate ? "Canvas limit reached" : "Create Canvas"}
 						>
-							<Plus className="h-4 w-4" />
+							<Plus className="size-4" />
 						</Button>
 					)}
 				</div>
@@ -322,9 +322,9 @@ export const LiveSidebar = ({
 					{filteredItems.length === 0 ? (
 						<div className="text-center py-8">
 							{type === "notes" ? (
-								<FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+								<FileText className="size-12 text-muted-foreground mx-auto mb-4" />
 							) : (
-								<Palette className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+								<Palette className="size-12 text-muted-foreground mx-auto mb-4" />
 							)}
 							<p className="text-sm text-muted-foreground">
 								{searchQuery ? `No ${type} found` : `No ${type} yet`}
@@ -337,7 +337,7 @@ export const LiveSidebar = ({
 									size="sm"
 									variant="outline"
 								>
-									<Plus className="h-4 w-4 mr-1" />
+									<Plus className="size-4 mr-1" />
 									{disableCreate
 										? "Limit Reached"
 										: `Create ${type === "notes" ? "Note" : "Canvas"}`}
@@ -349,7 +349,7 @@ export const LiveSidebar = ({
 							{filteredItems.map((item) => (
 								<div
 									className={cn(
-										"p-3 rounded-lg cursor-pointer transition-colors group",
+										"p-3 rounded-lg cursor-pointer transition-colors group outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
 										selectedItemId === item._id
 											? "bg-primary/10 border border-primary/20 dark:bg-primary/30 dark:border-primary/40"
 											: "hover:bg-muted/50 dark:hover:bg-muted/70"
@@ -394,13 +394,13 @@ export const LiveSidebar = ({
 														<Badge
 															className="text-xs"
 															key={`${item._id}-${tag}-${index}`}
-															variant="secondary"
+															variant="outline"
 														>
 															{tag}
 														</Badge>
 													))}
 													{item.tags.length > 3 && (
-														<Badge className="text-xs" variant="secondary">
+														<Badge className="text-xs" variant="outline">
 															+{item.tags.length - 3}
 														</Badge>
 													)}
@@ -424,12 +424,12 @@ export const LiveSidebar = ({
 											<DropdownMenuTrigger asChild>
 												<Button
 													aria-label={`More actions for ${getItemTitle(item)}`}
-													className="h-6 w-6 p-0 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+													className="size-6 p-0 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
 													onClick={(e) => e.stopPropagation()}
 													size="sm"
 													variant="ghost"
 												>
-													<MoreHorizontal className="h-4 w-4" />
+													<MoreHorizontal className="size-4" />
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
@@ -437,7 +437,7 @@ export const LiveSidebar = ({
 													<DropdownMenuItem
 														onClick={(e) => handleRename(e, item)}
 													>
-														<FileText className="h-4 w-4 mr-2" />
+														<FileText className="size-4 mr-2" />
 														Rename
 													</DropdownMenuItem>
 												)}
@@ -446,7 +446,7 @@ export const LiveSidebar = ({
 														className="text-destructive"
 														onClick={(e) => handleDelete(e, item._id)}
 													>
-														<Trash2 className="h-4 w-4 mr-2" />
+														<Trash2 className="size-4 mr-2" />
 														Delete
 													</DropdownMenuItem>
 												)}

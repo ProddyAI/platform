@@ -3,9 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { Card, CardContent, CardHeader } from "../../../components/ui/card";
 import { ServiceIntegrationCard } from "./service-integration-card";
 
 type CurrentMember = {
@@ -76,10 +76,11 @@ const SUPPORTED_TOOLKITS = [
 	"clickup",
 ] as const;
 
-// Loading card component - matches the new ServiceIntegrationCard layout
+// Loading card component - matches the ServiceIntegrationCard layout.
+// The Skeleton primitives pulse on their own, so the card itself stays still.
 const LoadingCard = () => {
 	return (
-		<Card className="relative overflow-hidden border border-border animate-pulse">
+		<Card className="relative overflow-hidden">
 			{/* Badge placeholder */}
 			<div className="absolute top-3 right-3">
 				<Skeleton className="h-5 w-24 rounded-full" />
@@ -87,7 +88,7 @@ const LoadingCard = () => {
 
 			<CardHeader className="pb-2 pt-5 pr-24">
 				<div className="flex items-center gap-3">
-					<Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+					<Skeleton className="size-10 rounded-xl flex-shrink-0" />
 					<div className="space-y-1.5 flex-1 min-w-0">
 						<Skeleton className="h-4 w-20" />
 						<Skeleton className="h-3 w-40" />
@@ -141,12 +142,10 @@ export const IntegrationsManagement = ({
 				setAuthConfigs(data.authConfigs || []);
 				setConnectedAccounts(data.connectedAccounts || []);
 			} else {
-				console.warn("Failed to fetch integration data, using empty arrays");
 				setAuthConfigs([]);
 				setConnectedAccounts([]);
 			}
-		} catch (error) {
-			console.error("Error fetching integration data:", error);
+		} catch (_error) {
 			setAuthConfigs([]);
 			setConnectedAccounts([]);
 		} finally {
@@ -176,13 +175,10 @@ export const IntegrationsManagement = ({
 					throw new Error("Failed to complete AgentAuth connection");
 				}
 
-				const _result = await response.json();
-
 				// Refresh the data
 				await fetchData();
 				setRefreshKey((prev) => prev + 1);
-			} catch (error) {
-				console.error("Error completing AgentAuth connection:", error);
+			} catch (_error) {
 				toast.error("Failed to complete connection setup");
 			}
 		},
@@ -199,7 +195,7 @@ export const IntegrationsManagement = ({
 			handledCallbackRef.current = true;
 
 			toast.success(
-				`${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} authorization completed!`
+				`${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} connected`
 			);
 
 			// Handle the connection completion using AgentAuth
@@ -251,7 +247,7 @@ export const IntegrationsManagement = ({
 		<div className="space-y-6">
 			<div>
 				<h3 className="text-lg font-semibold tracking-tight">
-					My Integrations
+					My integrations
 				</h3>
 				<p className="text-sm text-muted-foreground">
 					Connect your accounts so Proddy&apos;s assistant can act on them.

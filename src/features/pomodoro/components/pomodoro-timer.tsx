@@ -77,14 +77,14 @@ export const PomodoroTimer = () => {
 				>
 					<PopoverTrigger asChild>
 						<Button
-							className="relative text-white hover:bg-white/15 transition-colors"
+							className="relative rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 							onClick={() => setPopoverOpen(true)}
 							size="iconSm"
 							variant="ghost"
 						>
 							<Timer className="size-5" />
 							{isActive && (
-								<span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-secondary ring-2 ring-primary" />
+								<span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-secondary ring-2 ring-primary" />
 							)}
 						</Button>
 					</PopoverTrigger>

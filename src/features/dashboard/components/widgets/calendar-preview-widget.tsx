@@ -1,7 +1,7 @@
 "use client";
 
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
-import { Calendar as CalendarIcon, Loader } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -12,6 +12,7 @@ import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-e
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 // Define the CalendarEvent interface
 interface CalendarEventMessage {
@@ -100,13 +101,13 @@ export const CalendarPreviewWidget = ({
 				</p>
 				<Badge
 					className="text-xs border-2"
-					variant={!event.time ? "outline" : "secondary"}
+					variant={!event.time ? "outline" : "primarySoft"}
 				>
 					{!event.time ? "All day" : event.time}
 				</Badge>
 			</div>
 			<Button
-				className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+				className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 				onClick={() => handleViewEvent(event._id)}
 				size="sm"
 				variant="ghost"
@@ -145,19 +146,15 @@ export const CalendarPreviewWidget = ({
 	}, [upcomingEvents, nextSevenDays]);
 
 	if (isLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-3">
 			<WidgetHeader
 				action={
 					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 						onClick={handleViewCalendar}
 						size="sm"
 						variant="ghost"
@@ -166,11 +163,8 @@ export const CalendarPreviewWidget = ({
 					</Button>
 				}
 				badge={upcomingEvents.length > 0 ? upcomingEvents.length : undefined}
-				className="pr-2"
 				controls={controls}
-				icon={
-					<CalendarIcon className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<CalendarIcon className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Upcoming Events"
 			/>
@@ -185,7 +179,7 @@ export const CalendarPreviewWidget = ({
 									className="space-y-2"
 									key={format(dayData.date, "yyyy-MM-dd")}
 								>
-									<div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1">
+									<div className="sticky top-0 z-10 bg-card py-1">
 										<h4 className="text-sm font-medium">
 											{isSameDay(dayData.date, today)
 												? "Today"

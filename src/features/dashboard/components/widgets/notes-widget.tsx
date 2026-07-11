@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Loader, Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -13,6 +13,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 interface NotesWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -137,11 +138,7 @@ export const NotesWidget = ({
 	};
 
 	if (!channels) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
@@ -149,9 +146,7 @@ export const NotesWidget = ({
 			<WidgetHeader
 				badge={sortedNotes.length > 0 ? sortedNotes.length : undefined}
 				controls={controls}
-				icon={
-					<FileText className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<FileText className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Recent Notes"
 			/>
@@ -168,15 +163,12 @@ export const NotesWidget = ({
 										</h5>
 										<RelativeTime
 											className="text-[10px]"
-											iconClassName="h-2.5 w-2.5"
+											iconClassName="size-2.5"
 											timestamp={note.updatedAt}
 										/>
 									</div>
 									<div className="flex items-center gap-2">
-										<Badge
-											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
-											variant="outline"
-										>
+										<Badge className="h-5 px-2 text-xs" variant="outline">
 											# {note.channelName}
 										</Badge>
 									</div>
@@ -184,7 +176,7 @@ export const NotesWidget = ({
 										{getNotePreview(note.content)}
 									</p>
 									<Button
-										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 										onClick={() => handleViewNote(note._id, note.channelId)}
 										size="sm"
 										variant="ghost"

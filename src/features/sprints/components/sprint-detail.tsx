@@ -117,14 +117,14 @@ export const SprintDetail = ({ sprint, onBack }: SprintDetailProps) => {
 							<div className="font-semibold text-base">{stats.notStarted}</div>
 							<div className="text-muted-foreground">To do</div>
 						</div>
-						<div className="rounded-md bg-blue-500/10 p-2">
-							<div className="font-semibold text-base text-blue-600 dark:text-blue-400">
+						<div className="rounded-md bg-primary/10 p-2">
+							<div className="font-semibold text-base text-primary">
 								{stats.inProgress}
 							</div>
 							<div className="text-muted-foreground">In progress</div>
 						</div>
-						<div className="rounded-md bg-emerald-500/10 p-2">
-							<div className="font-semibold text-base text-emerald-600 dark:text-emerald-400">
+						<div className="rounded-md bg-success/10 p-2">
+							<div className="font-semibold text-base text-success">
 								{stats.completed}
 							</div>
 							<div className="text-muted-foreground">Done</div>
@@ -182,9 +182,9 @@ export const SprintDetail = ({ sprint, onBack }: SprintDetailProps) => {
 								>
 									<div className="mt-0.5 shrink-0">
 										{isDone ? (
-											<CheckCircle2 className="size-4 text-emerald-500" />
+											<CheckCircle2 className="size-4 text-success" />
 										) : bucket === "inProgress" ? (
-											<Clock className="size-4 text-blue-500" />
+											<Clock className="size-4 text-primary" />
 										) : (
 											<Circle className="size-4 text-muted-foreground/40" />
 										)}

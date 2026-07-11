@@ -29,13 +29,9 @@ import { TaskCategorySelector } from "./task-category-selector";
 
 interface TaskCreateFormProps {
 	workspaceId: Id<"workspaces">;
-	onSuccess?: () => void;
 }
 
-export const TaskCreateForm = ({
-	workspaceId,
-	onSuccess,
-}: TaskCreateFormProps) => {
+export const TaskCreateForm = ({ workspaceId }: TaskCreateFormProps) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	const [title, setTitle] = useState("");
@@ -66,22 +62,15 @@ export const TaskCreateForm = ({
 				workspaceId,
 			});
 
-			// Show success toast
 			toast.success("Task created");
 
-			// Reset form
 			setTitle("");
 			setDescription("");
 			setDueDate(undefined);
 			setPriority(undefined);
 			setCategoryId(null);
-
-			if (onSuccess) {
-				onSuccess();
-			}
 		} catch (error) {
-			console.error("Failed to create task:", error);
-			toast.error("Failed to create task", {
+			toast.error("Couldn't create task", {
 				description:
 					error instanceof Error ? error.message : "Please try again",
 			});
@@ -103,23 +92,25 @@ export const TaskCreateForm = ({
 		switch (value) {
 			case "high":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-red-600 mr-2" />,
-					label: "High Priority",
+					icon: <div className="size-3 rounded-full bg-warning mr-2" />,
+					label: "High priority",
 				};
 			case "medium":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-amber-500 mr-2" />,
-					label: "Medium Priority",
+					icon: <div className="size-3 rounded-full bg-primary mr-2" />,
+					label: "Medium priority",
 				};
 			case "low":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-blue-600 mr-2" />,
-					label: "Low Priority",
+					icon: (
+						<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
+					),
+					label: "Low priority",
 				};
 			default:
 				return {
 					icon: (
-						<div className="h-3 w-3 rounded-full border-2 border-dashed border-border mr-2" />
+						<div className="size-3 rounded-full border-2 border-dashed border-border mr-2" />
 					),
 					label: "Set priority (optional)",
 				};
@@ -148,7 +139,7 @@ export const TaskCreateForm = ({
 					}}
 					variant="default"
 				>
-					<Plus className="h-5 w-5" />
+					<Plus className="size-5" />
 					<span className="font-semibold text-base">
 						{maxReached ? "Task limit reached" : "Add new task"}
 					</span>
@@ -161,7 +152,7 @@ export const TaskCreateForm = ({
 
 	return (
 		<form
-			className="p-6 rounded-xl border shadow-sm bg-card"
+			className="p-6 rounded-2xl border shadow-sm bg-card"
 			onSubmit={handleSubmit}
 		>
 			<div className="flex justify-between items-center mb-4">
@@ -173,7 +164,7 @@ export const TaskCreateForm = ({
 					type="button"
 					variant="ghost"
 				>
-					<X className="h-4 w-4" />
+					<X className="size-4" />
 				</Button>
 			</div>
 
@@ -205,7 +196,7 @@ export const TaskCreateForm = ({
 									type="button"
 									variant="outline"
 								>
-									<CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+									<CalendarIcon className="mr-2 size-4 text-muted-foreground" />
 									{dueDate ? (
 										format(dueDate, "PPP")
 									) : (
@@ -254,20 +245,20 @@ export const TaskCreateForm = ({
 							<SelectContent>
 								<SelectItem value="high">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-red-600 mr-2" />
-										High Priority
+										<div className="size-3 rounded-full bg-warning mr-2" />
+										High priority
 									</div>
 								</SelectItem>
 								<SelectItem value="medium">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-amber-500 mr-2" />
-										Medium Priority
+										<div className="size-3 rounded-full bg-primary mr-2" />
+										Medium priority
 									</div>
 								</SelectItem>
 								<SelectItem value="low">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-blue-600 mr-2" />
-										Low Priority
+										<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
+										Low priority
 									</div>
 								</SelectItem>
 							</SelectContent>

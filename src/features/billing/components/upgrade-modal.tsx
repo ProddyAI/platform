@@ -346,7 +346,7 @@ export function UpgradeModal({
 										? "Switch to Pro"
 										: "Upgrade to Pro"
 							}
-							containerClassName="flex min-h-full flex-col rounded-[10px] border bg-background shadow-sm"
+							containerClassName="flex min-h-full flex-col rounded-2xl border bg-card shadow-sm"
 							decreaseAriaLabel="Decrease Pro seats"
 							features={PRO_FEATURES}
 							headerClassName="space-y-3 border-b p-4"
@@ -383,10 +383,10 @@ export function UpgradeModal({
 									? "Update Enterprise"
 									: "Switch to Enterprise"
 							}
-							containerClassName="flex min-h-full flex-col rounded-[10px] border border-primary/40 bg-background shadow-sm ring-1 ring-primary/10"
+							containerClassName="flex min-h-full flex-col rounded-2xl border border-primary/20 bg-card shadow-sm ring-1 ring-primary/30"
 							decreaseAriaLabel="Decrease Enterprise seats"
 							features={ENTERPRISE_FEATURES}
-							headerClassName="space-y-3 border-b bg-primary/[0.03] p-4"
+							headerClassName="space-y-3 border-b bg-primary/5 p-4"
 							increaseAriaLabel="Increase Enterprise seats"
 							loading={loading}
 							maxSeats={maxSeats}
@@ -416,7 +416,7 @@ export function UpgradeModal({
 				</div>
 
 				{targetPlan && (
-					<div className="mx-5 mb-5 rounded-[10px] border bg-muted/20 p-3 text-sm">
+					<div className="mx-5 mb-5 rounded-xl border bg-muted/20 p-3 text-sm">
 						<div className="flex items-center justify-between gap-4">
 							<span className="font-medium">Fair billing today</span>
 							<span className="text-muted-foreground">
@@ -436,7 +436,7 @@ export function UpgradeModal({
 								</div>
 								<div>
 									<p className="text-xs text-muted-foreground">Refund</p>
-									<p className="font-semibold text-emerald-600">
+									<p className="font-semibold text-success">
 										{formatMoney(
 											fairBillingPreview.refundAmount,
 											fairBillingPreview.currency
@@ -481,7 +481,7 @@ function PlanFeatures({ features }: { features: string[] }) {
 		<ul className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
 			{features.map((feature) => (
 				<li className="flex items-center gap-2 text-sm leading-5" key={feature}>
-					<Check className="size-4 shrink-0 text-emerald-500" />
+					<Check className="size-4 shrink-0 text-success" />
 					<span>{feature}</span>
 				</li>
 			))}
@@ -563,10 +563,10 @@ function PlanCard({
 			</div>
 
 			<div className="flex flex-1 flex-col gap-4 p-4">
-				<div className="rounded-[10px] border bg-muted/20 p-3">
+				<div className="rounded-xl border bg-muted/20 p-3">
 					<div className="flex items-center justify-between gap-3">
 						<div className="flex items-center gap-3">
-							<span className="flex size-8 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm">
+							<span className="flex size-8 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm">
 								<Users className="size-4" />
 							</span>
 							<div>
@@ -576,7 +576,7 @@ function PlanCard({
 								</p>
 							</div>
 						</div>
-						<div className="flex items-center rounded-full border bg-background p-1 shadow-sm">
+						<div className="flex items-center rounded-full border bg-card p-1 shadow-sm">
 							<Button
 								aria-label={decreaseAriaLabel}
 								className="size-8 rounded-full border-0 shadow-none"

@@ -17,9 +17,13 @@ interface BarChartProps {
 	showLabels?: boolean;
 	className?: string;
 	animate?: boolean;
+	activeIndex?: number;
 	formatValue?: (value: number) => string;
 	onBarClick?: (label: string, value: number, index: number) => void;
 }
+
+// Dashed gridlines behind the bars, evenly spaced from the baseline.
+const GRIDLINE_STOPS = [25, 50, 75, 100] as const;
 
 export const BarChart = ({
 	data,
@@ -29,6 +33,7 @@ export const BarChart = ({
 	showLabels = true,
 	className,
 	animate = true,
+	activeIndex,
 	formatValue = (value) => value.toString(),
 	onBarClick,
 }: BarChartProps) => {
@@ -56,7 +61,7 @@ export const BarChart = ({
 
 		const containerRect = container.getBoundingClientRect();
 		setTooltipPos(
-			calculateDomTooltipPosition(hoveredElement, containerRect, 50, 24, -30)
+			calculateDomTooltipPosition(hoveredElement, containerRect, 0, 28, -34)
 		);
 	}, [hoveredIndex]);
 
@@ -85,15 +90,29 @@ export const BarChart = ({
 			ref={containerRef}
 			style={{ height: chartHeight }}
 		>
+			{/* Gridlines behind the bars */}
+			<div
+				className="pointer-events-none absolute inset-x-0 top-0"
+				style={{ height: actualBarHeight }}
+			>
+				{GRIDLINE_STOPS.map((stop) => (
+					<div
+						className="absolute inset-x-0 border-t border-dashed border-border"
+						key={stop}
+						style={{ top: `${100 - stop}%` }}
+					/>
+				))}
+			</div>
+
 			{data.map((item, index) => {
 				const percentage = (item.value / maxValue) * 100;
-				const isHovered = hoveredIndex === index;
+				const isActive = hoveredIndex === index || activeIndex === index;
 
 				return (
 					<button
 						aria-disabled={!onBarClick}
 						aria-label={`${item.label}: ${formatValue(item.value)}`}
-						className="relative flex flex-col items-center justify-end flex-1 group"
+						className="relative flex flex-col items-center justify-end flex-1 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 						data-bar-id={item.id ?? item.label}
 						data-bar-index={index}
 						key={item.id ?? item.label}
@@ -118,9 +137,8 @@ export const BarChart = ({
 					>
 						<div
 							className={cn(
-								"w-full rounded-t-md transition-all duration-300",
-								item.color ? "" : "bg-secondary",
-								isHovered ? "opacity-80" : "opacity-100",
+								"relative w-full rounded-t-md transition-[height,background-color,opacity] duration-slow ease-out",
+								!item.color && (isActive ? "bg-primary" : "bg-primary/15"),
 								animate &&
 									"animate-in fade-in-50 slide-in-from-bottom-3 motion-reduce:animate-none",
 								onBarClick && "cursor-pointer"
@@ -128,12 +146,19 @@ export const BarChart = ({
 							style={{
 								height: `${(percentage / 100) * actualBarHeight}px`,
 								backgroundColor: item.color,
-								transitionDelay: animate ? `${index * 50}ms` : "0ms",
+								opacity: item.color ? (isActive ? 1 : 0.25) : undefined,
 							}}
 						/>
 
 						{showLabels && (
-							<div className="mt-2 text-xs text-muted-foreground truncate max-w-full px-1 text-center">
+							<div
+								className={cn(
+									"mt-2 text-xs truncate max-w-full px-1 text-center",
+									isActive
+										? "text-foreground font-medium"
+										: "text-muted-foreground"
+								)}
+							>
 								{item.label}
 							</div>
 						)}
@@ -143,13 +168,13 @@ export const BarChart = ({
 
 			{showValues && hoveredIndex !== null && tooltipPos && (
 				<div
-					className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
+					className="pointer-events-none absolute z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background shadow-md"
 					style={{
 						top: tooltipPos.top,
 						left: tooltipPos.left,
 					}}
 				>
-					{formatValue(data[hoveredIndex].value)}
+					{`${data[hoveredIndex].label}: ${formatValue(data[hoveredIndex].value)}`}
 				</div>
 			)}
 		</div>

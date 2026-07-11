@@ -2,8 +2,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Loader, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { SiGithub } from "react-icons/si";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +112,7 @@ export const SignUpCard = ({
 	}
 
 	return (
-		<Card className="size-full p-8 shadow-xl border-opacity-30 backdrop-blur-sm animate-slide-up rounded-[10px]">
+		<Card className="size-full p-8 shadow-xl animate-slide-up">
 			<CardHeader className="px-0 pt-0">
 				<CardTitle>Sign up to continue</CardTitle>
 				<CardDescription>
@@ -168,12 +168,7 @@ export const SignUpCard = ({
 						value={confirmPassword}
 					/>
 
-					<Button
-						className="bg-primary w-full transition-all duration-300 hover:shadow-lg hover:bg-primary/90"
-						disabled={pending}
-						size="lg"
-						type="submit"
-					>
+					<Button className="w-full" disabled={pending} size="lg" type="submit">
 						{pending ? (
 							<>
 								<Loader className="mr-2 size-4 animate-spin" />
@@ -189,7 +184,7 @@ export const SignUpCard = ({
 
 				<div className="flex flex-col gap-y-2.5">
 					<Button
-						className="relative w-full transition-all duration-300 hover:shadow-md group"
+						className="relative w-full group"
 						disabled={pending}
 						onClick={() => handleOAuthSignUp("google")}
 						size="lg"
@@ -200,7 +195,7 @@ export const SignUpCard = ({
 					</Button>
 
 					<Button
-						className="relative w-full transition-all duration-300 hover:shadow-md group"
+						className="relative w-full group"
 						disabled={pending}
 						onClick={() => {
 							handleOAuthSignUp("github");
@@ -208,7 +203,7 @@ export const SignUpCard = ({
 						size="lg"
 						variant="outline"
 					>
-						<FaGithub className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
+						<SiGithub className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
 						Continue with GitHub
 					</Button>
 				</div>
@@ -217,14 +212,14 @@ export const SignUpCard = ({
 					Already have an account?{" "}
 					{isStandalone ? (
 						<Link
-							className="text-secondary cursor-pointer font-medium hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							className="text-primary cursor-pointer font-medium hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-primary/80"
 							href="/auth/signin"
 						>
 							Sign in
 						</Link>
 					) : (
 						<button
-							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-primary/80"
 							disabled={pending}
 							onClick={() => setState?.("signIn")}
 							type="button"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Loader2, PaintBucket } from "lucide-react";
+import { Loader2, Palette, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -128,6 +128,11 @@ const CanvasPage = () => {
 				(item) => item._id === activeCanvasId || item.roomId === activeCanvasId
 			)
 		: null;
+
+	// Channel messages are still resolving on first paint; distinguish "loading"
+	// from "genuinely empty" so the empty state doesn't flash before data lands.
+	const isLoadingCanvases = messages === undefined && Boolean(channelId);
+	const hasCanvases = canvasItems.length > 0;
 
 	// Keep the URL in sync with the active canvas so sharing/copying the link
 	// reliably opens the same Liveblocks room (and therefore the same Stream call).
@@ -336,29 +341,42 @@ const CanvasPage = () => {
 					/>
 				)}
 
-				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-background">
-					<PaintBucket className="size-16 text-secondary" />
-					<h2 className="text-2xl font-semibold">Canvas</h2>
-					<p className="text-sm text-muted-foreground mb-2">
-						Create a new canvas to start drawing and collaborating
-					</p>
-					<Button
-						className="flex items-center gap-2"
-						disabled={isCreatingCanvas}
-						onClick={handleCreateCanvas}
-					>
-						{isCreatingCanvas ? (
-							<>
-								<Loader2 className="h-4 w-4 animate-spin" />
-								Creating Canvas...
-							</>
-						) : (
-							<>
-								<PaintBucket className="h-4 w-4" />
-								Create New Canvas
-							</>
-						)}
-					</Button>
+				<div className="flex-1 flex items-center justify-center bg-background">
+					{isLoadingCanvases ? (
+						<div className="flex flex-col items-center gap-y-4">
+							<Loader2 className="size-6 animate-spin text-primary motion-reduce:animate-none" />
+							<p className="text-sm text-muted-foreground">Loading canvases…</p>
+						</div>
+					) : (
+						<div className="text-center space-y-5 max-w-sm px-6 duration-300 animate-in fade-in-50 motion-reduce:animate-none">
+							<div className="mx-auto size-20 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm">
+								<Palette className="size-10 text-primary" />
+							</div>
+							<div>
+								<h3 className="text-xl font-semibold mb-2">
+									{hasCanvases ? "No canvas selected" : "No canvas yet"}
+								</h3>
+								<p className="text-sm text-muted-foreground leading-relaxed">
+									{hasCanvases
+										? "Pick a canvas from the sidebar to jump back in, or start a fresh one."
+										: "Create a canvas to sketch ideas, diagram flows, and think through problems with your team in real time."}
+								</p>
+							</div>
+							<Button disabled={isCreatingCanvas} onClick={handleCreateCanvas}>
+								{isCreatingCanvas ? (
+									<>
+										<Loader2 className="size-4 mr-2 animate-spin motion-reduce:animate-none" />
+										Creating...
+									</>
+								) : (
+									<>
+										<Plus className="size-4 mr-2" />
+										{hasCanvases ? "New canvas" : "Create canvas"}
+									</>
+								)}
+							</Button>
+						</div>
+					)}
 				</div>
 				<ConfirmDeleteCanvasDialog />
 			</div>

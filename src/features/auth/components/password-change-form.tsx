@@ -95,7 +95,7 @@ export const PasswordChangeForm = () => {
 		<Card className="bg-muted/50 border-border">
 			<CardHeader>
 				<div className="flex items-center gap-2">
-					<Lock className="h-5 w-5 text-primary" />
+					<Lock className="size-5 text-primary" />
 					<CardTitle>Change Password</CardTitle>
 				</div>
 				<CardDescription>

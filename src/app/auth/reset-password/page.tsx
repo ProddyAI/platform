@@ -59,9 +59,9 @@ const ResetPasswordContent = () => {
 	// Early return if token is missing - prevent flash of content
 	if (!token) {
 		return (
-			<div className="flex h-full items-center justify-center bg-primary">
-				<div className="flex flex-col items-center gap-4 text-white">
-					<Loader2 className="h-8 w-8 animate-spin" />
+			<div className="flex h-full items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-4 text-foreground">
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-lg">Redirecting...</p>
 				</div>
 			</div>
@@ -121,9 +121,9 @@ const ResetPasswordContent = () => {
 	// Show success message during redirect after successful reset
 	if (resetSuccessful) {
 		return (
-			<div className="flex h-full items-center justify-center bg-primary">
-				<div className="flex flex-col items-center gap-4 text-white">
-					<Loader2 className="h-8 w-8 animate-spin" />
+			<div className="flex h-full items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-4 text-foreground">
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-lg">Password reset successful!</p>
 					<p className="text-sm">Redirecting to sign in...</p>
 				</div>
@@ -134,9 +134,9 @@ const ResetPasswordContent = () => {
 	// Show loading while verifying token
 	if (!verifyToken) {
 		return (
-			<div className="flex h-full items-center justify-center bg-primary">
-				<div className="flex flex-col items-center gap-4 text-white">
-					<Loader2 className="h-8 w-8 animate-spin" />
+			<div className="flex h-full items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-4 text-foreground">
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-lg">Verifying reset link...</p>
 				</div>
 			</div>
@@ -146,10 +146,12 @@ const ResetPasswordContent = () => {
 	// Show error if token is invalid
 	if (!verifyToken.valid) {
 		return (
-			<div className="flex h-full items-center justify-center bg-primary">
+			<div className="flex h-full items-center justify-center bg-background">
 				<Card className="md:h-auto md:w-[420px] p-8 shadow-xl">
 					<CardHeader className="px-0 pt-0">
-						<CardTitle className="text-red-600">Invalid Reset Link</CardTitle>
+						<CardTitle className="text-destructive">
+							Invalid Reset Link
+						</CardTitle>
 						<CardDescription>
 							{verifyToken.message ||
 								"This password reset link is invalid or has expired."}
@@ -157,7 +159,7 @@ const ResetPasswordContent = () => {
 					</CardHeader>
 					<CardContent className="px-0 pb-0">
 						<Button
-							className="w-full bg-primary hover:bg-primary/90"
+							className="w-full"
 							onClick={() => router.push("/auth/forgot-password")}
 						>
 							Request New Reset Link
@@ -169,17 +171,17 @@ const ResetPasswordContent = () => {
 	}
 
 	return (
-		<div className="flex h-full items-center justify-center bg-primary">
+		<div className="flex h-full items-center justify-center bg-background">
 			<div className="md:h-auto md:w-[420px] animate-fade-in">
-				<Card className="size-full p-8 shadow-xl border-opacity-30 backdrop-blur-sm animate-slide-up rounded-[10px]">
+				<Card className="size-full p-8 shadow-xl animate-slide-up">
 					<CardHeader className="px-0 pt-0">
 						<div className="flex items-center gap-2 mb-2">
-							<Lock className="h-6 w-6 text-secondary" />
+							<Lock className="size-6 text-primary" />
 							<CardTitle>Reset Your Password</CardTitle>
 						</div>
 						<CardDescription>
 							Enter a new password for{" "}
-							<strong className="text-secondary">{verifyToken.email}</strong>
+							<strong className="text-primary">{verifyToken.email}</strong>
 						</CardDescription>
 					</CardHeader>
 
@@ -216,12 +218,14 @@ const ResetPasswordContent = () => {
 									value={confirmPassword}
 								/>
 								{confirmPassword && newPassword !== confirmPassword && (
-									<p className="text-sm text-red-500">Passwords do not match</p>
+									<p className="text-sm text-destructive">
+										Passwords do not match
+									</p>
 								)}
 							</div>
 
 							<Button
-								className="bg-primary w-full transition-standard hover:shadow-lg hover:bg-primary/90"
+								className="w-full"
 								disabled={isSubmitting || !isPasswordValid(newPassword)}
 								size="lg"
 								type="submit"
@@ -240,8 +244,8 @@ const ResetPasswordPage = () => {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex h-full items-center justify-center bg-primary">
-					<Loader2 className="h-8 w-8 animate-spin text-white" />
+				<div className="flex h-full items-center justify-center bg-background">
+					<Loader2 className="size-8 animate-spin text-primary" />
 				</div>
 			}
 		>

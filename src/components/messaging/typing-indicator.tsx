@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface TypingIndicatorProps {
@@ -14,53 +13,31 @@ export const TypingIndicator = ({
 	isVisible,
 	className,
 }: TypingIndicatorProps) => {
-	const shouldReduceMotion = useReducedMotion();
+	if (!isVisible) return null;
 
 	return (
-		<AnimatePresence>
-			{isVisible && (
-				<motion.div
-					animate={{ opacity: 1, y: 0 }}
-					className={cn(
-						"px-5 py-1 text-sm text-muted-foreground italic flex items-center gap-2",
-						className
-					)}
-					exit={{ opacity: 0, y: 10 }}
-					initial={{ opacity: 0, y: 10 }}
-					transition={{ duration: 0.2 }}
-				>
-					<div className="flex gap-1">
-						<motion.div
-							animate={shouldReduceMotion ? { opacity: 1 } : { y: [0, -4, 0] }}
-							className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
-							transition={{
-								duration: 0.6,
-								repeat: shouldReduceMotion ? 0 : Number.POSITIVE_INFINITY,
-								delay: 0,
-							}}
-						/>
-						<motion.div
-							animate={shouldReduceMotion ? { opacity: 1 } : { y: [0, -4, 0] }}
-							className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
-							transition={{
-								duration: 0.6,
-								repeat: shouldReduceMotion ? 0 : Number.POSITIVE_INFINITY,
-								delay: 0.2,
-							}}
-						/>
-						<motion.div
-							animate={shouldReduceMotion ? { opacity: 1 } : { y: [0, -4, 0] }}
-							className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
-							transition={{
-								duration: 0.6,
-								repeat: shouldReduceMotion ? 0 : Number.POSITIVE_INFINITY,
-								delay: 0.4,
-							}}
-						/>
-					</div>
-					<span>{typingText}</span>
-				</motion.div>
+		<div
+			className={cn(
+				"flex items-center gap-2 px-5 py-1 text-sm italic text-muted-foreground",
+				"animate-in fade-in slide-in-from-bottom-1 duration-200 motion-reduce:animate-none",
+				className
 			)}
-		</AnimatePresence>
+		>
+			<div className="flex gap-1">
+				<span
+					className="size-1.5 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+					style={{ animationDelay: "0ms" }}
+				/>
+				<span
+					className="size-1.5 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+					style={{ animationDelay: "200ms" }}
+				/>
+				<span
+					className="size-1.5 rounded-full bg-muted-foreground animate-pulse motion-reduce:animate-none"
+					style={{ animationDelay: "400ms" }}
+				/>
+			</div>
+			<span>{typingText}</span>
+		</div>
 	);
 };

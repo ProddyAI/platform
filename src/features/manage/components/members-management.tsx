@@ -108,7 +108,6 @@ const EmailInviteSection = ({
 			setEmail("");
 			setInviteRole("member");
 			setInviteComment("");
-			toast.success("Invite sent successfully");
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			setInviteError(message);
@@ -118,10 +117,10 @@ const EmailInviteSection = ({
 	};
 
 	return (
-		<div className="p-4 bg-muted/30 dark:bg-muted/50 rounded-lg border border-border/50 dark:border-border">
+		<div className="rounded-lg border bg-muted/30 p-4">
 			<div className="grid gap-4">
 				<Label className="text-sm font-semibold" htmlFor="emailInvite">
-					Invite by Email
+					Invite by email
 				</Label>
 				<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
 					<Input
@@ -157,7 +156,7 @@ const EmailInviteSection = ({
 								return (
 									<SelectItem key={value} value={value}>
 										<div className="flex items-center gap-2">
-											<Icon className="h-4 w-4" />
+											<Icon className="size-4" />
 											{label}
 										</div>
 									</SelectItem>
@@ -170,7 +169,7 @@ const EmailInviteSection = ({
 						disabled={inviteLoading}
 						onClick={sendInvite}
 					>
-						{inviteLoading ? "Sending..." : "Send Invite"}
+						{inviteLoading ? "Sending…" : "Send invite"}
 					</Button>
 				</div>
 				<div className="grid gap-2">
@@ -178,8 +177,11 @@ const EmailInviteSection = ({
 						className="flex items-center gap-2 text-sm font-medium"
 						htmlFor="inviteComment"
 					>
-						<MessageSquare className="h-4 w-4" />
-						Invitation Note
+						<MessageSquare className="size-4" />
+						Invitation note{" "}
+						<span className="font-normal text-muted-foreground">
+							(optional)
+						</span>
 					</Label>
 					<Textarea
 						disabled={inviteLoading}
@@ -188,16 +190,18 @@ const EmailInviteSection = ({
 							setInviteComment(e.target.value);
 							setInviteSuccess(false);
 						}}
-						placeholder="Let them know why you're inviting them..."
+						placeholder="Let them know why you're inviting them"
 						value={inviteComment}
 					/>
 				</div>
 				{inviteError && (
-					<p className="text-sm text-destructive">{inviteError}</p>
+					<p className="text-sm text-destructive" role="alert">
+						{inviteError}
+					</p>
 				)}
 				{inviteSuccess && (
-					<p className="text-sm text-green-700 dark:text-green-400">
-						Invite sent successfully
+					<p className="text-sm text-success" role="status">
+						Invite sent
 					</p>
 				)}
 				<p className="text-xs text-muted-foreground">
@@ -253,7 +257,7 @@ export const MembersManagement = ({
 				role,
 			});
 
-			toast.success(`User role updated to ${role}`);
+			toast.success(`Role updated to ${ROLE_META[role].label}`);
 		} catch (error) {
 			toast.error(
 				(error as { message?: string }).message || "Failed to update user role"
@@ -289,24 +293,24 @@ export const MembersManagement = ({
 		}
 	};
 
-	const getRoleBadgeVariant = (
-		role: string
-	): "default" | "secondary" | "outline" => {
+	const getRoleBadgeVariant = (role: string): "primarySoft" | "outline" => {
 		switch (role) {
 			case "owner":
-				return "default";
-			case "admin":
-				return "secondary";
+				return "primarySoft";
 			default:
 				return "outline";
 		}
+	};
+
+	const getRoleBadgeClassName = (role: string): string | undefined => {
+		return role === "admin" ? "border-primary/30 text-primary" : undefined;
 	};
 
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<div>
-					<h3 className="text-lg font-medium">Members</h3>
+					<h3 className="text-lg font-semibold tracking-tight">Members</h3>
 					<p className="text-sm text-muted-foreground">
 						Manage the members in your workspace and their roles
 					</p>
@@ -326,8 +330,8 @@ export const MembersManagement = ({
 				<span className="text-sm font-medium text-muted-foreground">
 					Workspace plan
 				</span>
-				<Badge variant="outline">
-					{workspace?.plan ? workspace.plan.toUpperCase() : "FREE"}
+				<Badge className="capitalize" variant="outline">
+					{workspace?.plan ?? "free"}
 				</Badge>
 			</div>
 
@@ -345,7 +349,7 @@ export const MembersManagement = ({
 							<TableRow key={`member-skeleton-${index}`}>
 								<TableCell>
 									<div className="flex items-center gap-3">
-										<Skeleton className="h-8 w-8 rounded-full" />
+										<Skeleton className="size-8 rounded-full" />
 										<div className="space-y-1.5">
 											<Skeleton className="h-4 w-32" />
 											<Skeleton className="h-3 w-40" />
@@ -356,7 +360,7 @@ export const MembersManagement = ({
 									<Skeleton className="h-5 w-16 rounded-full" />
 								</TableCell>
 								<TableCell>
-									<Skeleton className="h-8 w-8" />
+									<Skeleton className="size-8" />
 								</TableCell>
 							</TableRow>
 						))}
@@ -364,7 +368,7 @@ export const MembersManagement = ({
 				</Table>
 			) : !members || members.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-8 text-center">
-					<Shield className="h-12 w-12 text-muted-foreground mb-4" />
+					<Shield className="size-12 text-muted-foreground mb-4" />
 					<h3 className="text-lg font-medium">No members</h3>
 					<p className="text-sm text-muted-foreground mb-4">
 						Invite members to your workspace
@@ -392,7 +396,7 @@ export const MembersManagement = ({
 							<TableRow key={member._id}>
 								<TableCell>
 									<div className="flex items-center gap-3">
-										<Avatar className="h-8 w-8">
+										<Avatar className="size-8">
 											<AvatarImage
 												alt={member.user.name}
 												src={member.user.image}
@@ -410,8 +414,12 @@ export const MembersManagement = ({
 									</div>
 								</TableCell>
 								<TableCell>
-									<Badge variant={getRoleBadgeVariant(member.role)}>
-										{member.role}
+									<Badge
+										className={getRoleBadgeClassName(member.role)}
+										variant={getRoleBadgeVariant(member.role)}
+									>
+										{ROLE_META[member.role as WorkspaceRole]?.label ??
+											member.role}
 									</Badge>
 								</TableCell>
 								<TableCell>
@@ -430,7 +438,7 @@ export const MembersManagement = ({
 															size="sm"
 															variant="outline"
 														>
-															<UserCog className="h-4 w-4" />
+															<UserCog className="size-4" />
 														</Button>
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
@@ -483,7 +491,7 @@ export const MembersManagement = ({
 												className="text-xs text-muted-foreground"
 												variant="outline"
 											>
-												Only Owner
+												Only owner
 											</Badge>
 										)}
 
@@ -500,7 +508,7 @@ export const MembersManagement = ({
 												size="sm"
 												variant="outline"
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className="size-4" />
 											</Button>
 										)}
 									</div>
@@ -515,7 +523,7 @@ export const MembersManagement = ({
 			<AlertDialog onOpenChange={setRemoveDialogOpen} open={removeDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogTitle>Remove this member?</AlertDialogTitle>
 						<AlertDialogDescription>
 							This action cannot be undone. This will remove the member from
 							your workspace and delete all of their messages and reactions.
@@ -528,7 +536,7 @@ export const MembersManagement = ({
 							disabled={isRemoving}
 							onClick={handleRemoveMember}
 						>
-							{isRemoving ? "Removing..." : "Remove Member"}
+							{isRemoving ? "Removing…" : "Remove member"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

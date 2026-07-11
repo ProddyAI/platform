@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanSquare, Loader } from "lucide-react";
+import { KanbanSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 // A due date is only overdue once its calendar day has fully elapsed, matching
 // the convention in board-issue-row.tsx's isOverdue check.
@@ -76,11 +77,7 @@ export const AssignedCardsWidget = ({
 	};
 
 	if (cardsLoading) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
@@ -89,8 +86,8 @@ export const AssignedCardsWidget = ({
 				action={
 					sortedCards.length > 0 && (
 						<Button
-							className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-							onClick={() => router.push(`/workspace/${workspaceId}/issues`)}
+							className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
+							onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 							size="sm"
 							variant="ghost"
 						>
@@ -100,9 +97,7 @@ export const AssignedCardsWidget = ({
 				}
 				badge={sortedCards.length > 0 ? sortedCards.length : undefined}
 				controls={controls}
-				icon={
-					<KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<KanbanSquare className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Assigned Issues"
 			/>
@@ -120,22 +115,19 @@ export const AssignedCardsWidget = ({
 										{card.dueDate && (
 											<RelativeTime
 												className="text-[10px]"
-												iconClassName="h-2.5 w-2.5"
+												iconClassName="size-2.5"
 												overdue={isOverdue(card.dueDate)}
 												timestamp={card.dueDate}
 											/>
 										)}
 									</div>
 									<div className="flex items-center gap-2">
-										<Badge
-											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
-											variant="outline"
-										>
+										<Badge className="h-5 px-2 text-xs" variant="outline">
 											# {card.channelName || "Unknown Channel"}
 										</Badge>
 									</div>
 									<Button
-										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 										onClick={() => handleViewCard(card)}
 										size="sm"
 										variant="ghost"

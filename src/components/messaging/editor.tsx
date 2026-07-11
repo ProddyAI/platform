@@ -1,4 +1,5 @@
 import {
+	AtSign,
 	CalendarIcon,
 	Download,
 	File,
@@ -866,7 +867,7 @@ const Editor = ({
 									}
 									variant="outline"
 								>
-									<FileText className="mr-2 h-4 w-4" />
+									<FileText className="mr-2 size-4" />
 									<span className="truncate">
 										{note.title || "Untitled Note"}
 									</span>
@@ -930,7 +931,7 @@ const Editor = ({
 									onClick={() => handleSelectExistingCanvas(canvas)}
 									variant="outline"
 								>
-									<PaintBucket className="mr-2 h-4 w-4" />
+									<PaintBucket className="mr-2 size-4" />
 									<span className="truncate">{canvas.canvasName}</span>
 								</Button>
 							))
@@ -998,7 +999,7 @@ const Editor = ({
 
 			<div
 				className={cn(
-					"chat-editor-compose relative flex flex-col overflow-hidden rounded-md border border-border bg-card transition focus-within:border-ring/50 focus-within:shadow-sm",
+					"chat-editor-compose relative flex flex-col overflow-hidden rounded-lg border border-input bg-card transition-standard focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
 					disabled && "opacity-50"
 				)}
 			>
@@ -1009,7 +1010,7 @@ const Editor = ({
 						<div className="group/image relative flex min-h-[62px] items-center justify-center rounded-xl border bg-muted/40 px-3 py-2">
 							<Hint label="Remove file">
 								<button
-									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
+									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-background bg-foreground/70 text-background hover:bg-foreground group-hover/image:flex"
 									onClick={() => {
 										setImage(null);
 
@@ -1153,22 +1154,7 @@ const Editor = ({
 										size="iconSm"
 										variant="ghost"
 									>
-										<svg
-											aria-hidden="true"
-											className="size-3.5 md:size-4"
-											fill="none"
-											height="16"
-											stroke="currentColor"
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth="2"
-											viewBox="0 0 24 24"
-											width="16"
-											xmlns="http://www.w3.org/2000/svg"
-										>
-											<circle cx="12" cy="12" r="4" />
-											<path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
-										</svg>
+										<AtSign className="size-3.5 md:size-4" />
 									</Button>
 								</Hint>
 							)}

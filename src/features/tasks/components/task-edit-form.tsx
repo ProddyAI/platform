@@ -79,7 +79,6 @@ export const TaskEditForm = ({
 			});
 			onSave();
 		} catch (error) {
-			console.error("Failed to update task:", error);
 			toast.error("Couldn't save task changes", {
 				description:
 					error instanceof Error ? error.message : "Please try again",
@@ -91,7 +90,7 @@ export const TaskEditForm = ({
 
 	return (
 		<form
-			className="p-4 rounded-lg border bg-card shadow-md"
+			className="p-4 rounded-2xl border bg-card shadow-md"
 			onSubmit={handleSubmit}
 		>
 			<div className="space-y-3">
@@ -122,7 +121,7 @@ export const TaskEditForm = ({
 									type="button"
 									variant="outline"
 								>
-									<CalendarIcon className="mr-2 h-4 w-4" />
+									<CalendarIcon className="mr-2 size-4" />
 									{dueDate ? (
 										format(dueDate, "PPP")
 									) : (
@@ -133,9 +132,9 @@ export const TaskEditForm = ({
 							<PopoverContent align="start" className="w-auto p-0">
 								<Calendar onSelect={setDueDate} selected={dueDate} />
 								{dueDate && (
-									<div className="p-2 border-t">
+									<div className="flex justify-end border-t p-2">
 										<Button
-											className="text-destructive text-xs w-full"
+											className="text-destructive hover:bg-destructive/10 hover:text-destructive text-xs"
 											onClick={() => setDueDate(undefined)}
 											size="sm"
 											type="button"
@@ -157,12 +156,27 @@ export const TaskEditForm = ({
 							value={priority}
 						>
 							<SelectTrigger>
-								<SelectValue placeholder="Priority (optional)" />
+								<SelectValue placeholder="Set priority (optional)" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="low">Low</SelectItem>
-								<SelectItem value="medium">Medium</SelectItem>
-								<SelectItem value="high">High</SelectItem>
+								<SelectItem value="high">
+									<div className="flex items-center">
+										<div className="size-3 rounded-full bg-warning mr-2" />
+										High priority
+									</div>
+								</SelectItem>
+								<SelectItem value="medium">
+									<div className="flex items-center">
+										<div className="size-3 rounded-full bg-primary mr-2" />
+										Medium priority
+									</div>
+								</SelectItem>
+								<SelectItem value="low">
+									<div className="flex items-center">
+										<div className="size-3 rounded-full bg-muted-foreground/60 mr-2" />
+										Low priority
+									</div>
+								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -190,7 +204,7 @@ export const TaskEditForm = ({
 					Cancel
 				</Button>
 				<Button disabled={!title.trim() || isSubmitting} type="submit">
-					Save
+					{isSubmitting ? "Saving..." : "Save"}
 				</Button>
 			</div>
 		</form>

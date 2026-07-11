@@ -201,9 +201,9 @@ export const Mermaid = ({
 					x={x}
 					y={y}
 				>
-					<div className="h-full w-full flex items-center justify-center bg-muted border border-border rounded p-2 text-xs text-muted-foreground">
+					<div className="size-full flex items-center justify-center bg-muted border border-border rounded p-2 text-xs text-muted-foreground">
 						<div className="w-full text-center">
-							<Skeleton className="h-3 w-3/4 mx-auto mb-2 bg-muted-foreground/20" />
+							<Skeleton className="size-3/4 mx-auto mb-2 bg-muted-foreground/20" />
 							<div>Loading...</div>
 						</div>
 					</div>
@@ -236,9 +236,9 @@ export const Mermaid = ({
 					x={x}
 					y={y}
 				>
-					<div className="h-full w-full flex items-center justify-center bg-muted border border-border rounded p-2 text-xs text-muted-foreground">
+					<div className="size-full flex items-center justify-center bg-muted border border-border rounded p-2 text-xs text-muted-foreground">
 						<div className="w-full text-center">
-							<Skeleton className="h-3 w-3/4 mx-auto mb-2 bg-muted-foreground/20" />
+							<Skeleton className="size-3/4 mx-auto mb-2 bg-muted-foreground/20" />
 							<div>Rendering diagram...</div>
 						</div>
 					</div>
@@ -273,7 +273,7 @@ export const Mermaid = ({
 					x={x}
 					y={y}
 				>
-					<div className="h-full w-full flex items-center justify-center bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">
+					<div className="size-full flex items-center justify-center bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">
 						<div className="text-center p-2">
 							<div className="font-medium mb-1">Diagram Error</div>
 							<div className="text-xs">{error}</div>
@@ -308,7 +308,7 @@ export const Mermaid = ({
 				y={y}
 			>
 				<div
-					className="h-full w-full overflow-hidden rounded border border-border bg-card"
+					className="size-full overflow-hidden rounded border border-border bg-card"
 					ref={containerRef}
 					style={{
 						display: "flex",
@@ -319,7 +319,7 @@ export const Mermaid = ({
 				>
 					{renderedSvg && (
 						<div
-							className="w-full h-full flex items-center justify-center"
+							className="size-full flex items-center justify-center"
 							ref={svgContainerRef}
 							style={{
 								maxWidth: "100%",

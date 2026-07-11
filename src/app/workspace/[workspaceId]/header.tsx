@@ -43,11 +43,11 @@ const CollapsedButton = forwardRef<
 			<Button
 				ref={ref}
 				{...props}
-				className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+				className="h-11 md:h-12 group flex items-center justify-center p-1 md:p-1.5 text-foreground hover:bg-sidebar-accent transition-standard"
 				size="icon"
 				variant="ghost"
 			>
-				<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+				<div className="flex size-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 					{workspace.name.charAt(0).toUpperCase()}
 				</div>
 			</Button>
@@ -62,20 +62,20 @@ const ExpandedButton = forwardRef<
 >(function ExpandedButton({ workspace, ...props }, ref) {
 	return (
 		<Button
-			className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+			className="h-11 md:h-12 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-foreground hover:bg-sidebar-accent transition-standard"
 			ref={ref}
 			size="lg"
 			variant="ghost"
 			{...props}
 		>
-			<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+			<div className="flex size-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 				{workspace.name.charAt(0).toUpperCase()}
 			</div>
 			<div className="flex flex-col items-start min-w-0">
-				<span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
+				<span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full text-foreground">
 					{workspace.name}
 				</span>
-				<span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
+				<span className="text-xs text-muted-foreground hidden md:inline-block">
 					Active Workspace
 				</span>
 			</div>
@@ -111,7 +111,7 @@ export const WorkspaceHeader = ({
 
 			<div
 				className={cn(
-					"flex h-14 md:h-16 items-center justify-between gap-1 border-b border-primary/20",
+					"flex h-14 md:h-16 items-center justify-between gap-1 border-b border-sidebar-border",
 					isCollapsed ? "px-1 md:px-2" : "px-2 md:px-6"
 				)}
 			>
@@ -131,13 +131,15 @@ export const WorkspaceHeader = ({
 							onCloseAutoFocus={(e) => e.preventDefault()}
 							side="bottom"
 						>
-							<div className="flex items-center capitalize rounded-[8px] p-3 mb-1">
-								<div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
+							<div className="flex items-center capitalize rounded-lg p-3 mb-1">
+								<div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-xl bg-primary text-xl font-semibold text-primary-foreground shadow-md">
 									{workspace.name.charAt(0).toUpperCase()}
 								</div>
 
 								<div className="flex flex-col items-start">
-									<p className="font-bold tracking-tight">{workspace.name}</p>
+									<p className="font-bold tracking-tight text-foreground">
+										{workspace.name}
+									</p>
 									<p className="text-xs text-muted-foreground">
 										Active workspace
 									</p>
@@ -149,11 +151,11 @@ export const WorkspaceHeader = ({
 									<DropdownMenuSeparator />
 
 									<DropdownMenuItem
-										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
+										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-lg hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
 										onClick={() => setInviteOpen(true)}
 									>
-										<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
-											<Plus className="size-3.5 text-secondary transition-transform duration-200 group-hover:scale-125" />
+										<div className="flex size-6 items-center justify-center rounded-lg bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+											<Plus className="size-3.5 text-secondary" />
 										</div>
 										<span className="font-medium">
 											Invite to {workspace.name}
@@ -164,10 +166,10 @@ export const WorkspaceHeader = ({
 
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
-								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
+								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-lg hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
 								onClick={() => setSwitchOpen(true)}
 							>
-								<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+								<div className="flex size-6 items-center justify-center rounded-lg bg-secondary/10 transition-standard group-hover:bg-secondary/20">
 									<RefreshCw className="size-3.5 text-secondary transition-transform duration-200 group-hover:rotate-45" />
 								</div>
 								<span className="font-medium">Switch Workspace</span>
@@ -176,7 +178,7 @@ export const WorkspaceHeader = ({
 					</DropdownMenu>
 
 					<Dialog onOpenChange={setSwitchOpen} open={switchOpen}>
-						<DialogContent className="overflow-hidden p-0 rounded-[12px] border-0 shadow-xl">
+						<DialogContent className="overflow-hidden p-0 rounded-xl border-0 shadow-xl">
 							<DialogHeader className="border-b p-5 bg-muted/30">
 								<DialogTitle className="text-xl font-semibold tracking-tight">
 									Workspaces
@@ -189,16 +191,16 @@ export const WorkspaceHeader = ({
 							<div className="flex flex-col gap-y-3 p-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
 								{workspaces?.map((item) => (
 									<button
-										className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
+										className="flex w-full cursor-pointer items-center gap-x-4 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted transition-standard group"
 										key={item._id}
 										onClick={() => onWorkspaceClick(item._id)}
 										type="button"
 									>
-										<div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
+										<div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg">
 											{item.name.charAt(0).toUpperCase()}
 										</div>
 										<div className="flex flex-col items-start">
-											<p className="text-sm font-semibold tracking-tight">
+											<p className="text-sm font-semibold tracking-tight text-foreground">
 												{item.name}
 											</p>
 											{item._id === workspace._id && (
@@ -208,7 +210,7 @@ export const WorkspaceHeader = ({
 											)}
 										</div>
 										{item._id === workspace._id && (
-											<div className="ml-auto rounded-full bg-secondary/10 px-3 py-1 text-xs font-medium text-secondary shadow-sm">
+											<div className="ml-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary shadow-sm">
 												Active
 											</div>
 										)}
@@ -218,17 +220,17 @@ export const WorkspaceHeader = ({
 
 							<div className="p-5 pt-0">
 								<button
-									className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
+									className="flex w-full cursor-pointer items-center gap-x-4 rounded-lg border border-dashed border-border bg-card/50 px-4 py-3 hover:bg-muted transition-standard group mt-2"
 									onClick={() => {
 										setSwitchOpen(false);
 										setCreateOpen(true);
 									}}
 									type="button"
 								>
-									<div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
-										<Plus className="size-5 transition-transform duration-200 group-hover:scale-125" />
+									<div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-standard group-hover:shadow-lg">
+										<Plus className="size-5" />
 									</div>
-									<p className="text-sm font-semibold tracking-tight">
+									<p className="text-sm font-semibold tracking-tight text-foreground">
 										Create New Workspace
 									</p>
 								</button>

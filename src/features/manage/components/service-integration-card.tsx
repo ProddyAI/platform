@@ -14,11 +14,13 @@ import {
 	Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { FaGithub, FaSlack } from "react-icons/fa";
+import { SiGithub, SiSlack } from "react-icons/si";
 import { toast } from "sonner";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader } from "../../../components/ui/card";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Single source of truth for supported toolkits
 type Toolkit = "github" | "gmail" | "slack" | "linear" | "notion" | "clickup";
@@ -77,61 +79,48 @@ interface ServiceIntegrationCardProps {
 
 type ToolkitConfig = {
 	icon: React.ComponentType<{ className?: string }>;
-	/** Solid brand bg for the icon pill */
-	iconBg: string;
-	/** Tailwind class for the connect button */
-	connectBtn: string;
 	name: string;
 	description: string;
 	/** Short capability label shown under description */
 	capability: string;
 };
 
+// Quiet, token-based treatment for every toolkit — purple stays the app's
+// single interactive accent, so brand identity carries through the icon
+// glyph + name rather than per-brand hex fills.
 const toolkits: Record<Toolkit, ToolkitConfig> = {
 	github: {
-		icon: FaGithub,
-		iconBg: "bg-[#24292e]",
-		connectBtn: "bg-[#24292e] hover:bg-[#3a3f47] text-white",
+		icon: SiGithub,
 		name: "GitHub",
 		description: "Manage repos, issues & pull requests with AI",
 		capability: "Repos · Issues · PRs",
 	},
 	gmail: {
 		icon: Mail,
-		iconBg: "bg-red-600",
-		connectBtn: "bg-red-600 hover:bg-red-700 text-white",
 		name: "Gmail",
 		description: "Send emails, read inbox & automate email workflows",
 		capability: "Send · Read · Search",
 	},
 	slack: {
-		icon: FaSlack,
-		iconBg: "bg-[#4a154b]",
-		connectBtn: "bg-[#4a154b] hover:bg-[#611f69] text-white",
+		icon: SiSlack,
 		name: "Slack",
 		description: "Send messages, manage channels & team notifications",
 		capability: "Messages · Channels · Users",
 	},
 	linear: {
 		icon: Ticket,
-		iconBg: "bg-[#5e6ad2]",
-		connectBtn: "bg-[#5e6ad2] hover:bg-indigo-600 text-white",
 		name: "Linear",
 		description: "Track issues, manage projects & team sprints",
 		capability: "Issues · Projects · Teams",
 	},
 	notion: {
 		icon: FileText,
-		iconBg: "bg-neutral-800",
-		connectBtn: "bg-neutral-800 hover:bg-neutral-700 text-white",
 		name: "Notion",
 		description: "Create pages, query databases & manage workspace docs",
 		capability: "Pages · Databases · Docs",
 	},
 	clickup: {
 		icon: CheckSquare,
-		iconBg: "bg-[#7b68ee]",
-		connectBtn: "bg-[#7b68ee] hover:bg-violet-600 text-white",
 		name: "ClickUp",
 		description: "Create tasks, track time & manage projects",
 		capability: "Tasks · Time · Goals",
@@ -139,42 +128,35 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 };
 
 function IntegrationStatusBadge({ isConnected }: { isConnected: boolean }) {
-	if (isConnected) {
-		return (
-			<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold px-2.5 py-0.5 leading-5">
-				<span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-				Active
-			</span>
-		);
-	}
 	return (
-		<span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border text-muted-foreground text-[11px] font-medium px-2.5 py-0.5 leading-5">
-			<span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-			Not connected
-		</span>
+		<Badge
+			className="gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold"
+			variant={isConnected ? "success" : "outline"}
+		>
+			<span
+				className={cn(
+					"size-1.5 rounded-full",
+					isConnected ? "bg-success" : "bg-muted-foreground/40"
+				)}
+			/>
+			{isConnected ? "Active" : "Not connected"}
+		</Badge>
 	);
 }
 
 function ServiceToolkitIcon({
 	Icon,
-	iconBg,
 	isConnected,
 }: {
 	Icon: React.ComponentType<{ className?: string }>;
-	iconBg: string;
 	isConnected: boolean;
 }) {
 	return (
-		<div
-			className={`
-				relative flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
-				text-white shadow-sm ${iconBg}
-			`}
-		>
-			<Icon className="h-5 w-5" />
+		<div className="relative flex-shrink-0 size-10 rounded-xl flex items-center justify-center bg-muted text-foreground shadow-sm">
+			<Icon className="size-5" />
 			{isConnected && (
-				<span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card flex items-center justify-center">
-					<CheckCircle2 className="h-2.5 w-2.5 text-white" />
+				<span className="absolute -bottom-1 -right-1 size-4 rounded-full bg-success border-2 border-card flex items-center justify-center">
+					<CheckCircle2 className="size-2.5 text-success-foreground" />
 				</span>
 			)}
 		</div>
@@ -189,7 +171,7 @@ function ConnectedAccountMeta({
 	return (
 		<div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/60 rounded-lg px-3 py-2 border border-border/40">
 			<span className="flex items-center gap-1.5">
-				<Wifi className="h-3 w-3 text-emerald-500 dark:text-emerald-400" />
+				<Wifi className="size-3 text-success" />
 				Connected
 				{connectedAccount.connectedAt && (
 					<span className="text-muted-foreground/70">
@@ -199,7 +181,7 @@ function ConnectedAccountMeta({
 			</span>
 			{connectedAccount.lastUsed && (
 				<span className="flex items-center gap-1">
-					<Zap className="h-3 w-3" />
+					<Zap className="size-3" />
 					Used {timeAgo(connectedAccount.lastUsed)}
 				</span>
 			)}
@@ -228,9 +210,9 @@ function ConnectedActionButtons({
 				variant="outline"
 			>
 				{isRefreshing ? (
-					<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+					<Loader2 className="size-3.5 mr-1.5 animate-spin" />
 				) : (
-					<RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+					<RefreshCw className="size-3.5 mr-1.5" />
 				)}
 				{isRefreshing ? "Checking…" : "Verify"}
 			</Button>
@@ -243,9 +225,9 @@ function ConnectedActionButtons({
 				variant="outline"
 			>
 				{isDisconnecting ? (
-					<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+					<Loader2 className="size-3.5 mr-1.5 animate-spin" />
 				) : (
-					<Unlink className="h-3.5 w-3.5 mr-1.5" />
+					<Unlink className="size-3.5 mr-1.5" />
 				)}
 				{isDisconnecting ? "Disconnecting…" : "Disconnect"}
 			</Button>
@@ -257,30 +239,28 @@ function ConnectButton({
 	isConnecting,
 	onConnect,
 	Icon,
-	connectBtnClass,
 	name,
 }: {
 	isConnecting: boolean;
 	onConnect: () => void;
 	Icon: React.ComponentType<{ className?: string }>;
-	connectBtnClass: string;
 	name: string;
 }) {
 	return (
 		<Button
-			className={`w-full h-9 text-xs font-semibold rounded-lg transition-all duration-150 shadow-sm ${connectBtnClass}`}
+			className="w-full h-9 text-xs font-semibold"
 			disabled={isConnecting}
 			onClick={onConnect}
 			size="sm"
 		>
 			{isConnecting ? (
 				<>
-					<Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+					<Loader2 className="size-3.5 mr-2 animate-spin" />
 					Redirecting…
 				</>
 			) : (
 				<>
-					<Icon className="h-3.5 w-3.5 mr-2" />
+					<Icon className="size-3.5 mr-2" />
 					Connect {name}
 				</>
 			)}
@@ -300,11 +280,7 @@ function IntegrationCardHeader({
 	return (
 		<CardHeader className="pb-2 pt-5 pr-24">
 			<div className="flex items-center gap-3">
-				<ServiceToolkitIcon
-					Icon={IconComponent}
-					iconBg={cfg.iconBg}
-					isConnected={isConnected}
-				/>
+				<ServiceToolkitIcon Icon={IconComponent} isConnected={isConnected} />
 
 				<div className="min-w-0">
 					<p className="font-semibold text-sm text-foreground leading-tight">
@@ -483,15 +459,13 @@ export const ServiceIntegrationCard = ({
 	/* ──── RENDER ─────────────────────────────────────────────── */
 	return (
 		<Card
-			className={`
-				relative overflow-hidden border transition-all duration-200
-				hover:shadow-md
-				${
-					isConnected
-						? "border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent"
-						: "border-border bg-card hover:border-primary/20"
-				}
-			`}
+			className={cn(
+				"relative overflow-hidden",
+				isConnected
+					? "border-primary/20 bg-primary/5"
+					: "hover:border-primary/20"
+			)}
+			interactive
 		>
 			<div className="absolute top-3 right-3 z-10">
 				<IntegrationStatusBadge isConnected={Boolean(isConnected)} />
@@ -519,7 +493,6 @@ export const ServiceIntegrationCard = ({
 				) : (
 					<div className="space-y-2">
 						<ConnectButton
-							connectBtnClass={cfg.connectBtn}
 							Icon={IconComponent}
 							isConnecting={isConnecting}
 							name={cfg.name}
@@ -527,7 +500,7 @@ export const ServiceIntegrationCard = ({
 						/>
 
 						<p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
-							<WifiOff className="h-3 w-3" />
+							<WifiOff className="size-3" />
 							Authorize once, use everywhere in Proddy AI
 						</p>
 					</div>

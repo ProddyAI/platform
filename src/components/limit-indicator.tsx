@@ -25,10 +25,10 @@ export const LimitIndicator = ({
 				href={`/workspace/${workspaceId}/manage#billing`}
 			>
 				<Badge
-					className="cursor-pointer gap-1.5 border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 px-2.5 py-1 text-xs font-semibold transition-all duration-300 rounded-md"
-					variant="destructive"
+					className="cursor-pointer gap-1.5 px-2.5 py-1 text-xs font-semibold transition-standard hover:bg-destructive/20"
+					variant="destructiveSoft"
 				>
-					<AlertTriangle className="h-3.5 w-3.5" />
+					<AlertTriangle className="size-3.5" />
 					Limit Reached
 				</Badge>
 			</Link>

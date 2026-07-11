@@ -49,13 +49,11 @@ export const SPRINT_STATUS_CONFIG: Record<
 	},
 	active: {
 		label: "Active",
-		className:
-			"bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+		className: "bg-primary/10 text-primary border-primary/20",
 	},
 	completed: {
 		label: "Completed",
-		className:
-			"bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+		className: "bg-success/10 text-success border-success/20",
 	},
 	cancelled: {
 		label: "Cancelled",
@@ -109,7 +107,7 @@ export const SprintCard = ({
 			{/* biome-ignore lint/a11y/useSemanticElements: This card contains a nested dropdown-menu trigger, so replacing it with a button would create invalid nested buttons. */}
 			<div
 				className={cn(
-					"group w-full rounded-lg border bg-card p-4 text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+					"group w-full rounded-2xl border bg-card p-4 text-left shadow-sm transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0",
 					sprint.status === "active" &&
 						"border-primary/40 ring-1 ring-primary/20"
 				)}
@@ -168,7 +166,7 @@ export const SprintCard = ({
 						>
 							{sprint.status === "planning" && (
 								<DropdownMenuItem onClick={() => handleStatusChange("active")}>
-									<Play className="mr-2 size-4 text-blue-500" />
+									<Play className="mr-2 size-4 text-primary" />
 									Start sprint
 								</DropdownMenuItem>
 							)}
@@ -177,7 +175,7 @@ export const SprintCard = ({
 									<DropdownMenuItem
 										onClick={() => handleStatusChange("completed")}
 									>
-										<CheckCircle2 className="mr-2 size-4 text-emerald-500" />
+										<CheckCircle2 className="mr-2 size-4 text-success" />
 										Complete sprint
 									</DropdownMenuItem>
 									{onRollover && (
@@ -243,11 +241,11 @@ export const SprintCard = ({
 						<Progress className="h-1.5" value={stats.completionRate} />
 						<div className="flex items-center gap-3 text-muted-foreground text-xs">
 							<span className="flex items-center gap-1">
-								<span className="inline-block size-1.5 rounded-full bg-emerald-400" />
+								<span className="inline-block size-1.5 rounded-full bg-success" />
 								{stats.completed} done
 							</span>
 							<span className="flex items-center gap-1">
-								<span className="inline-block size-1.5 rounded-full bg-blue-400" />
+								<span className="inline-block size-1.5 rounded-full bg-primary" />
 								{stats.inProgress} in progress
 							</span>
 							<span className="flex items-center gap-1">

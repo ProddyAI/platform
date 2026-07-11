@@ -1,6 +1,6 @@
 "use client";
 
-import { Hash, Loader, MessageSquareText } from "lucide-react";
+import { Hash, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -15,6 +15,7 @@ import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
 import { WidgetHeader } from "../shared/widget-header";
+import { WidgetLoading } from "../shared/widget-loading";
 
 interface ThreadRepliesWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -101,11 +102,7 @@ export const ThreadRepliesWidget = ({
 	};
 
 	if (!threadMessages) {
-		return (
-			<div className="flex h-[300px] items-center justify-center">
-				<Loader className="size-6 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <WidgetLoading />;
 	}
 
 	return (
@@ -113,7 +110,7 @@ export const ThreadRepliesWidget = ({
 			<WidgetHeader
 				action={
 					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 						onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
 						size="sm"
 						variant="ghost"
@@ -123,9 +120,7 @@ export const ThreadRepliesWidget = ({
 				}
 				badge={threadMessages.length > 0 ? threadMessages.length : undefined}
 				controls={controls}
-				icon={
-					<MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<MessageSquareText className="size-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Thread Replies"
 			/>
@@ -143,7 +138,7 @@ export const ThreadRepliesWidget = ({
 								<WidgetCard key={thread.message._id.toString()}>
 									<div className="flex items-start gap-3">
 										<div className="relative">
-											<Avatar className="h-8 w-8">
+											<Avatar className="size-8">
 												<AvatarImage
 													alt={thread.currentUser.name || "User avatar"}
 													src={thread.currentUser.image}
@@ -169,7 +164,7 @@ export const ThreadRepliesWidget = ({
 															className="flex items-center gap-1 border-2"
 															variant="outline"
 														>
-															<Hash className="h-3 w-3" />
+															<Hash className="size-3" />
 															{thread.context.name}
 														</Badge>
 													)}
@@ -192,7 +187,7 @@ export const ThreadRepliesWidget = ({
 												})()}
 											</div>
 											<Button
-												className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+												className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 												onClick={() => handleViewThread(thread)}
 												size="sm"
 												variant="ghost"

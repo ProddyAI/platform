@@ -60,10 +60,10 @@ const emojiSizeClasses: Record<
 	NonNullable<ChannelIconProps["size"]>,
 	string
 > = {
-	sm: "h-5 w-5 text-base",
-	md: "h-6 w-6 text-lg",
-	lg: "h-10 w-10 text-3xl",
-	xl: "h-20 w-20 text-6xl",
+	sm: "size-5 text-base",
+	md: "size-6 text-lg",
+	lg: "size-10 text-3xl",
+	xl: "size-20 text-6xl",
 };
 
 const ChannelIcon = ({
@@ -75,10 +75,10 @@ const ChannelIcon = ({
 	onImageError,
 }: ChannelIconProps) => {
 	const sizeClasses = {
-		sm: "h-5 w-5",
-		md: "h-6 w-6",
-		lg: "h-10 w-10",
-		xl: "h-20 w-20",
+		sm: "size-5",
+		md: "size-6",
+		lg: "size-10",
+		xl: "size-20",
 	};
 
 	const containerSize = sizeClasses[size];
@@ -88,7 +88,7 @@ const ChannelIcon = ({
 			<div className={`${containerSize} rounded-full overflow-hidden relative`}>
 				<Image
 					alt={`Channel icon for ${name}`}
-					className="h-full w-full object-cover"
+					className="size-full object-cover"
 					fill
 					onError={onImageError}
 					src={iconImageUrl}
@@ -109,9 +109,9 @@ const ChannelIcon = ({
 
 	return (
 		<div
-			className={`${containerSize} flex items-center justify-center rounded-full bg-gray-100`}
+			className={`${containerSize} flex items-center justify-center rounded-full bg-muted`}
 		>
-			<span className="text-xs font-medium text-gray-600">
+			<span className="text-xs font-medium text-muted-foreground">
 				{name.charAt(0).toLowerCase()}
 			</span>
 		</div>
@@ -137,10 +137,10 @@ const ChannelIconPreview = ({
 }: ChannelIconPreviewProps) => {
 	if (iconPreview) {
 		return (
-			<div className="h-full w-full relative">
+			<div className="size-full relative">
 				<Image
 					alt="Icon preview"
-					className="h-full w-full object-cover rounded"
+					className="size-full object-cover rounded"
 					fill
 					src={iconPreview}
 				/>
@@ -202,7 +202,7 @@ const ChannelIconUploader = ({
 			/>
 			<button
 				aria-label="Upload workspace icon"
-				className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+				className="relative flex size-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted transition-standard hover:border-primary/50 hover:bg-muted/70 disabled:cursor-not-allowed disabled:opacity-50"
 				disabled={isUploadingIcon}
 				onClick={() => !isUploadingIcon && imageInputRef.current?.click()}
 				type="button"
@@ -224,8 +224,8 @@ const ChannelIconUploader = ({
 					/>
 				) : (
 					<div className="flex flex-col items-center gap-1">
-						<Upload className="h-6 w-6 text-gray-400" />
-						<span className="text-xs text-gray-500 text-center">
+						<Upload className="size-6 text-muted-foreground" />
+						<span className="text-xs text-muted-foreground text-center">
 							{isUploadingIcon ? "Uploading..." : "Upload"}
 						</span>
 					</div>
@@ -233,7 +233,7 @@ const ChannelIconUploader = ({
 			</button>
 			{(iconPreview || icon) && (
 				<button
-					className="absolute -top-2 -right-2 h-6 w-6 bg-card text-foreground rounded-full flex items-center justify-center hover:bg-accent shadow-md border-2 border-border z-50"
+					className="absolute -top-2 -right-2 size-6 bg-card text-foreground rounded-full flex items-center justify-center hover:bg-accent shadow-md border-2 border-border z-50"
 					onClick={(e) => {
 						e.stopPropagation();
 						if (iconPreview || iconImage) {
@@ -245,7 +245,7 @@ const ChannelIconUploader = ({
 					}}
 					type="button"
 				>
-					<X className="h-3.5 w-3.5" />
+					<X className="size-3.5" />
 				</button>
 			)}
 			<EmojiPopover
@@ -256,10 +256,10 @@ const ChannelIconUploader = ({
 				}}
 			>
 				<button
-					className="absolute -bottom-1 -right-1 h-7 w-7 bg-card text-foreground rounded-full flex items-center justify-center hover:bg-accent shadow-md border-2 border-border z-50"
+					className="absolute -bottom-1 -right-1 size-7 bg-card text-foreground rounded-full flex items-center justify-center hover:bg-accent shadow-md border-2 border-border z-50"
 					type="button"
 				>
-					<Smile className="h-4 w-4" />
+					<Smile className="size-4" />
 				</button>
 			</EmojiPopover>
 		</div>
@@ -343,7 +343,7 @@ const ChannelNameDialog = ({
 					</div>
 
 					<div className="flex items-center gap-3 mt-2">
-						<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
+						<div className="flex size-10 items-center justify-center rounded-md bg-muted border border-border overflow-hidden">
 							<ChannelIcon
 								icon={channel.icon}
 								iconImageUrl={channel.iconImageUrl}
@@ -506,7 +506,7 @@ const ChannelIconDialog = ({
 					</div>
 
 					<div className="flex items-center gap-3 mt-2">
-						<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
+						<div className="flex size-10 items-center justify-center rounded-md bg-muted border border-border overflow-hidden">
 							<ChannelIcon
 								icon={channel.icon}
 								iconImageUrl={channel.iconImageUrl}
@@ -557,13 +557,17 @@ const ChannelIconDialog = ({
 											setIcon(e);
 										}}
 									>
-										<div className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 hover:bg-gray-200 hover:border-gray-400 transition-all">
+										<div className="flex size-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted transition-standard hover:border-primary/50 hover:bg-muted/70">
 											{icon ? (
 												<span className="text-4xl">{icon}</span>
 											) : (
 												<div className="flex flex-col items-center">
-													<span className="text-sm text-gray-600">Select</span>
-													<span className="text-sm text-gray-600">Icon</span>
+													<span className="text-sm text-muted-foreground">
+														Select
+													</span>
+													<span className="text-sm text-muted-foreground">
+														Icon
+													</span>
 												</div>
 											)}
 										</div>
@@ -815,7 +819,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		() =>
 			channel ? (
 				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
+					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-foreground hover:bg-muted transition-standard"
 					onClick={() => setChannelDialogOpen(true)}
 					size="sm"
 					variant="ghost"
@@ -839,7 +843,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 	const channelSettingsDialog = channel ? (
 		<Dialog onOpenChange={setChannelDialogOpen} open={channelDialogOpen}>
-			<DialogContent className="overflow-hidden bg-gray-50 p-0">
+			<DialogContent className="overflow-hidden bg-muted p-0">
 				<DialogHeader className="border-b bg-card p-4">
 					<DialogTitle className="flex items-center gap-2">
 						<ChannelIcon
@@ -933,9 +937,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 				{isOpen && (
 					<div
 						className={
-							isExpanded
-								? "w-full h-full"
-								: "flex w-[380px] border-l border-border"
+							isExpanded ? "size-full" : "flex w-[380px] border-l border-border"
 						}
 					>
 						<AiNotemaker

@@ -76,6 +76,10 @@ interface ImportDataManagementProps {
 	currentMember: Doc<"members">;
 }
 
+// Quiet, token-based icon swatch shared by every platform — purple stays the
+// app's single interactive accent, so brand marks read via icon + name only.
+const PLATFORM_ICON_CLASS = "bg-muted text-foreground border-border";
+
 // Platform configuration
 const PLATFORMS = [
 	{
@@ -84,8 +88,6 @@ const PLATFORMS = [
 		description:
 			"Import channels, messages, and user data from Slack workspaces",
 		icon: SiSlack,
-		color:
-			"bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
 		available: true,
 	},
 	{
@@ -93,8 +95,6 @@ const PLATFORMS = [
 		name: "Todoist",
 		description: "Import tasks, projects, and labels from Todoist",
 		icon: SiTodoist,
-		color:
-			"bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
 		available: true,
 	},
 	{
@@ -102,8 +102,6 @@ const PLATFORMS = [
 		name: "Linear",
 		description: "Import issues, projects, and workflows from Linear",
 		icon: SiLinear,
-		color:
-			"bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
 		available: true,
 	},
 	{
@@ -111,8 +109,6 @@ const PLATFORMS = [
 		name: "Notion",
 		description: "Import pages, databases, and content from Notion",
 		icon: SiNotion,
-		color:
-			"bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700",
 		available: false, // Coming soon
 	},
 	{
@@ -120,8 +116,6 @@ const PLATFORMS = [
 		name: "Miro",
 		description: "Import boards, frames, and collaboration data from Miro",
 		icon: SiMiro,
-		color:
-			"bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800",
 		available: false, // Coming soon
 	},
 	{
@@ -129,8 +123,6 @@ const PLATFORMS = [
 		name: "ClickUp",
 		description: "Import tasks, lists, and spaces from ClickUp",
 		icon: SiClickup,
-		color:
-			"bg-pink-100 text-pink-700 border-pink-300 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800",
 		available: false, // Coming soon
 	},
 ];
@@ -211,7 +203,7 @@ export const ImportDataManagement = ({
 				);
 			}
 		} else {
-			toast.info("This platform will be available soon!");
+			toast.info("This platform will be available soon");
 		}
 	};
 
@@ -235,9 +227,7 @@ export const ImportDataManagement = ({
 					},
 					{ throwError: true }
 				);
-				toast.success(
-					"Import started! You'll receive a notification when it's complete."
-				);
+				toast.success("Import started. You'll be notified when it completes.");
 			} else if (selectedPlatform === "todoist") {
 				await startTodoistImport.mutate(
 					{
@@ -249,9 +239,7 @@ export const ImportDataManagement = ({
 					},
 					{ throwError: true }
 				);
-				toast.success(
-					"Import started! You'll receive a notification when it's complete."
-				);
+				toast.success("Import started. You'll be notified when it completes.");
 			} else if (selectedPlatform === "linear") {
 				await startLinearImport.mutate(
 					{
@@ -266,9 +254,7 @@ export const ImportDataManagement = ({
 					},
 					{ throwError: true }
 				);
-				toast.success(
-					"Import started! You'll receive a notification when it's complete."
-				);
+				toast.success("Import started. You'll be notified when it completes.");
 			} else {
 				toast.info("This platform import is not yet implemented");
 			}
@@ -345,33 +331,36 @@ export const ImportDataManagement = ({
 			}
 		> = {
 			active: {
-				variant: "default",
-				icon: <CheckCircle2 className="h-3 w-3" />,
+				variant: "success",
+				icon: <CheckCircle2 className="size-3" />,
 			},
 			expired: {
-				variant: "secondary",
-				icon: <AlertCircle className="h-3 w-3" />,
+				variant: "warning",
+				icon: <AlertCircle className="size-3" />,
 			},
-			revoked: { variant: "destructive", icon: <Trash2 className="h-3 w-3" /> },
+			revoked: {
+				variant: "destructiveSoft",
+				icon: <Trash2 className="size-3" />,
+			},
 			pending: {
 				variant: "outline",
-				icon: <Loader2 className="h-3 w-3 animate-spin" />,
+				icon: <Loader2 className="size-3 animate-spin" />,
 			},
 			in_progress: {
 				variant: "outline",
-				icon: <Loader2 className="h-3 w-3 animate-spin" />,
+				icon: <Loader2 className="size-3 animate-spin" />,
 			},
 			completed: {
-				variant: "default",
-				icon: <CheckCircle2 className="h-3 w-3" />,
+				variant: "success",
+				icon: <CheckCircle2 className="size-3" />,
 			},
 			failed: {
-				variant: "destructive",
-				icon: <AlertCircle className="h-3 w-3" />,
+				variant: "destructiveSoft",
+				icon: <AlertCircle className="size-3" />,
 			},
 			cancelled: {
-				variant: "secondary",
-				icon: <AlertCircle className="h-3 w-3" />,
+				variant: "outline",
+				icon: <AlertCircle className="size-3" />,
 			},
 		};
 
@@ -388,7 +377,7 @@ export const ImportDataManagement = ({
 		<div className="space-y-6" data-member-role={currentMember.role}>
 			{/* Header */}
 			<div>
-				<h3 className="text-lg font-medium">Import Data</h3>
+				<h3 className="text-lg font-semibold tracking-tight">Import data</h3>
 				<p className="text-sm text-muted-foreground">
 					Connect to external platforms and import your data into Proddy. Slack
 					and Linear are fully supported. More platforms coming soon.
@@ -405,22 +394,25 @@ export const ImportDataManagement = ({
 
 					return (
 						<Card
-							className={`relative ${!platform.available ? "opacity-60" : ""}`}
+							className={!platform.available ? "opacity-60" : undefined}
+							interactive={platform.available}
 							key={platform.id}
 						>
 							<CardHeader>
 								<div className="flex items-start justify-between">
 									<div className="flex items-center gap-3">
-										<div className={`p-2 rounded-lg border ${platform.color}`}>
-											<platform.icon className="h-6 w-6" />
+										<div
+											className={`p-2 rounded-lg border ${PLATFORM_ICON_CLASS}`}
+										>
+											<platform.icon className="size-6" />
 										</div>
 										<div>
 											<CardTitle className="text-base">
 												{platform.name}
 											</CardTitle>
 											{!platform.available && (
-												<Badge className="mt-1" variant="secondary">
-													Coming Soon
+												<Badge className="mt-1" variant="outline">
+													Coming soon
 												</Badge>
 											)}
 										</div>
@@ -455,16 +447,18 @@ export const ImportDataManagement = ({
 												onClick={() => handleStartImport(platform.id)}
 												size="sm"
 											>
-												<Upload className="h-4 w-4 mr-2" />
-												Start Import
+												<Upload className="size-4 mr-2" />
+												Start import
 											</Button>
 											<Button
+												aria-label={`Disconnect ${platform.name}`}
+												className="text-destructive hover:bg-destructive/10"
 												disabled={disconnectImport.isPending}
 												onClick={() => handleDisconnect(connection._id)}
 												size="sm"
 												variant="outline"
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className="size-4" />
 											</Button>
 										</div>
 									</>
@@ -475,7 +469,7 @@ export const ImportDataManagement = ({
 										onClick={() => handleConnect(platform.id)}
 										size="sm"
 									>
-										<ExternalLink className="h-4 w-4 mr-2" />
+										<ExternalLink className="size-4 mr-2" />
 										Connect {platform.name}
 									</Button>
 								)}
@@ -484,7 +478,7 @@ export const ImportDataManagement = ({
 									<div className="pt-2 border-t">
 										<div className="flex items-center justify-between text-xs mb-1">
 											<span className="text-muted-foreground">
-												Latest Import
+												Latest import
 											</span>
 											{getStatusBadge(latestJob.status)}
 										</div>
@@ -544,7 +538,9 @@ export const ImportDataManagement = ({
 				<>
 					<Separator />
 					<div>
-						<h3 className="text-lg font-medium mb-4">Import History</h3>
+						<h3 className="text-lg font-semibold tracking-tight mb-4">
+							Import history
+						</h3>
 						<div className="border rounded-lg">
 							<Table>
 								<TableHeader>
@@ -643,7 +639,7 @@ export const ImportDataManagement = ({
 														size="sm"
 														variant="ghost"
 													>
-														<RefreshCw className="h-4 w-4 mr-1" />
+														<RefreshCw className="size-4 mr-1" />
 														Retry
 													</Button>
 												)}
@@ -661,7 +657,7 @@ export const ImportDataManagement = ({
 			<Dialog onOpenChange={setConfigDialogOpen} open={configDialogOpen}>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
-						<DialogTitle>Configure Import</DialogTitle>
+						<DialogTitle>Configure import</DialogTitle>
 						<DialogDescription>
 							Choose what to import from{" "}
 							{selectedPlatform &&
@@ -778,7 +774,7 @@ export const ImportDataManagement = ({
 								</div>
 
 								<div className="space-y-2 pt-2">
-									<Label htmlFor="targetChannel">Import Destination</Label>
+									<Label htmlFor="targetChannel">Import destination</Label>
 									<Select
 										onValueChange={(value) =>
 											setImportConfig((prev) => ({
@@ -834,8 +830,19 @@ export const ImportDataManagement = ({
 							}
 							onClick={handleConfirmImport}
 						>
-							<Download className="h-4 w-4 mr-2" />
-							Start Import
+							{startSlackImport.isPending ||
+							startTodoistImport.isPending ||
+							startLinearImport.isPending ? (
+								<>
+									<Loader2 className="size-4 mr-2 animate-spin" />
+									Starting…
+								</>
+							) : (
+								<>
+									<Download className="size-4 mr-2" />
+									Start import
+								</>
+							)}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

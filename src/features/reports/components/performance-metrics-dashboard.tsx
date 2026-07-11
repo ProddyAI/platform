@@ -3,9 +3,10 @@
 import { useQuery } from "convex/react";
 import { format, subDays } from "date-fns";
 import { Award, CheckSquare, Loader, Users } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { AnimatedNumber } from "@/components/animated-number";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -38,8 +39,6 @@ export const PerformanceMetricsDashboard = ({
 	workspaceId,
 	timeRange = "7d",
 }: PerformanceMetricsDashboardProps) => {
-	const [_activeTab, setActiveTab] = useState("tasks");
-
 	// Calculate date ranges. Recompute "now" whenever the range changes so
 	// switching 1d/7d/30d doesn't keep querying against a timestamp frozen at
 	// mount.
@@ -264,7 +263,7 @@ export const PerformanceMetricsDashboard = ({
 							<Skeleton className="h-4 w-52 mt-1" />
 						</CardHeader>
 						<CardContent className="flex items-center justify-center">
-							<Skeleton className="h-[300px] w-[300px] rounded-full" />
+							<Skeleton className="size-[300px] rounded-full" />
 						</CardContent>
 					</Card>
 				</div>
@@ -277,26 +276,25 @@ export const PerformanceMetricsDashboard = ({
 			<div className="flex justify-between items-center">
 				<h2 className="text-xl font-semibold">Performance Metrics</h2>
 				{isRefreshing && (
-					<Loader
-						aria-label="Refreshing metrics"
-						className="h-4 w-4 animate-spin text-muted-foreground"
-					/>
+					<span
+						className="flex items-center gap-1.5 text-xs text-muted-foreground"
+						role="status"
+					>
+						<Loader aria-hidden="true" className="size-3 animate-spin" />
+						Updating…
+					</span>
 				)}
 			</div>
 
 			{/* Performance tabs */}
-			<Tabs
-				className="space-y-4"
-				defaultValue="tasks"
-				onValueChange={setActiveTab}
-			>
+			<Tabs className="space-y-4" defaultValue="tasks">
 				<TabsList>
 					<TabsTrigger value="tasks">
-						<CheckSquare className="h-4 w-4 mr-2" />
+						<CheckSquare className="size-4 mr-2" />
 						Task Performance
 					</TabsTrigger>
 					<TabsTrigger value="users">
-						<Users className="h-4 w-4 mr-2" />
+						<Users className="size-4 mr-2" />
 						User Performance
 					</TabsTrigger>
 				</TabsList>
@@ -305,75 +303,62 @@ export const PerformanceMetricsDashboard = ({
 				<TabsContent className="space-y-4" value="tasks">
 					{/* Volume metrics — relocated from the reports page's old standalone
 					    Tasks tab; "Completed Tasks" isn't repeated here since the Task
-					    Completion Rate card below already covers that same metric. */}
+					    Completion Rate card below already covers that same metric. Plain
+					    tiles rather than StatCard: none of these have a previous-period
+					    comparison, and StatCard's caption only renders alongside a delta
+					    chip. */}
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									Total Tasks
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center">
-									<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-									<div className="text-2xl font-bold">
-										{taskData?.totalTasks ?? 0}
-									</div>
-								</div>
-								<CardDescription className="mt-2">
-									in the selected time period
-								</CardDescription>
-							</CardContent>
+						<Card className="p-5">
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<CheckSquare className="size-4" />
+								Total Tasks
+							</div>
+							<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+								<AnimatedNumber value={taskData?.totalTasks ?? 0} />
+							</div>
+							<div className="mt-2 text-xs text-muted-foreground">
+								in the selected time period
+							</div>
 						</Card>
 
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									In Progress
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center">
-									<CheckSquare
-										className="h-5 w-5 mr-2"
-										style={{ color: STATUS_COLORS.in_progress }}
-									/>
-									<div className="text-2xl font-bold">
-										{taskData?.statusCounts.in_progress ?? 0}
-									</div>
-								</div>
-								<CardDescription className="mt-2">
-									tasks currently in progress
-								</CardDescription>
-							</CardContent>
+						<Card className="p-5">
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<CheckSquare
+									className="size-4"
+									style={{ color: STATUS_COLORS.in_progress }}
+								/>
+								In Progress
+							</div>
+							<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+								<AnimatedNumber
+									value={taskData?.statusCounts.in_progress ?? 0}
+								/>
+							</div>
+							<div className="mt-2 text-xs text-muted-foreground">
+								tasks currently in progress
+							</div>
 						</Card>
 
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									High Priority
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center">
-									<CheckSquare
-										className="h-5 w-5 mr-2"
-										style={{ color: PRIORITY_COLORS.high }}
-									/>
-									<div className="text-2xl font-bold">
-										{taskData?.priorityCounts.high ?? 0}
-									</div>
-								</div>
-								<CardDescription className="mt-2">
-									high priority tasks
-								</CardDescription>
-							</CardContent>
+						<Card className="p-5">
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<CheckSquare
+									className="size-4"
+									style={{ color: PRIORITY_COLORS.high }}
+								/>
+								High Priority
+							</div>
+							<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+								<AnimatedNumber value={taskData?.priorityCounts.high ?? 0} />
+							</div>
+							<div className="mt-2 text-xs text-muted-foreground">
+								high priority tasks
+							</div>
 						</Card>
 					</div>
 
 					{/* Key metrics */}
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
+						<Card>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									Task Completion Rate
@@ -384,7 +369,7 @@ export const PerformanceMetricsDashboard = ({
 									<>
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
-												<div className="text-2xl font-bold">
+												<div className="text-3xl font-semibold tracking-tight tabular-nums">
 													{taskCompletionRate}%
 												</div>
 												<Badge
@@ -400,7 +385,7 @@ export const PerformanceMetricsDashboard = ({
 														? "Good"
 														: taskCompletionRate >= 50
 															? "Average"
-															: "Needs Improvement"}
+															: "Needs improvement"}
 												</Badge>
 											</div>
 											<Progress className="h-2" value={taskCompletionRate} />
@@ -413,15 +398,13 @@ export const PerformanceMetricsDashboard = ({
 								) : (
 									<div className="space-y-2">
 										<div className="flex items-center justify-between">
-											<div className="text-2xl font-bold text-muted-foreground/40">
+											<div className="text-3xl font-semibold tracking-tight tabular-nums text-muted-foreground">
 												0%
 											</div>
-											<Badge className="opacity-50" variant="outline">
-												No data yet
-											</Badge>
+											<Badge variant="outline">No data yet</Badge>
 										</div>
-										<Progress className="h-2 opacity-30" value={0} />
-										<CardDescription className="mt-2 text-muted-foreground/60">
+										<Progress className="h-2" value={0} />
+										<CardDescription className="mt-2">
 											0 of 0 tasks completed
 										</CardDescription>
 									</div>
@@ -429,7 +412,7 @@ export const PerformanceMetricsDashboard = ({
 							</CardContent>
 						</Card>
 
-						<Card className="opacity-50">
+						<Card>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									Avg. Completion Time
@@ -438,19 +421,19 @@ export const PerformanceMetricsDashboard = ({
 							<CardContent>
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold text-muted-foreground/40">
+										<div className="text-3xl font-semibold tracking-tight tabular-nums text-muted-foreground">
 											—
 										</div>
 										<Badge variant="outline">Not tracked yet</Badge>
 									</div>
-									<CardDescription className="mt-2 text-muted-foreground/60">
+									<CardDescription className="mt-2">
 										Add due dates to tasks to unlock this metric
 									</CardDescription>
 								</div>
 							</CardContent>
 						</Card>
 
-						<Card className="opacity-50">
+						<Card>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									On-Time Completion
@@ -459,12 +442,12 @@ export const PerformanceMetricsDashboard = ({
 							<CardContent>
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold text-muted-foreground/40">
+										<div className="text-3xl font-semibold tracking-tight tabular-nums text-muted-foreground">
 											—
 										</div>
 										<Badge variant="outline">Not tracked yet</Badge>
 									</div>
-									<CardDescription className="mt-2 text-muted-foreground/60">
+									<CardDescription className="mt-2">
 										Add task deadlines to unlock this metric
 									</CardDescription>
 								</div>
@@ -488,14 +471,12 @@ export const PerformanceMetricsDashboard = ({
 											height={300}
 										/>
 									) : (
-										<div className="flex flex-col items-center justify-center h-full bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
-											<div className="w-32 h-32 rounded-full bg-muted/30 mb-4 flex items-center justify-center">
-												<CheckSquare className="h-12 w-12 text-muted-foreground/40" />
-											</div>
-											<p className="text-muted-foreground/60 text-sm">
+										<div className="flex flex-col items-center justify-center h-full bg-muted/20 rounded-md">
+											<CheckSquare className="size-12 text-muted-foreground mb-2" />
+											<p className="text-muted-foreground text-sm">
 												No task data available
 											</p>
-											<p className="text-muted-foreground/40 text-xs mt-1">
+											<p className="text-muted-foreground text-xs mt-1">
 												Create tasks to see how volume trends over time
 											</p>
 										</div>
@@ -517,7 +498,7 @@ export const PerformanceMetricsDashboard = ({
 												? taskStatusData
 												: [
 														{
-															label: "No Data Available",
+															label: "No data available",
 															value: 100,
 															color: NEUTRAL_COLOR,
 														},
@@ -551,7 +532,7 @@ export const PerformanceMetricsDashboard = ({
 												? taskPriorityData
 												: [
 														{
-															label: "No Data Available",
+															label: "No data available",
 															value: 100,
 															color: NEUTRAL_COLOR,
 														},
@@ -587,7 +568,7 @@ export const PerformanceMetricsDashboard = ({
 													<div className="flex items-center justify-between">
 														<div className="flex items-center gap-2 font-medium">
 															<span
-																className={`h-2.5 w-2.5 rounded-full ${seriesColorClass(index)}`}
+																className={`size-2.5 rounded-full ${seriesColorClass(index)}`}
 															/>
 															{category.label}
 														</div>
@@ -608,12 +589,12 @@ export const PerformanceMetricsDashboard = ({
 											))}
 										</div>
 									) : (
-										<div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
-											<CheckSquare className="h-10 w-10 text-muted-foreground/40 mb-2" />
-											<p className="text-muted-foreground/60 text-sm">
+										<div className="flex flex-col items-center justify-center h-40 bg-muted/20 rounded-md">
+											<CheckSquare className="size-10 text-muted-foreground mb-2" />
+											<p className="text-muted-foreground text-sm">
 												No category data available
 											</p>
-											<p className="text-muted-foreground/40 text-xs mt-1">
+											<p className="text-muted-foreground text-xs mt-1">
 												Categorize tasks to see distribution
 											</p>
 										</div>
@@ -646,7 +627,7 @@ export const PerformanceMetricsDashboard = ({
 													<div className="flex items-center justify-between">
 														<div className="font-medium flex items-center">
 															{index === 0 && (
-																<Award className="h-4 w-4 text-yellow-500 mr-1" />
+																<Award className="size-4 text-warning mr-1" />
 															)}
 															{user.name}
 														</div>
@@ -696,7 +677,6 @@ export const PerformanceMetricsDashboard = ({
 											data={userPerformanceData.map((user) => ({
 												label: user.name,
 												value: user.timeSpentMinutes,
-												color: "bg-secondary",
 											}))}
 											formatValue={(value) => `${value} min`}
 										/>
@@ -726,7 +706,6 @@ export const PerformanceMetricsDashboard = ({
 										data={userPerformanceData.map((user) => ({
 											label: user.name,
 											value: user.reactions,
-											color: "bg-secondary",
 										}))}
 										formatValue={(value) => `${value} reactions`}
 									/>

@@ -61,10 +61,10 @@ export const FullMessage = ({
 		<>
 			<div
 				className={cn(
-					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/60 transition-standard hover:shadow-sm rounded-[10px]",
-					isEditing && "bg-secondary/20 hover:bg-secondary/20",
+					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/60 transition-standard hover:shadow-sm rounded-lg",
+					isEditing && "bg-primary/10 hover:bg-primary/10",
 					isPending && "opacity-60 motion-reduce:transition-none",
-					isSelected && "bg-secondary/10 hover:bg-secondary/10",
+					isSelected && "bg-primary/5 hover:bg-primary/5",
 					isAuthor && "flex-row-reverse"
 				)}
 				onContextMenu={handleContextMenu}
@@ -77,7 +77,7 @@ export const FullMessage = ({
 						onClick={() => onOpenProfile(memberId)}
 						type="button"
 					>
-						<Avatar className="h-8 w-8 md:h-10 md:w-10">
+						<Avatar className="size-8 md:h-10 md:w-10">
 							<AvatarImage alt={authorName} src={authorImage} />
 							<AvatarFallback>{avatarFallback}</AvatarFallback>
 						</Avatar>
@@ -99,19 +99,19 @@ export const FullMessage = ({
 						)}
 					>
 						<button
-							className="font-medium text-sm hover:underline transition-all duration-200"
+							className="font-medium text-sm hover:underline transition-colors"
 							onClick={() => onOpenProfile(memberId)}
 							type="button"
 						>
 							{authorName}
 						</button>
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button
-								className="text-xs text-muted-foreground hover:underline transition-all duration-200"
-								type="button"
+							<time
+								className="text-xs text-muted-foreground"
+								dateTime={new Date(createdAt).toISOString()}
 							>
 								{format(new Date(createdAt), "h:mm a")}
-							</button>
+							</time>
 						</Hint>
 					</div>
 

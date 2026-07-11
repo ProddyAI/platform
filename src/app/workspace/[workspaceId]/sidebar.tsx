@@ -13,7 +13,6 @@ import {
 	FolderKanban,
 	Hash,
 	LayoutDashboard,
-	LayoutGrid,
 	Loader,
 	MessageSquareText,
 	PanelLeftClose,
@@ -30,6 +29,7 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { UserButton } from "@/features/auth/components/user-button";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useCreateChannelModal } from "@/features/channels/store/use-create-channel-modal";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -114,8 +114,10 @@ const DroppableItem = ({
 		>
 			{/* Toggle and "new" action are sibling controls, not nested —
 			    a button inside a button is invalid HTML and unreliable for
-			    screen readers and keyboard focus order. */}
-			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2.5 text-sm font-medium transition-standard text-secondary-foreground/80 hover:bg-secondary-foreground/10">
+			    screen readers and keyboard focus order. Geometry (radius,
+			    padding, height) mirrors SidebarItem so headers and their
+			    sub-items read as one consistent list. */}
+			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-full px-2 md:px-4 py-2 md:py-2.5 transition-standard text-muted-foreground hover:bg-sidebar-accent">
 				<button
 					className="flex flex-1 min-w-0 cursor-pointer items-center gap-x-2 md:gap-x-3 text-left"
 					onClick={handleToggle}
@@ -124,19 +126,21 @@ const DroppableItem = ({
 					{isCollapsed ? (
 						<div className="relative flex-shrink-0">
 							<Hint align="center" label={label} side="right">
-								<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+								<Icon className="size-4 md:size-5 flex-shrink-0 text-muted-foreground/60" />
 							</Hint>
 						</div>
 					) : (
-						<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+						<Icon className="size-4 md:size-5 flex-shrink-0 text-muted-foreground/60" />
 					)}
 
 					{!isCollapsed && (
 						<>
-							<span className="truncate min-w-0">{label}</span>
+							<span className="truncate min-w-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+								{label}
+							</span>
 							<ChevronDown
 								className={cn(
-									"ml-auto size-4 flex-shrink-0 transition-transform duration-200",
+									"ml-auto size-4 flex-shrink-0 text-muted-foreground/70 transition-transform duration-200",
 									!isExpanded && "-rotate-90"
 								)}
 							/>
@@ -147,19 +151,29 @@ const DroppableItem = ({
 				{!isCollapsed && onNew && (
 					<Hint align="center" label={hint} side="top">
 						<Button
-							className="h-7 w-7 flex-shrink-0 p-0 text-secondary-foreground/80 opacity-0 transition-all group-hover:opacity-100 rounded-[8px] hover:bg-secondary-foreground/10"
+							className="size-7 flex-shrink-0 p-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 rounded-md hover:bg-sidebar-accent"
 							onClick={onNew}
 							size="sm"
 							variant="ghost"
 						>
-							<PlusIcon className="size-4 transition-transform duration-200 hover:scale-110" />
+							<PlusIcon className="size-4" />
 						</Button>
 					</Hint>
 				)}
 			</div>
 
 			{isExpanded && (
-				<div className="mt-2 space-y-1.5 pl-1 md:pl-2">{children}</div>
+				<div
+					className={cn(
+						"mt-1 space-y-1",
+						// Indent sub-item pills to the right of the section header so
+						// the header reads as the parent. Only when expanded — the
+						// collapsed rail centers its icons and must not be offset.
+						!isCollapsed && "pl-2 md:pl-3"
+					)}
+				>
+					{children}
+				</div>
 			)}
 		</div>
 	);
@@ -180,7 +194,7 @@ const NewItemButton = ({
 }: NewItemButtonProps) => (
 	<button
 		className={cn(
-			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-full transition-standard w-full text-muted-foreground hover:bg-sidebar-accent hover:text-foreground cursor-pointer",
 			isCollapsed
 				? "justify-center px-1 md:px-2 py-2 md:py-2.5"
 				: "justify-start px-2 md:px-4 py-2 md:py-2.5"
@@ -192,13 +206,13 @@ const NewItemButton = ({
 			<div className="relative flex-shrink-0">
 				<Hint align="center" label={label} side="right">
 					<div className="flex items-center justify-center">
-						<PlusIcon className="size-4 text-secondary-foreground/80" />
+						<PlusIcon className="size-4 text-muted-foreground" />
 					</div>
 				</Hint>
 			</div>
 		) : (
 			<>
-				<PlusIcon className="size-4 text-secondary-foreground/80" />
+				<PlusIcon className="size-4 text-muted-foreground" />
 				<span className="truncate min-w-0">{label}</span>
 			</>
 		)}
@@ -220,20 +234,15 @@ export const WorkspaceSidebar = ({
 	const projectId = useProjectId();
 	const memberId = useMemberId();
 	const pathname = usePathname();
-	const activeTopSection = memberId
-		? "Members"
-		: projectId
-			? "Projects"
-			: "Channels";
-	// Track which sections are expanded. Sections toggle independently;
-	// start with the section for the current route open so the active item
-	// is visible on first render.
+	// Track which sections are expanded. Sections toggle independently and
+	// start collapsed; the user's last-open sections are rehydrated from
+	// localStorage in the effect below.
 	const [expandedSections, setExpandedSections] = useState<
 		Record<string, boolean>
 	>(() => ({
-		Channels: activeTopSection === "Channels",
-		Projects: activeTopSection === "Projects",
-		Members: activeTopSection === "Members",
+		Channels: false,
+		Projects: false,
+		Members: false,
 		Planning: false,
 		Messages: false,
 		Settings: false,
@@ -242,7 +251,8 @@ export const WorkspaceSidebar = ({
 	// Rehydrate the user's last expanded/collapsed sections from a previous
 	// visit. Reads happen in an effect (not the state initializer) so the
 	// server-rendered and first client render agree, avoiding a hydration
-	// mismatch; the section matching the current route stays open either way.
+	// mismatch. Everything starts collapsed unless the user previously
+	// expanded it.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally rehydrates once on mount only.
 	useEffect(() => {
 		if (typeof window === "undefined") {
@@ -257,10 +267,9 @@ export const WorkspaceSidebar = ({
 			setExpandedSections((prev) => ({
 				...prev,
 				...persisted,
-				[activeTopSection]: true,
 			}));
 		} catch {
-			// Ignore malformed storage; fall back to the route-derived defaults.
+			// Ignore malformed storage; fall back to the collapsed defaults.
 		}
 	}, []);
 
@@ -309,17 +318,17 @@ export const WorkspaceSidebar = ({
 		membersLoading
 	) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center bg-primary">
-				<Loader className="size-6 animate-spin text-secondary-foreground animate-pulse-subtle" />
+			<div className="flex h-full flex-col items-center justify-center bg-sidebar">
+				<Loader className="size-6 animate-spin text-muted-foreground animate-pulse-subtle" />
 			</div>
 		);
 	}
 
 	if (!workspace || !member) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-y-3 bg-primary">
-				<AlertTriangle className="size-6 text-secondary-foreground animate-pulse-subtle" />
-				<p className="text-sm font-medium text-secondary-foreground animate-fade-in">
+			<div className="flex h-full flex-col items-center justify-center gap-y-3 bg-sidebar">
+				<AlertTriangle className="size-6 text-muted-foreground animate-pulse-subtle" />
+				<p className="text-sm font-medium text-muted-foreground animate-fade-in">
 					Workspace not found.
 				</p>
 			</div>
@@ -331,20 +340,22 @@ export const WorkspaceSidebar = ({
 	return (
 		<div
 			className={cn(
-				"flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white/20 dark:border-border/40",
-				isCollapsed ? "w-[70px]" : "w-[280px]"
+				"flex h-full w-full flex-col bg-sidebar border-r border-sidebar-border",
+				// Width is owned by the parent container (fixed 70px when collapsed,
+				// adjustable when expanded); fill it here.
+				isCollapsed && "min-w-[70px]"
 			)}
 		>
 			{/* Close button for mobile overlay */}
 			{onMobileClose && (
 				<div className="flex justify-end p-2 md:hidden flex-shrink-0">
 					<Button
-						className="h-8 w-8 rounded-full p-0"
+						className="size-8 rounded-full p-0"
 						onClick={onMobileClose}
 						size="sm"
 						variant="ghost"
 					>
-						<PanelLeftClose className="size-4 text-secondary-foreground/80" />
+						<PanelLeftClose className="size-4 text-muted-foreground" />
 					</Button>
 				</div>
 			)}
@@ -361,14 +372,14 @@ export const WorkspaceSidebar = ({
 			{/* Scrollable content container */}
 			<div
 				className={cn(
-					"flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+					"flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-3",
 					onMobileClose && "pb-4"
 				)}
 			>
 				{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
 				<div
 					className={cn(
-						"mt-4 px-2 md:px-4",
+						"px-2 md:px-4",
 						onMobileClose ? "block" : "hidden md:block"
 					)}
 				>
@@ -515,7 +526,7 @@ export const WorkspaceSidebar = ({
 				)}
 
 				{/* Divider between dynamic and static sections */}
-				<Separator className="my-4 mx-4 bg-secondary-foreground/10" />
+				<Separator className="my-4 mx-4 bg-sidebar-border" />
 
 				{/* Planning Section */}
 				<div className="mt-2">
@@ -539,12 +550,12 @@ export const WorkspaceSidebar = ({
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
-								href={`/workspace/${workspaceId}/meeting-notes`}
+								href={`/workspace/${workspaceId}/meetings`}
 								icon={Brain}
-								id="meeting-notes"
-								isActive={pathname.includes("/meeting-notes")}
+								id="meetings"
+								isActive={pathname.includes("/meetings")}
 								isCollapsed={isCollapsed}
-								label="Meeting Notes"
+								label="Meetings"
 							/>
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>
@@ -555,16 +566,6 @@ export const WorkspaceSidebar = ({
 								isActive={pathname.includes("/calendar")}
 								isCollapsed={isCollapsed}
 								label="Calendar"
-							/>
-						</MobileCloseWrapper>
-						<MobileCloseWrapper onClose={onMobileClose}>
-							<SidebarItem
-								href={`/workspace/${workspaceId}/issues`}
-								icon={LayoutGrid}
-								id="issues"
-								isActive={pathname.includes("/issues")}
-								isCollapsed={isCollapsed}
-								label="Issues"
 							/>
 						</MobileCloseWrapper>
 					</DroppableItem>
@@ -658,28 +659,49 @@ export const WorkspaceSidebar = ({
 				</div>
 			</div>
 
-			{/* Collapse/Expand Button - Hidden in mobile overlay */}
-			{!onMobileClose && (
-				<div className="mt-auto mb-4 flex justify-center">
-					<Hint
-						label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-						side="right"
-					>
-						<Button
-							className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-secondary-foreground/10"
-							onClick={() => setIsCollapsed(!isCollapsed)}
-							size="sm"
-							variant="ghost"
+			{/* Footer: account menu (bottom-left) + collapse toggle */}
+			<div
+				className={cn(
+					"mt-auto flex-shrink-0 border-t border-sidebar-border",
+					isCollapsed ? "px-1 py-3" : "px-3 py-3"
+				)}
+			>
+				{/* Expanded: account and collapse toggle share one row (toggle on
+				    the right). Collapsed: they stack, toggle centered below. */}
+				<div
+					className={cn(
+						"flex",
+						isCollapsed
+							? "flex-col items-center gap-2"
+							: "flex-row items-center gap-2"
+					)}
+				>
+					<div className={cn(!isCollapsed && "min-w-0 flex-1")}>
+						<UserButton isCollapsed={isCollapsed} variant="sidebar" />
+					</div>
+
+					{/* Collapse/Expand Button - Hidden in mobile overlay */}
+					{!onMobileClose && (
+						<Hint
+							label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+							side="right"
 						>
-							{isCollapsed ? (
-								<PanelLeftOpen className="size-4 text-secondary-foreground/80" />
-							) : (
-								<PanelLeftClose className="size-4 text-secondary-foreground/80" />
-							)}
-						</Button>
-					</Hint>
+							<Button
+								className="size-8 flex-shrink-0 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
+								onClick={() => setIsCollapsed(!isCollapsed)}
+								size="sm"
+								variant="ghost"
+							>
+								{isCollapsed ? (
+									<PanelLeftOpen className="size-4 text-muted-foreground" />
+								) : (
+									<PanelLeftClose className="size-4 text-muted-foreground" />
+								)}
+							</Button>
+						</Hint>
+					)}
 				</div>
-			)}
+			</div>
 		</div>
 	);
 };

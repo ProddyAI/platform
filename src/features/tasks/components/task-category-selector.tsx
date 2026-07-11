@@ -89,8 +89,7 @@ export const TaskCategorySelector = ({
 			setNewCategoryColor(CATEGORY_COLORS[0].value);
 			setCreateDialogOpen(false);
 		} catch (error) {
-			console.error("Failed to create category:", error);
-			toast.error("Failed to create category", {
+			toast.error("Couldn't create category", {
 				description:
 					error instanceof Error ? error.message : "Please try again",
 			});
@@ -110,7 +109,7 @@ export const TaskCategorySelector = ({
 						{selectedCategory ? (
 							<div className="flex items-center gap-2">
 								<div
-									className="h-3 w-3 rounded-full"
+									className="size-3 rounded-full"
 									style={{ backgroundColor: selectedCategory.color }}
 								/>
 								<span>{selectedCategory.name}</span>
@@ -120,7 +119,10 @@ export const TaskCategorySelector = ({
 						)}
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent align="start" className="w-full p-0">
+				<PopoverContent
+					align="start"
+					className="w-[var(--radix-popover-trigger-width)] p-0"
+				>
 					<Command>
 						<CommandInput placeholder="Search categories..." />
 						<CommandList>
@@ -133,14 +135,14 @@ export const TaskCategorySelector = ({
 										setOpen(false);
 									}}
 								>
-									<div className="flex h-4 w-4 items-center justify-center">
-										{!value && <Check className="h-3 w-3" />}
+									<div className="flex size-4 items-center justify-center">
+										{!value && <Check className="size-3" />}
 									</div>
 									<span>No category</span>
 								</CommandItem>
 								{isLoading ? (
 									<CommandItem disabled>
-										<Loader className="mr-2 h-3 w-3 animate-spin" />
+										<Loader className="mr-2 size-3 animate-spin" />
 										Loading...
 									</CommandItem>
 								) : (
@@ -153,13 +155,11 @@ export const TaskCategorySelector = ({
 												setOpen(false);
 											}}
 										>
-											<div className="flex h-4 w-4 items-center justify-center">
-												{value === category._id && (
-													<Check className="h-3 w-3" />
-												)}
+											<div className="flex size-4 items-center justify-center">
+												{value === category._id && <Check className="size-3" />}
 											</div>
 											<div
-												className="h-3 w-3 rounded-full"
+												className="size-3 rounded-full"
 												style={{ backgroundColor: category.color }}
 											/>
 											<span>{category.name}</span>
@@ -175,7 +175,7 @@ export const TaskCategorySelector = ({
 										setCreateDialogOpen(true);
 									}}
 								>
-									<Plus className="mr-2 h-4 w-4" />
+									<Plus className="mr-2 size-4" />
 									Create category
 								</CommandItem>
 							</CommandGroup>
@@ -216,7 +216,7 @@ export const TaskCategorySelector = ({
 										<button
 											aria-label={`Select color ${color.label}`}
 											className={cn(
-												"h-8 w-8 rounded-full cursor-pointer flex items-center justify-center border-2 ring-offset-2 ring-offset-background transition-colors hover:ring-2 hover:ring-muted-foreground",
+												"size-8 rounded-full cursor-pointer flex items-center justify-center border-2 ring-offset-2 ring-offset-background transition-shadow duration-fast hover:ring-2 hover:ring-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 												newCategoryColor === color.value
 													? "border-foreground"
 													: "border-transparent"
@@ -228,7 +228,7 @@ export const TaskCategorySelector = ({
 											type="button"
 										>
 											{newCategoryColor === color.value && (
-												<Check className="h-4 w-4 text-white" />
+												<Check className="size-4 text-white" />
 											)}
 										</button>
 									))}

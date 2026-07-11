@@ -49,7 +49,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,7 +147,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "List repositories, create issues, manage pull requests",
 		examplePrompt: "List my repositories",
 		icon: Github,
-		iconClassName: "text-gray-800 dark:text-gray-200",
+		iconClassName: "text-muted-foreground",
 	},
 	GMAIL: {
 		name: "Gmail",
@@ -156,7 +155,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Send emails, read inbox messages, and manage drafts",
 		examplePrompt: "Send an email to [email]",
 		icon: Mail,
-		iconClassName: "text-red-600",
+		iconClassName: "text-muted-foreground",
 	},
 	SLACK: {
 		name: "Slack",
@@ -164,7 +163,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Send messages, browse channels, and review discussions",
 		examplePrompt: "Post a Slack update to #team",
 		icon: MessageSquare,
-		iconClassName: "text-violet-600",
+		iconClassName: "text-muted-foreground",
 	},
 	NOTION: {
 		name: "Notion",
@@ -172,7 +171,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Create pages, query databases, and find Notion content",
 		examplePrompt: "Create a Notion page for sprint notes",
 		icon: FileText,
-		iconClassName: "text-slate-700 dark:text-slate-200",
+		iconClassName: "text-muted-foreground",
 	},
 	CLICKUP: {
 		name: "ClickUp",
@@ -180,7 +179,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Create tasks, manage lists, and track project work",
 		examplePrompt: "Create a ClickUp task for release QA",
 		icon: CheckSquare,
-		iconClassName: "text-pink-600",
+		iconClassName: "text-muted-foreground",
 	},
 	LINEAR: {
 		name: "Linear",
@@ -188,7 +187,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Create issues, update projects, and review team work",
 		examplePrompt: "Create a Linear issue for onboarding bug",
 		icon: Kanban,
-		iconClassName: "text-blue-600",
+		iconClassName: "text-muted-foreground",
 	},
 };
 
@@ -268,33 +267,46 @@ function formatRelativeTime(timestamp: number): string {
 	return new Date(timestamp).toLocaleDateString();
 }
 
-function ProddyChatAvatar() {
+function ProddyChatAvatar({ className }: { className?: string }) {
+	// Solid brand mark: white icon on deep-purple primary reads as a logo and
+	// clears WCAG AA, unlike a tinted icon on the light fallback surface.
 	return (
-		<Avatar className="h-9 w-9 bg-primary/10 ring-2 ring-primary/20">
-			<AvatarFallback>
-				<Bot className="h-5 w-5 text-primary" />
-			</AvatarFallback>
-		</Avatar>
-	);
-}
-
-function ChatLoadingBody() {
-	return (
-		<div className="min-w-0 flex-1">
-			<p className="text-sm font-medium text-muted-foreground">Thinking…</p>
+		<div
+			className={cn(
+				"flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/25",
+				className
+			)}
+		>
+			<Bot className="size-5" />
 		</div>
 	);
 }
 
 function ChatLoadingIndicator() {
+	// Mirrors an assistant MessageBubble (brand mark + bubble) so the reply
+	// animates in place. Dots reuse the app's typing-indicator convention.
 	return (
-		<div className="flex justify-start">
-			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3 flex items-start gap-2">
-				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-					<Zap className="h-4 w-4 animate-pulse text-primary" />
+		<div className="flex justify-start gap-3">
+			<ProddyChatAvatar className="mt-0.5 size-8" />
+			<div className="flex items-center gap-2 rounded-2xl rounded-tl-md bg-muted px-4 py-3.5">
+				<div
+					aria-label="Assistant is typing"
+					className="flex gap-1"
+					role="status"
+				>
+					<span
+						className="size-1.5 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
+						style={{ animationDelay: "0ms" }}
+					/>
+					<span
+						className="size-1.5 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
+						style={{ animationDelay: "200ms" }}
+					/>
+					<span
+						className="size-1.5 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
+						style={{ animationDelay: "400ms" }}
+					/>
 				</div>
-				<ChatLoadingBody />
-				<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
 			</div>
 		</div>
 	);
@@ -304,10 +316,8 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 	const metadata = getIntegrationMetadata(app.app);
 	const Icon = metadata?.icon ?? Zap;
 	return (
-		<div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border">
-			<Icon
-				className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
-			/>
+		<div className="flex items-center gap-3 rounded-lg border border-success/20 bg-success/10 p-2">
+			<Icon className={`size-4 ${metadata?.iconClassName ?? "text-success"}`} />
 			<div className="flex-1">
 				<div className="font-medium text-sm">{metadata?.name ?? app.app}</div>
 				<div className="text-xs text-muted-foreground">
@@ -315,7 +325,7 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 						"Connected and available for assistant actions"}
 				</div>
 			</div>
-			<CheckCircle className="h-4 w-4 text-green-600" />
+			<CheckCircle className="size-4 text-success" />
 		</div>
 	);
 }
@@ -331,12 +341,12 @@ function ConnectedIntegrationsPopover({
 		<Popover>
 			<PopoverTrigger asChild>
 				<Button
-					className="h-5 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
+					className="h-5 px-2 text-xs hover:bg-success/10 transition-standard"
 					size="sm"
 					variant="ghost"
 				>
-					<Zap className="h-3 w-3 mr-1 text-green-600" />
-					<span className="text-green-700 dark:text-green-300 font-medium">
+					<Zap className="size-3 mr-1 text-success" />
+					<span className="text-success font-medium">
 						{connected.length} connected
 					</span>
 				</Button>
@@ -344,7 +354,7 @@ function ConnectedIntegrationsPopover({
 			<PopoverContent className="w-80 p-3">
 				<div className="space-y-3">
 					<h4 className="font-medium text-sm flex items-center gap-2">
-						<CheckCircle className="h-4 w-4 text-green-600" />
+						<CheckCircle className="size-4 text-success" />
 						Connected Integrations
 					</h4>
 					<div className="space-y-2">
@@ -373,7 +383,7 @@ function IntegrationStatusBlock({
 	if (status.loading) {
 		return (
 			<div className="flex items-center gap-1">
-				<Loader className="h-3 w-3 animate-spin text-muted-foreground" />
+				<Loader className="size-3 animate-spin text-muted-foreground" />
 				<span className="text-xs text-muted-foreground">
 					Checking integrations...
 				</span>
@@ -451,25 +461,21 @@ function ChatHeaderActions({
 	return (
 		<div className="flex items-center gap-2">
 			<Button
-				className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
+				className="h-8 px-3 shadow-sm hover:shadow-md"
 				onClick={onNewChat}
 				size="sm"
 				variant="default"
 			>
-				<Plus className="h-4 w-4 mr-1.5" />
+				<Plus className="size-4 mr-1.5" />
 				New Chat
 			</Button>
 
 			<DropdownMenu onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
 				<DropdownMenuTrigger asChild>
-					<Button
-						className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
-						size="sm"
-						variant="outline"
-					>
-						<History className="h-4 w-4 mr-1.5" />
+					<Button className="h-8 px-3" size="sm" variant="outline">
+						<History className="size-4 mr-1.5" />
 						Recent Chats
-						<ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
+						<ChevronDown className="size-3 ml-1.5 opacity-50" />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
@@ -566,7 +572,7 @@ function ChatHistoryItem({
 				onSelect();
 			}}
 		>
-			<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+			<MessageSquare className="size-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
 			<div className="flex-1 min-w-0">
 				<p
 					className={`text-sm font-medium truncate transition-all duration-500 ${
@@ -579,7 +585,7 @@ function ChatHistoryItem({
 					{conv.titleSource === "ai_generated" &&
 						conv.title &&
 						conv.title !== "New Chat" && (
-							<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
+							<Sparkles className="inline-block ml-1 size-3 text-primary/40" />
 						)}
 				</p>
 				<p className="text-xs text-muted-foreground mt-0.5">
@@ -589,7 +595,7 @@ function ChatHistoryItem({
 			<div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
 				<Button
 					aria-label="Rename chat"
-					className="h-6 w-6 p-0"
+					className="size-6 p-0"
 					onClick={(e) => {
 						e.stopPropagation();
 						onStartEdit();
@@ -597,11 +603,11 @@ function ChatHistoryItem({
 					size="sm"
 					variant="ghost"
 				>
-					<Edit2 className="h-3 w-3" />
+					<Edit2 className="size-3" />
 				</Button>
 				<Button
 					aria-label="Delete chat"
-					className="h-6 w-6 p-0 hover:text-destructive"
+					className="size-6 p-0 hover:text-destructive"
 					onClick={(e) => {
 						e.stopPropagation();
 						onDelete();
@@ -609,7 +615,7 @@ function ChatHistoryItem({
 					size="sm"
 					variant="ghost"
 				>
-					<Trash2 className="h-3 w-3" />
+					<Trash2 className="size-3" />
 				</Button>
 			</div>
 		</DropdownMenuItem>
@@ -653,7 +659,7 @@ const MARKDOWN_COMPONENTS = {
 
 function AssistantMarkdown({ content }: { content: string }) {
 	return (
-		<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
+		<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:italic prose-blockquote:text-muted-foreground prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
 			<ReactMarkdown
 				components={MARKDOWN_COMPONENTS}
 				remarkPlugins={[remarkGfm]}
@@ -746,7 +752,7 @@ function MessageSourceBadges({ sources }: { sources: Message["sources"] }) {
 	if (!sources || sources.length === 0) return null;
 
 	return (
-		<div className="mt-3 rounded-md border border-border/70 bg-background/70 p-3">
+		<div className="mt-3 rounded-2xl border bg-card p-3">
 			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 				Sources
 			</p>
@@ -772,7 +778,7 @@ function ConversationTitleEditor({
 }) {
 	return (
 		<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
-			<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+			<MessageSquare className="size-4 flex-shrink-0 text-muted-foreground" />
 			<Input
 				aria-label="Chat title"
 				className="h-8 text-sm flex-1"
@@ -789,21 +795,21 @@ function ConversationTitleEditor({
 			/>
 			<Button
 				aria-label="Save title"
-				className="h-8 w-8 p-0"
+				className="size-8 p-0"
 				onClick={onSave}
 				size="sm"
 				variant="ghost"
 			>
-				<Check className="h-4 w-4 text-green-600" />
+				<Check className="size-4 text-success" />
 			</Button>
 			<Button
 				aria-label="Cancel"
-				className="h-8 w-8 p-0"
+				className="size-8 p-0"
 				onClick={onCancel}
 				size="sm"
 				variant="ghost"
 			>
-				<X className="h-4 w-4" />
+				<X className="size-4" />
 			</Button>
 		</div>
 	);
@@ -845,7 +851,7 @@ function DashboardChatHeader({
 	setIsHistoryOpen: (open: boolean) => void;
 }) {
 	return (
-		<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
+		<CardHeader className="pb-3 border-b">
 			<div className="flex items-center justify-between">
 				<ChatHeaderTitle status={integrationStatus} />
 				<ChatHeaderActions
@@ -1019,17 +1025,16 @@ function ChatComposer({
 						size="icon"
 						variant="secondary"
 					>
-						<Square className="h-4 w-4" />
+						<Square className="size-4" />
 					</Button>
 				) : (
 					<Button
 						aria-label="Send message"
-						className="chat-send-button"
 						disabled={!input.trim()}
 						onClick={onSend}
 						size="icon"
 					>
-						<Send className="h-4 w-4" />
+						<Send className="size-4" />
 					</Button>
 				)}
 			</div>
@@ -1113,7 +1118,7 @@ function DashboardChatMainCard({
 	onStop: () => void;
 }) {
 	return (
-		<Card className="flex flex-col flex-1 shadow-md overflow-hidden">
+		<Card className="flex flex-col flex-1 shadow-sm overflow-hidden">
 			<DashboardChatHeader
 				conversationId={conversationId}
 				editingConversationId={editingConversationId}
@@ -1167,18 +1172,29 @@ function MessageBubble({
 	onNavigate: (action: NavigationAction) => void;
 }) {
 	const isUser = message.sender === "user";
-	return (
-		<div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-			<div
-				className={`max-w-[80%] rounded-lg px-4 py-3 ${
-					isUser ? "bg-primary text-primary-foreground" : "bg-muted"
-				}`}
-			>
-				{isUser ? (
+	const time = message.timestamp.toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+
+	if (isUser) {
+		return (
+			<div className="flex justify-end">
+				<div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-primary-foreground">
 					<p className="text-sm">{message.content}</p>
-				) : (
-					<AssistantMarkdown content={message.content} />
-				)}
+					<p className="mt-1.5 text-right text-xs text-primary-foreground/70">
+						{time}
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex justify-start gap-3">
+			<ProddyChatAvatar className="mt-0.5 size-8" />
+			<div className="min-w-0 max-w-[80%] rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+				<AssistantMarkdown content={message.content} />
 				<MessageSourceBadges sources={message.sources} />
 				{message.actions && message.actions.length > 0 ? (
 					<MessageActions
@@ -1187,12 +1203,7 @@ function MessageBubble({
 						onNavigate={onNavigate}
 					/>
 				) : null}
-				<p className="mt-2 text-right text-xs opacity-70">
-					{message.timestamp.toLocaleTimeString([], {
-						hour: "2-digit",
-						minute: "2-digit",
-					})}
-				</p>
+				<p className="mt-2 text-xs text-muted-foreground">{time}</p>
 			</div>
 		</div>
 	);
@@ -1727,22 +1738,22 @@ Try asking me things like:`;
 	const getActionIcon = (type: string) => {
 		switch (type) {
 			case "calendar":
-				return <Calendar className="h-4 w-4" />;
+				return <Calendar className="size-4" />;
 			case "note":
-				return <FileText className="h-4 w-4" />;
+				return <FileText className="size-4" />;
 			case "board":
-				return <Kanban className="h-4 w-4" />;
+				return <Kanban className="size-4" />;
 			case "task":
-				return <CheckSquare className="h-4 w-4" />;
+				return <CheckSquare className="size-4" />;
 			case "message":
-				return <MessageSquare className="h-4 w-4" />;
+				return <MessageSquare className="size-4" />;
 			case "github":
-				return <Github className="h-4 w-4" />;
+				return <Github className="size-4" />;
 			case "gmail":
 			case "email":
-				return <Mail className="h-4 w-4" />;
+				return <Mail className="size-4" />;
 			default:
-				return <ExternalLink className="h-4 w-4" />;
+				return <ExternalLink className="size-4" />;
 		}
 	};
 

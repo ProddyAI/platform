@@ -25,7 +25,7 @@ export const AudioControlButton = ({
 		if (variant === "mic" || variant === "speaker") {
 			// Audio control buttons (mic/speaker)
 			return cn(
-				"h-10 w-10 rounded-full transition-all duration-200 shadow-sm",
+				"size-10 rounded-full transition-all duration-200 shadow-sm",
 				isMuted
 					? "bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive"
 					: "bg-muted hover:bg-muted/80 text-muted-foreground border-border",
@@ -58,7 +58,7 @@ export const AudioControlButton = ({
 			title={label}
 			variant="ghost"
 		>
-			<Icon className="h-5 w-5" />
+			<Icon className="size-5" />
 			{variant === "action" && <span className="text-sm">{label}</span>}
 		</Button>
 	);

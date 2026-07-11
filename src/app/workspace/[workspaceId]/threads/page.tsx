@@ -6,7 +6,6 @@ import {
 	Clock,
 	FileText,
 	Hash,
-	Loader,
 	MessageCircle,
 	MessageSquareText,
 	PaintBucket,
@@ -16,11 +15,14 @@ import {
 import { useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
+import { PageShell } from "@/components/page-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-messages";
 import { ThreadModal } from "@/features/messages/components/thread-modal";
@@ -66,6 +68,58 @@ interface ThreadMessage {
 	};
 }
 
+type ParsedMessageBody = {
+	type: "text" | "canvas" | "note";
+	content: string;
+	isSpecial: boolean;
+};
+
+const parseMessageBody = (body: string): ParsedMessageBody => {
+	try {
+		const parsed = JSON.parse(body);
+
+		if (parsed.type?.includes("canvas")) {
+			return {
+				type: "canvas",
+				content: parsed.canvasName || "Untitled Canvas",
+				isSpecial: true,
+			};
+		}
+
+		if (parsed.type?.includes("note")) {
+			return {
+				type: "note",
+				content: parsed.noteTitle || "Untitled Note",
+				isSpecial: true,
+			};
+		}
+
+		if (parsed.ops?.[0]?.insert) {
+			return {
+				type: "text",
+				content: parsed.ops[0].insert,
+				isSpecial: false,
+			};
+		}
+
+		return { type: "text", content: body, isSpecial: false };
+	} catch {
+		return { type: "text", content: body, isSpecial: false };
+	}
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type ThreadGroupKey = "today" | "yesterday" | "thisWeek" | "earlier";
+
+// Render order + sentence-case labels for the date sections.
+const THREAD_GROUPS: { key: ThreadGroupKey; label: string }[] = [
+	{ key: "today", label: "Today" },
+	{ key: "yesterday", label: "Yesterday" },
+	{ key: "thisWeek", label: "This week" },
+	{ key: "earlier", label: "Earlier" },
+];
+
 const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	useSetWorkspaceTitle(
 		<WorkspaceTitle icon={MessageSquareText} label="Threads" />
@@ -108,54 +162,6 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 		return map;
 	}, [threadTitles]);
 
-	const parseMessageBody = (
-		body: string
-	): {
-		type: "text" | "canvas" | "note";
-		content: string;
-		isSpecial: boolean;
-	} => {
-		try {
-			const parsed = JSON.parse(body);
-
-			if (parsed.type?.includes("canvas")) {
-				return {
-					type: "canvas",
-					content: parsed.canvasName || "Untitled Canvas",
-					isSpecial: true,
-				};
-			}
-
-			if (parsed.type?.includes("note")) {
-				return {
-					type: "note",
-					content: parsed.noteTitle || "Untitled Note",
-					isSpecial: true,
-				};
-			}
-
-			if (parsed.ops?.[0]?.insert) {
-				return {
-					type: "text",
-					content: parsed.ops[0].insert,
-					isSpecial: false,
-				};
-			}
-
-			return {
-				type: "text",
-				content: body,
-				isSpecial: false,
-			};
-		} catch {
-			return {
-				type: "text",
-				content: body,
-				isSpecial: false,
-			};
-		}
-	};
-
 	const handleOpenThread = (thread: ThreadMessage) => {
 		setSelectedThread(thread);
 	};
@@ -180,37 +186,42 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	});
 
 	// Group threads by date (today, yesterday, this week, earlier)
+	const now = new Date();
+	const todayStart = new Date(
+		now.getFullYear(),
+		now.getMonth(),
+		now.getDate()
+	).getTime();
+	const yesterdayStart = todayStart - DAY_MS;
+	const weekStart = todayStart - 6 * DAY_MS;
+
 	const groupedThreads =
 		filteredThreads?.reduce(
 			(groups, thread) => {
-				const date = new Date(thread.message._creationTime);
-				const now = new Date();
-				const isToday = date.toDateString() === now.toDateString();
-				const isYesterday =
-					new Date(now.setDate(now.getDate() - 1)).toDateString() ===
-					date.toDateString();
-				const isThisWeek = date > new Date(now.setDate(now.getDate() - 6));
+				const time = thread.message._creationTime;
 
-				const group = isToday
-					? "today"
-					: isYesterday
-						? "yesterday"
-						: isThisWeek
-							? "thisWeek"
-							: "earlier";
+				const group: ThreadGroupKey =
+					time >= todayStart
+						? "today"
+						: time >= yesterdayStart
+							? "yesterday"
+							: time >= weekStart
+								? "thisWeek"
+								: "earlier";
 
-				if (!groups[group]) {
-					groups[group] = [];
-				}
-
-				groups[group].push(thread);
+				const bucket = groups[group] ?? [];
+				bucket.push(thread);
+				groups[group] = bucket;
 				return groups;
 			},
-			{} as Record<string, ThreadMessage[]>
+			{} as Partial<Record<ThreadGroupKey, ThreadMessage[]>>
 		) || {};
 
 	function renderThreadCard(thread: ThreadMessage) {
 		const parsedParentBody = parseMessageBody(thread.parentMessage.body);
+		const parsedLatestReply = parseMessageBody(thread.message.body);
+		const threadTitle =
+			titleMap.get(thread.message._id.toString()) || parsedParentBody.content;
 		const threadReplyCount =
 			threadReplyCounts?.find(
 				(tc) => tc.parentMessageId === thread.message.parentMessageId
@@ -218,101 +229,96 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 		return (
 			<Card
-				className="group hover:shadow-md transition-all duration-200 cursor-pointer"
+				className="group cursor-pointer"
+				interactive
 				key={thread.message._id}
 				onClick={() => handleOpenThread(thread)}
 			>
 				<CardContent className="p-4">
-					<div className="flex items-start justify-between mb-3">
-						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<Avatar className="h-8 w-8 flex-shrink-0">
-								<AvatarImage src={thread.parentUser.image} />
-								<AvatarFallback>
-									{thread.parentUser.name.charAt(0)}
-								</AvatarFallback>
-							</Avatar>
-							<div className="flex-1 min-w-0">
-								<div className="flex items-center gap-2">
-									<span className="font-semibold text-sm truncate">
-										{thread.parentUser.name}
-									</span>
-									<Badge
-										className={`rounded-full text-xs flex-shrink-0 ${
-											thread.context.type === "channel"
-												? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
-												: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
-										}`}
-										variant="outline"
-									>
-										{thread.context.type === "channel" ? (
-											<span className="flex items-center gap-1">
-												<Hash className="h-3 w-3" />
-												{thread.context.name}
-											</span>
-										) : (
-											<span className="flex items-center gap-1">
-												<User className="h-3 w-3" />
-												{thread.context.name}
-											</span>
-										)}
-									</Badge>
-								</div>
-								<span className="text-xs text-muted-foreground">
-									{formatDistanceToNow(new Date(thread.message._creationTime), {
-										addSuffix: true,
-									})}
+					<div className="mb-3 flex items-center gap-2">
+						<Avatar className="size-8 flex-shrink-0">
+							<AvatarImage src={thread.parentUser.image} />
+							<AvatarFallback>
+								{thread.parentUser.name.charAt(0)}
+							</AvatarFallback>
+						</Avatar>
+						<div className="min-w-0 flex-1">
+							<div className="flex items-center gap-2">
+								<span className="truncate text-sm font-semibold">
+									{thread.parentUser.name}
 								</span>
+								<Badge className="flex-shrink-0" variant="outline">
+									<span className="flex items-center gap-1">
+										{thread.context.type === "channel" ? (
+											<Hash aria-hidden className="size-3" />
+										) : (
+											<User aria-hidden className="size-3" />
+										)}
+										{thread.context.name}
+									</span>
+								</Badge>
 							</div>
+							<span className="text-xs text-muted-foreground">
+								{formatDistanceToNow(new Date(thread.message._creationTime), {
+									addSuffix: true,
+								})}
+							</span>
 						</div>
 					</div>
 
 					<div className="mb-3">
 						{parsedParentBody.isSpecial ? (
-							<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
+							<div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3">
 								{parsedParentBody.type === "canvas" ? (
-									<PaintBucket className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+									<PaintBucket
+										aria-hidden
+										className="size-5 flex-shrink-0 text-primary"
+									/>
 								) : (
-									<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+									<FileText
+										aria-hidden
+										className="size-5 flex-shrink-0 text-primary"
+									/>
 								)}
-								<span className="font-semibold text-sm truncate">
+								<span className="truncate text-sm font-semibold">
 									{parsedParentBody.content}
 								</span>
 							</div>
 						) : (
-							<h3 className="font-semibold text-sm line-clamp-2 text-foreground">
-								{titleMap.get(thread.message._id.toString()) ||
-									parsedParentBody.content}
-							</h3>
+							<h4 className="line-clamp-2 text-sm font-semibold text-foreground">
+								{threadTitle}
+							</h4>
 						)}
 					</div>
 
-					<div className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
-						<Avatar className="h-6 w-6 flex-shrink-0">
+					<div className="flex items-start gap-2 rounded-lg bg-muted/30 p-2">
+						<Avatar className="size-6 flex-shrink-0">
 							<AvatarImage src={thread.currentUser.image} />
 							<AvatarFallback className="text-xs">
 								{thread.currentUser.name.charAt(0)}
 							</AvatarFallback>
 						</Avatar>
-						<div className="flex-1 min-w-0">
-							<span className="font-medium text-xs text-muted-foreground">
+						<div className="min-w-0 flex-1">
+							<span className="text-xs font-medium text-muted-foreground">
 								{thread.currentUser.name}
 							</span>
-							<p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-								{parseMessageBody(thread.message.body).content}
+							<p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+								{parsedLatestReply.content}
 							</p>
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between mt-3 pt-3 border-t">
+					<div className="mt-3 flex items-center justify-between border-t border-border pt-3">
 						<div className="flex items-center gap-1 text-xs text-muted-foreground">
-							<MessageCircle className="h-3.5 w-3.5" />
+							<MessageCircle aria-hidden className="size-3.5" />
 							<span>
 								{threadReplyCount}{" "}
 								{threadReplyCount === 1 ? "reply" : "replies"}
 							</span>
 						</div>
 						<Button
-							className="h-7 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							aria-label={`Open thread: ${threadTitle}`}
+							className="h-7 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 							onClick={(e) => {
 								e.stopPropagation();
 								handleOpenThread(thread);
@@ -328,136 +334,105 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 		);
 	}
 
-	// We'll use a consistent structure with conditional rendering for the content
 	return (
 		<>
 			{!threads ? (
-				// Loading state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
-					<Loader className="size-12 animate-spin text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">Loading threads...</p>
-				</div>
+				// Loading state — skeletons mirror the loaded layout so nothing jumps
+				<PageShell className="max-w-4xl">
+					<div
+						aria-busy="true"
+						aria-label="Loading threads"
+						className="space-y-6"
+						role="status"
+					>
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+							<Skeleton className="h-10 flex-1 rounded-full" />
+							<Skeleton className="h-10 w-full rounded-full sm:w-[300px]" />
+						</div>
+						<div className="space-y-3">
+							<Skeleton className="h-4 w-20" />
+							<Skeleton className="h-40 rounded-2xl" />
+							<Skeleton className="h-40 rounded-2xl" />
+							<Skeleton className="h-40 rounded-2xl" />
+						</div>
+					</div>
+				</PageShell>
 			) : !threads.length ? (
 				// Empty state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
-					<MessageSquareText className="size-12 text-muted-foreground" />
-					<h2 className="text-2xl font-semibold">Threads</h2>
-					<p className="text-sm text-muted-foreground">No threads yet.</p>
-				</div>
+				<PageShell>
+					<EmptyState
+						description="Replies you're part of will show up here."
+						icon={MessageSquareText}
+						title="No threads yet"
+					/>
+				</PageShell>
 			) : (
 				// Threads loaded state
-				<div className="flex flex-1 flex-col bg-background overflow-hidden">
-					<div className="border-b p-4 flex-shrink-0">
-						<div className="flex items-center justify-between mb-4">
-							<h2 className="text-xl font-semibold">Threads</h2>
+				<PageShell className="max-w-4xl">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+						<div className="relative flex-1">
+							<Search
+								aria-hidden
+								className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+							/>
+							<Input
+								aria-label="Search threads"
+								className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="Search threads..."
+								type="search"
+								value={searchQuery}
+							/>
 						</div>
 
-						<div className="flex items-center gap-4">
-							<div className="relative flex-1">
-								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									onChange={(e) => setSearchQuery(e.target.value)}
-									placeholder="Search threads..."
-									type="search"
-									value={searchQuery}
-								/>
-							</div>
+						<Tabs
+							className="w-full sm:w-[300px]"
+							onValueChange={(value) =>
+								setActiveFilter(value as "all" | "channels" | "direct")
+							}
+							value={activeFilter}
+						>
+							<TabsList className="grid w-full grid-cols-3">
+								<TabsTrigger value="all">All</TabsTrigger>
+								<TabsTrigger value="channels">Channels</TabsTrigger>
+								<TabsTrigger value="direct">Direct</TabsTrigger>
+							</TabsList>
+						</Tabs>
+					</div>
 
-							<Tabs
-								className="w-[300px]"
-								onValueChange={(value) =>
-									setActiveFilter(value as "all" | "channels" | "direct")
-								}
-								value={activeFilter}
-							>
-								<TabsList className="grid w-full grid-cols-3">
-									<TabsTrigger value="all">All</TabsTrigger>
-									<TabsTrigger value="channels">Channels</TabsTrigger>
-									<TabsTrigger value="direct">Direct</TabsTrigger>
-								</TabsList>
-							</Tabs>
+					{filteredThreads?.length === 0 ? (
+						<EmptyState
+							description="Try a different search or filter."
+							icon={Search}
+							size="sm"
+							title="No matching threads"
+						/>
+					) : (
+						<div className="space-y-6">
+							{THREAD_GROUPS.map(({ key, label }) => {
+								const group = groupedThreads[key];
+								if (!group?.length) return null;
+
+								return (
+									<section aria-label={label} key={key}>
+										<div className="mb-4 flex items-center gap-2">
+											<Clock
+												aria-hidden
+												className="size-4 text-muted-foreground"
+											/>
+											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+												{label}
+											</h3>
+										</div>
+										<div className="space-y-3">
+											{group.map((thread) => renderThreadCard(thread))}
+										</div>
+									</section>
+								);
+							})}
 						</div>
-					</div>
-
-					<div className="flex-1 overflow-y-auto p-6">
-						{filteredThreads?.length === 0 ? (
-							<div className="flex h-full flex-col items-center justify-center gap-y-2">
-								<Search className="size-12 text-muted-foreground" />
-								<h3 className="text-lg font-medium">No matching threads</h3>
-								<p className="text-sm text-muted-foreground">
-									Try adjusting your search or filters
-								</p>
-							</div>
-						) : (
-							<div className="space-y-6 max-w-4xl mx-auto">
-								{groupedThreads.today?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												Today
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedThreads.today.map((thread) =>
-												renderThreadCard(thread)
-											)}
-										</div>
-									</div>
-								)}
-
-								{groupedThreads.yesterday?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												Yesterday
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedThreads.yesterday.map((thread) =>
-												renderThreadCard(thread)
-											)}
-										</div>
-									</div>
-								)}
-
-								{groupedThreads.thisWeek?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												This Week
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedThreads.thisWeek.map((thread) =>
-												renderThreadCard(thread)
-											)}
-										</div>
-									</div>
-								)}
-
-								{groupedThreads.earlier?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-4">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												Earlier
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedThreads.earlier.map((thread) =>
-												renderThreadCard(thread)
-											)}
-										</div>
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-				</div>
+					)}
+				</PageShell>
 			)}
 
 			{selectedThread && (

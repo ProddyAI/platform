@@ -123,13 +123,13 @@ export const ChannelPicker = ({
 
 	return (
 		<div
-			className="fixed bottom-[120px] left-0 right-0 mx-auto w-[90%] max-w-[500px] bg-popover border border-border rounded-md shadow-lg z-[9999] overflow-hidden"
+			className="fixed bottom-[120px] left-0 right-0 mx-auto w-[90%] max-w-[500px] bg-popover border border-border rounded-xl shadow-lg z-[9999] overflow-hidden"
 			onClick={handlePickerClick}
 			onKeyDown={handlePickerKeyDown}
 		>
 			<div className="border-b p-2 bg-muted">
 				<div className="flex items-center">
-					<Hash className="mr-2 h-4 w-4 text-muted-foreground" />
+					<Hash className="mr-2 size-4 text-muted-foreground" />
 					<span className="text-sm font-medium">Mention a channel</span>
 				</div>
 			</div>
@@ -177,7 +177,7 @@ export const ChannelPicker = ({
 
 			<div className="border-t p-2 bg-muted">
 				<div className="relative">
-					<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+					<Search className="absolute left-2 top-2.5 size-4 text-muted-foreground" />
 					<Input
 						aria-activedescendant={
 							activeChannel ? `channel-option-${activeChannel._id}` : undefined

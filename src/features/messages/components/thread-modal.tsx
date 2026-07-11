@@ -23,9 +23,10 @@ import { Thumbnail } from "@/components/messaging/thumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -87,30 +88,31 @@ const SpecialContentChip = ({ parsed }: { parsed: ParsedMessageBody }) => (
 		<div className="flex items-center gap-2 rounded-md bg-muted p-2 border border-primary/20">
 			{parsed.type === "canvas" ? (
 				<span className="text-sm font-medium flex items-center gap-1.5">
-					<Paintbrush className="h-4 w-4 text-primary" />
+					<Paintbrush className="size-4 text-primary" />
 					{parsed.content}
 				</span>
 			) : parsed.type === "file" ? (
 				<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
 					<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
-						<File className="h-4 w-4 text-primary" />
+						<File className="size-4 text-primary" />
 						<span className="truncate">{parsed.content}</span>
 					</span>
 					{parsed.fileUrl && (
 						<Button
+							aria-label={`Download ${parsed.content}`}
 							onClick={() =>
 								window.open(parsed.fileUrl, "_blank", "noopener,noreferrer")
 							}
 							size="iconSm"
 							variant="ghost"
 						>
-							<Download className="h-4 w-4" />
+							<Download aria-hidden className="size-4" />
 						</Button>
 					)}
 				</div>
 			) : (
 				<span className="text-sm font-medium flex items-center gap-1.5">
-					<FileText className="h-4 w-4 text-primary" />
+					<FileText className="size-4 text-primary" />
 					{parsed.content}
 				</span>
 			)}
@@ -347,29 +349,35 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 	return (
 		<Dialog onOpenChange={onClose} open={isOpen}>
-			<DialogContent className="max-w-2xl h-[80vh] p-0 flex flex-col gap-0">
+			<DialogContent
+				aria-describedby={undefined}
+				className="flex h-[80vh] max-w-2xl flex-col gap-0 overflow-hidden p-0"
+			>
 				{/* Header */}
-				<div className="flex items-center gap-3 p-4 border-b flex-shrink-0">
-					<MessageSquare className="h-5 w-5 text-primary flex-shrink-0" />
+				<div className="flex flex-shrink-0 items-center gap-3 border-b p-4 pr-12">
+					<MessageSquare
+						aria-hidden
+						className="size-5 flex-shrink-0 text-primary"
+					/>
 					<div className="min-w-0 flex-1">
-						<h2 className="text-lg font-semibold">Thread</h2>
+						<DialogTitle>Thread</DialogTitle>
 						<div className="flex min-w-0 items-center gap-2 mt-1">
 							<Badge
 								className={`min-w-0 max-w-full rounded-full text-xs ${
 									thread.context.type === "channel"
 										? "bg-primary/10 text-primary border-primary/30"
-										: "bg-secondary/10 text-secondary border-secondary/30"
+										: "bg-muted text-foreground border-border"
 								}`}
 								variant="outline"
 							>
 								{thread.context.type === "channel" ? (
 									<span className="flex min-w-0 items-center gap-1">
-										<Hash className="h-3 w-3 flex-shrink-0" />
+										<Hash className="size-3 flex-shrink-0" />
 										<span className="truncate">{thread.context.name}</span>
 									</span>
 								) : (
 									<span className="flex min-w-0 items-center gap-1">
-										<User className="h-3 w-3 flex-shrink-0" />
+										<User className="size-3 flex-shrink-0" />
 										<span className="truncate">{thread.context.name}</span>
 									</span>
 								)}
@@ -380,9 +388,9 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 				<ScrollArea className="flex-1 p-4">
 					<div className="space-y-4">
-						<div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+						<div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
 							<div className="flex items-start gap-3">
-								<Avatar className="h-10 w-10 flex-shrink-0">
+								<Avatar className="size-10 flex-shrink-0">
 									<AvatarImage src={thread.parentUser.image} />
 									<AvatarFallback>
 										{thread.parentUser.name.charAt(0)}
@@ -414,8 +422,22 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 						<Separator />
 
 						{allReplies.length === 0 && !threadReplies ? (
-							<div className="flex items-center justify-center py-8">
-								<Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+							// Skeleton rows mirror the reply layout so nothing jumps on load
+							<div
+								aria-busy="true"
+								aria-label="Loading replies"
+								className="space-y-3"
+								role="status"
+							>
+								{[0, 1, 2].map((i) => (
+									<div className="flex items-start gap-3 pl-4" key={i}>
+										<Skeleton className="size-8 flex-shrink-0 rounded-full" />
+										<div className="flex-1 space-y-2">
+											<Skeleton className="h-3 w-32" />
+											<Skeleton className="h-3 w-3/4" />
+										</div>
+									</div>
+								))}
 							</div>
 						) : (
 							<>
@@ -430,7 +452,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 										>
 											{isLoadingMoreReplies ? (
 												<>
-													<Loader className="mr-1.5 h-3 w-3 animate-spin" />
+													<Loader className="mr-1.5 size-3 animate-spin" />
 													Loading…
 												</>
 											) : (
@@ -455,7 +477,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 														className="flex items-start gap-3 pl-4"
 														key={reply._id}
 													>
-														<Avatar className="h-8 w-8 flex-shrink-0">
+														<Avatar className="size-8 flex-shrink-0">
 															<AvatarImage src={reply.user?.image} />
 															<AvatarFallback>
 																{reply.user?.name?.charAt(0) || "?"}
@@ -491,9 +513,17 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 											})}
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-										<MessageSquare className="h-8 w-8 mb-2" />
-										<p className="text-sm">No replies yet</p>
+									<div className="flex flex-col items-center justify-center py-8 text-center">
+										<MessageSquare
+											aria-hidden
+											className="mb-2 size-8 text-muted-foreground/50"
+										/>
+										<p className="text-sm font-medium text-foreground">
+											No replies yet
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											Reply below to keep the discussion in this thread.
+										</p>
 									</div>
 								)}
 							</>

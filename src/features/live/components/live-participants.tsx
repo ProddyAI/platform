@@ -32,7 +32,7 @@ export const LiveParticipants = ({
 			>
 				{Array.from({ length: 2 }).map((_, index) => (
 					<div
-						className="h-7 w-7 animate-pulse rounded-full border-2 border-muted bg-muted"
+						className="size-7 animate-pulse rounded-full border-2 border-muted bg-muted"
 						key={index}
 					/>
 				))}
@@ -57,7 +57,7 @@ export const LiveParticipants = ({
 				return (
 					<Hint key={user.userId} label={user.info.name} side="bottom">
 						<div className="relative">
-							<Avatar className="h-7 w-7 border-2 border-muted">
+							<Avatar className="size-7 border-2 border-muted">
 								<AvatarImage src={user.info.picture ?? undefined} />
 								<AvatarFallback
 									className="text-xs font-semibold text-white"
@@ -77,7 +77,7 @@ export const LiveParticipants = ({
 					side="bottom"
 				>
 					<div className="relative">
-						<Avatar className="h-7 w-7 border-2 border-muted">
+						<Avatar className="size-7 border-2 border-muted">
 							<AvatarFallback className="text-xs font-semibold bg-muted">
 								+{participants.length - MAX_SHOWN_OTHER_USERS}
 							</AvatarFallback>
