@@ -115,7 +115,7 @@ const DroppableItem = ({
 			{/* Toggle and "new" action are sibling controls, not nested —
 			    a button inside a button is invalid HTML and unreliable for
 			    screen readers and keyboard focus order. */}
-			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2.5 text-sm font-medium transition-standard text-secondary-foreground/80 hover:bg-secondary-foreground/10">
+			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-lg px-2 md:px-4 py-2.5 transition-standard text-muted-foreground hover:bg-sidebar-accent">
 				<button
 					className="flex flex-1 min-w-0 cursor-pointer items-center gap-x-2 md:gap-x-3 text-left"
 					onClick={handleToggle}
@@ -124,19 +124,21 @@ const DroppableItem = ({
 					{isCollapsed ? (
 						<div className="relative flex-shrink-0">
 							<Hint align="center" label={label} side="right">
-								<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+								<Icon className="size-4 md:size-5 flex-shrink-0" />
 							</Hint>
 						</div>
 					) : (
-						<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+						<Icon className="size-4 md:size-5 flex-shrink-0" />
 					)}
 
 					{!isCollapsed && (
 						<>
-							<span className="truncate min-w-0">{label}</span>
+							<span className="truncate min-w-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+								{label}
+							</span>
 							<ChevronDown
 								className={cn(
-									"ml-auto size-4 flex-shrink-0 transition-transform duration-200",
+									"ml-auto size-4 flex-shrink-0 text-muted-foreground/70 transition-transform duration-200",
 									!isExpanded && "-rotate-90"
 								)}
 							/>
@@ -147,12 +149,12 @@ const DroppableItem = ({
 				{!isCollapsed && onNew && (
 					<Hint align="center" label={hint} side="top">
 						<Button
-							className="h-7 w-7 flex-shrink-0 p-0 text-secondary-foreground/80 opacity-0 transition-all group-hover:opacity-100 rounded-[8px] hover:bg-secondary-foreground/10"
+							className="h-7 w-7 flex-shrink-0 p-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 rounded-md hover:bg-sidebar-accent"
 							onClick={onNew}
 							size="sm"
 							variant="ghost"
 						>
-							<PlusIcon className="size-4 transition-transform duration-200 hover:scale-110" />
+							<PlusIcon className="size-4" />
 						</Button>
 					</Hint>
 				)}
@@ -180,7 +182,7 @@ const NewItemButton = ({
 }: NewItemButtonProps) => (
 	<button
 		className={cn(
-			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-lg transition-standard w-full text-muted-foreground hover:bg-sidebar-accent hover:text-foreground cursor-pointer",
 			isCollapsed
 				? "justify-center px-1 md:px-2 py-2 md:py-2.5"
 				: "justify-start px-2 md:px-4 py-2 md:py-2.5"
@@ -192,13 +194,13 @@ const NewItemButton = ({
 			<div className="relative flex-shrink-0">
 				<Hint align="center" label={label} side="right">
 					<div className="flex items-center justify-center">
-						<PlusIcon className="size-4 text-secondary-foreground/80" />
+						<PlusIcon className="size-4 text-muted-foreground" />
 					</div>
 				</Hint>
 			</div>
 		) : (
 			<>
-				<PlusIcon className="size-4 text-secondary-foreground/80" />
+				<PlusIcon className="size-4 text-muted-foreground" />
 				<span className="truncate min-w-0">{label}</span>
 			</>
 		)}
@@ -309,17 +311,17 @@ export const WorkspaceSidebar = ({
 		membersLoading
 	) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center bg-primary">
-				<Loader className="size-6 animate-spin text-secondary-foreground animate-pulse-subtle" />
+			<div className="flex h-full flex-col items-center justify-center bg-sidebar">
+				<Loader className="size-6 animate-spin text-muted-foreground animate-pulse-subtle" />
 			</div>
 		);
 	}
 
 	if (!workspace || !member) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-y-3 bg-primary">
-				<AlertTriangle className="size-6 text-secondary-foreground animate-pulse-subtle" />
-				<p className="text-sm font-medium text-secondary-foreground animate-fade-in">
+			<div className="flex h-full flex-col items-center justify-center gap-y-3 bg-sidebar">
+				<AlertTriangle className="size-6 text-muted-foreground animate-pulse-subtle" />
+				<p className="text-sm font-medium text-muted-foreground animate-fade-in">
 					Workspace not found.
 				</p>
 			</div>
@@ -331,7 +333,7 @@ export const WorkspaceSidebar = ({
 	return (
 		<div
 			className={cn(
-				"flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white/20 dark:border-border/40",
+				"flex h-full flex-col bg-sidebar transition-all duration-300 ease-in-out border-r border-sidebar-border",
 				isCollapsed ? "w-[70px]" : "w-[280px]"
 			)}
 		>
@@ -344,7 +346,7 @@ export const WorkspaceSidebar = ({
 						size="sm"
 						variant="ghost"
 					>
-						<PanelLeftClose className="size-4 text-secondary-foreground/80" />
+						<PanelLeftClose className="size-4 text-muted-foreground" />
 					</Button>
 				</div>
 			)}
@@ -361,7 +363,7 @@ export const WorkspaceSidebar = ({
 			{/* Scrollable content container */}
 			<div
 				className={cn(
-					"flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+					"flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar",
 					onMobileClose && "pb-4"
 				)}
 			>
@@ -515,7 +517,7 @@ export const WorkspaceSidebar = ({
 				)}
 
 				{/* Divider between dynamic and static sections */}
-				<Separator className="my-4 mx-4 bg-secondary-foreground/10" />
+				<Separator className="my-4 mx-4 bg-sidebar-border" />
 
 				{/* Planning Section */}
 				<div className="mt-2">
@@ -666,15 +668,15 @@ export const WorkspaceSidebar = ({
 						side="right"
 					>
 						<Button
-							className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-secondary-foreground/10"
+							className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
 							onClick={() => setIsCollapsed(!isCollapsed)}
 							size="sm"
 							variant="ghost"
 						>
 							{isCollapsed ? (
-								<PanelLeftOpen className="size-4 text-secondary-foreground/80" />
+								<PanelLeftOpen className="size-4 text-muted-foreground" />
 							) : (
-								<PanelLeftClose className="size-4 text-secondary-foreground/80" />
+								<PanelLeftClose className="size-4 text-muted-foreground" />
 							)}
 						</Button>
 					</Hint>

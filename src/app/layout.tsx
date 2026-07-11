@@ -1,5 +1,6 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
@@ -18,11 +19,17 @@ import { siteConfig } from "@/config";
 
 import "./globals.css";
 
+const inter = Inter({
+	subsets: ["latin"],
+	variable: "--font-sans",
+	display: "swap",
+});
+
 export const viewport: Viewport = {
 	width: "device-width",
 	initialScale: 1,
 	viewportFit: "cover",
-	themeColor: "#4A0D68",
+	themeColor: "#ffffff",
 };
 
 const metadata: Metadata = {
@@ -51,7 +58,7 @@ export function generateMetadata(): Metadata {
 const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	return (
 		<ConvexAuthNextjsServerProvider>
-			<html lang="en">
+			<html className={inter.variable} lang="en">
 				<head>
 					<meta content="yes" name="apple-mobile-web-app-capable" />
 					<meta content="yes" name="mobile-web-app-capable" />
@@ -64,10 +71,10 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 								// Force light mode only on public pages (e.g. /auth/signin, /auth/signup, /home)
 								if (typeof window === 'undefined') return;
 								
-								var publicPaths = ['/', '/home', '/auth/signin', '/auth/signup', '/auth/forgot-password', '/auth/reset-password'];
+								var publicPaths = ['/', '/home', '/about', '/contact', '/features', '/pricing', '/privacy', '/terms', '/auth', '/auth/signin', '/auth/signup', '/auth/forgot-password', '/auth/reset-password'];
 								var path = window.location && window.location.pathname ? window.location.pathname : '';
-								
-								if (publicPaths.indexOf(path) !== -1) {
+
+								if (publicPaths.indexOf(path) !== -1 || path.indexOf('/auth/join') === 0) {
 									document.documentElement.classList.remove('dark');
 								}
 							})();

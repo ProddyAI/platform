@@ -61,7 +61,7 @@ const getTrendVisual = (change: number): TrendVisual => {
 	if (change > 0) {
 		return {
 			Icon: TrendingUp,
-			className: "text-green-700 dark:text-green-400",
+			className: "text-success",
 			label,
 		};
 	}
@@ -69,7 +69,7 @@ const getTrendVisual = (change: number): TrendVisual => {
 	if (change < 0) {
 		return {
 			Icon: TrendingDown,
-			className: "text-red-600 dark:text-red-400",
+			className: "text-destructive",
 			label,
 		};
 	}

@@ -2,33 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sidebar scrollbar styling to match purple background */
-.sidebar-scrollbar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-track {
-  background: transparent; /* Match sidebar background */
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2); /* Semi-transparent white */
-  border-radius: 4px;
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3); /* Lighter on hover */
-}
-
-/* For Firefox */
-.sidebar-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  scroll-behavior: smooth;
-  overscroll-behavior: contain; /* Prevent scroll chaining */
-}
-
 /* Notes editor custom scrollbar — subtle violet-tinted for a modern feel */
 .bn-editor,
 .bn-editor *,
@@ -97,48 +70,56 @@
 
 @layer base {
 	:root {
-		/* Colors */
-		--background: 0 0% 100%;
-		--foreground: 222.2 84% 4.9%;
-		--card: 0 0% 100%;
-		--card-foreground: 222.2 84% 4.9%;
+		/* Colors — fintech-dashboard: soft-gray canvas, white cards */
+		--background: 220 20% 97%; /* soft gray canvas ~#F5F6F8 */
+		--foreground: 221 40% 11%; /* near-navy ink ~#101828 */
+		--card: 0 0% 100%; /* cards stay pure white */
+		--card-foreground: 221 40% 11%;
+		--card-accent: 220 16% 96%; /* subtle raised surface (defined for both themes) */
 		--popover: 0 0% 100%;
-		--popover-foreground: 222.2 84% 4.9%;
-		--primary: 280 77% 23%;
+		--popover-foreground: 221 40% 11%;
+		--primary: 280 77% 23%; /* LOCKED — deep purple #4A0D68 */
 		--primary-foreground: 0 0% 100%;
-		--secondary: 326 100% 44%; /* darkened from 55% for >=4.5:1 white-on-secondary contrast (AA) */
+		--secondary: 326 100% 44%; /* magenta — role demoted to AI-accent/marketing garnish */
 		--secondary-foreground: 0 0% 100%;
-		--muted: 210 40% 96.1%;
-		--muted-foreground: 215.4 16.3% 46.9%;
-		--accent: 210 40% 96.1%;
-		--accent-foreground: 222.2 47.4% 11.2%;
+		--muted: 220 16% 94%; /* ~#ECEFF3 */
+		--muted-foreground: 220 12% 42%; /* AA on the gray canvas (>=4.5:1) */
+		--accent: 220 16% 94%; /* = muted; hover surface */
+		--accent-foreground: 221 40% 11%;
 		--destructive: 0 100% 45%; /* darkened from 65% for >=4.5:1 contrast with destructive-foreground (AA) */
 		--destructive-foreground: 210 40% 98%;
-		--border: 214.3 31.8% 91.4%;
-		--input: 214.3 31.8% 91.4%;
-		--ring: 326 100% 55%;
-		--chart-1: 12 100% 65%;
-		--chart-2: 173 100% 45%;
-		--chart-3: 197 100% 30%;
-		--chart-4: 43 100% 70%;
-		--chart-5: 27 100% 70%;
+		--success: 145 65% 27%; /* ~green-800; >=4.5:1 on white and on success/10 tint */
+		--success-foreground: 0 0% 100%;
+		--warning: 26 90% 37%; /* ~amber-700 #B45309 */
+		--warning-foreground: 0 0% 100%;
+		--border: 220 14% 90%; /* 1px hairlines read on the gray canvas */
+		--input: 220 14% 90%;
+		--ring: 280 60% 40%; /* focus is purple, matches primary */
+		--sidebar: 0 0% 100%;
+		--sidebar-foreground: 220 12% 38%;
+		--sidebar-accent: 220 16% 95%;
+		--sidebar-border: 220 14% 90%;
+		--chart-1: 280 55% 48%; /* purple anchor */
+		--chart-2: 173 58% 38%; /* teal */
+		--chart-3: 221 70% 55%; /* blue */
+		--chart-4: 38 92% 50%; /* amber */
+		--chart-5: 326 70% 52%; /* magenta (nods to secondary) */
 
 		/* Border Radius */
-		--radius: 0.625rem; /* 10px */
+		--radius: 0.75rem; /* 12px */
 
 		/* Animation Durations */
 		--duration-fast: 150ms;
 		--duration-normal: 200ms;
 		--duration-slow: 300ms;
 
-		/* Shadows */
-		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+		/* Shadows — softer, wider blur, low alpha, gray-900 (#101828) base */
+		--shadow-sm: 0 1px 2px 0 rgb(16 24 40 / 0.04);
 		--shadow-md:
-			0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+			0 2px 8px -2px rgb(16 24 40 / 0.06), 0 1px 2px 0 rgb(16 24 40 / 0.04);
 		--shadow-lg:
-			0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-		--shadow-xl:
-			0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+			0 12px 24px -6px rgb(16 24 40 / 0.08), 0 2px 6px -2px rgb(16 24 40 / 0.04);
+		--shadow-xl: 0 24px 48px -12px rgb(16 24 40 / 0.12);
 	}
 
 	/* Enable smooth scrolling for the entire website */
@@ -167,34 +148,48 @@
 	 Only override white/background-related tokens so other colors remain unchanged. */
 @layer base {
 	.dark {
-		/* Replace white surfaces with a soft dark-grey (Discord-like) */
-		--background: 222.2 8% 12%; /* dark page background */
-		--card: 222.2 8% 15%; /* card/panel backgrounds */
-		--card-accent: 222.2 8% 18%; /* accent tone for slightly different dark surfaces */
-		--popover: 222.2 8% 15%;
+		/* Dark canvas + raised cards — widened separation so the "white card on gray
+			 canvas" language survives (card ~1.2:1 above background, leaning on border). */
+		--background: 222 12% 9%; /* dark page background */
+		--card: 222 12% 13%; /* card/panel backgrounds */
+		--card-accent: 222 12% 16%; /* accent tone for slightly different dark surfaces */
+		--popover: 222 12% 13%;
 
 		/* Ensure text on those surfaces becomes light */
-		--foreground: 210 16% 96%;
-		--card-foreground: 210 16% 96%;
-		--popover-foreground: 210 16% 96%;
+		--foreground: 210 15% 95%;
+		--card-foreground: 210 15% 95%;
+		--popover-foreground: 210 15% 95%;
 
 		/* Muted (subtle surfaces) and borders move from white to dark-grey tones */
-		--muted: 222.2 8% 18%;
-		--muted-foreground: 210 16% 84%;
-		--border: 222.2 8% 20%;
-		--input: 222.2 8% 18%;
+		--muted: 222 10% 17%;
+		--muted-foreground: 217 12% 70%; /* was 84% — too close to foreground; 70% still >4.5:1 */
+		--border: 222 10% 20%;
+		--input: 222 10% 20%;
 
-		/* Hover/focus surface for menus, selects, and command palettes — was previously
-			 unmapped and fell through to the light-mode near-white value, flashing bright
-			 inside dark popovers. Matches --muted so hover state reads as "one step up". */
-		--accent: 222.2 8% 18%;
-		--accent-foreground: 210 16% 96%;
+		/* Hover/focus surface for menus, selects, and command palettes. */
+		--accent: 222 10% 17%;
+		--accent-foreground: 210 15% 95%;
 
-		/* Ring already contrasts >=4.5:1 against the dark background at this value;
-			 remapped explicitly rather than left to fall through from :root. */
-		--ring: 326 100% 55%;
+		/* Focus ring: light purple on dark. */
+		--ring: 280 55% 70%;
 
-		/* Leave primary/secondary/chart/destructive untouched so colors remain consistent */
+		--success: 145 55% 55%;
+		--success-foreground: 222 12% 9%;
+		--warning: 38 90% 60%;
+		--warning-foreground: 222 12% 9%;
+
+		--sidebar: 222 12% 11%; /* one step above canvas */
+		--sidebar-foreground: 217 12% 72%;
+		--sidebar-accent: 222 10% 16%;
+		--sidebar-border: 222 10% 20%;
+
+		--chart-1: 280 50% 70%;
+		--chart-2: 173 50% 55%;
+		--chart-3: 221 70% 68%;
+		--chart-4: 42 90% 62%;
+		--chart-5: 326 70% 65%;
+
+		/* Leave primary/secondary/destructive untouched so brand colors stay consistent */
 	}
 }
 
@@ -217,16 +212,17 @@
 		background-clip: padding-box;
 	}
 
-	/* Prevent dark-mode from changing normal chat bubbles (non-author) — keep them light */
-	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer:not(.bg-primary),
-	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer.bg-muted {
+	/* Prevent dark-mode from changing normal chat bubbles (non-author) — keep them light.
+		 Keyed on the stable `.chat-bubble` class (see message-content.tsx), not utilities. */
+	.dark .messages-scrollbar .chat-bubble:not(.bg-primary),
+	.dark .messages-scrollbar .chat-bubble.bg-muted {
 		background-color: hsl(210 40% 95%) !important; /* slightly lighter for visibility */
 		color: hsl(222.2 84% 4.9%) !important; /* dark text for contrast */
 	}
 
 	/* Ensure text inside non-author messages stays dark */
-	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer:not(.bg-primary) *,
-	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer.bg-muted * {
+	.dark .messages-scrollbar .chat-bubble:not(.bg-primary) *,
+	.dark .messages-scrollbar .chat-bubble.bg-muted * {
 		color: hsl(222.2 84% 4.9%) !important;
 	}
 
@@ -316,11 +312,11 @@
 
 .ql-toolbar {
 	border: none !important;
-	background-color: #f8f8f8 !important;
+	background-color: hsl(var(--muted)) !important;
 }
 
 .chat-editor-compose .ql-toolbar {
-	border-bottom: 1px solid #e5e7eb !important;
+	border-bottom: 1px solid hsl(var(--border)) !important;
 	min-height: 40px;
 	padding-right: clamp(8.5rem, 34vw, 12rem) !important;
 }
@@ -330,12 +326,12 @@
 }
 
 .ql-toolbar .ql-formats:not(:last-child) {
-	border-right: 1px solid #dcdcdc !important;
+	border-right: 1px solid hsl(var(--border)) !important;
 	padding-right: 12px !important;
 }
 
 .ql-container {
-	font-family: 'Poppins', sans-serif !important;
+	font-family: var(--font-sans), sans-serif !important;
 	border: none !important;
 	height: unset !important;
 }
@@ -343,9 +339,9 @@
 .ql-editor {
 	line-height: 22px !important;
 	padding: 8px 12px !important;
-	color: #1d1c1d !important;
+	color: hsl(var(--foreground)) !important;
 	font-weight: 400 !important;
-	font-family: 'Poppins', sans-serif !important;
+	font-family: var(--font-sans), sans-serif !important;
 	font-size: 14px !important;
 }
 
@@ -363,8 +359,8 @@
 
 .ql-editor:before {
 	left: 12px !important;
-	font-family: 'Poppins', sans-serif !important;
-	color: #8d8d8d !important;
+	font-family: var(--font-sans), sans-serif !important;
+	color: hsl(var(--muted-foreground)) !important;
 	font-style: normal !important;
 	font-size: 14px !important;
 	font-weight: 400 !important;
@@ -378,12 +374,12 @@
 
 /* Calendar event highlight */
 .calendar-event-highlight {
-	background-color: rgba(var(--secondary), 0.2);
-	color: hsl(var(--secondary));
+	background-color: hsl(var(--primary) / 0.1);
+	color: hsl(var(--primary));
 	padding: 2px 4px;
 	border-radius: 4px;
 	font-weight: 600;
-	border: 1px solid rgba(var(--secondary), 0.3);
+	border: 1px solid hsl(var(--primary) / 0.2);
 	display: inline-block;
 	margin: 0 2px;
 }
@@ -426,7 +422,7 @@
 @layer utilities {
 	.messages-scrollbar {
 		scrollbar-width: thin;
-		scrollbar-color: #dcdcdc #f8f8f8;
+		scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
 	}
 
 	/* Animation Utilities */
@@ -475,33 +471,26 @@
 		transform: translateX(4px);
 	}
 
-	/* Glass Effects */
-	.glass-effect {
-		background: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(10px);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		border-radius: var(--radius);
-	}
-
-	.glass-card {
-		background: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(10px);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		box-shadow: var(--shadow-lg);
-		border-radius: var(--radius);
-	}
-
-	/* Consistent Transitions */
+	/* Consistent Transitions — scoped to paint-cheap properties (not `all`) */
 	.transition-standard {
-		transition: all var(--duration-normal) ease-in-out;
+		transition-property: color, background-color, border-color, fill, stroke,
+			transform, box-shadow, opacity;
+		transition-duration: var(--duration-normal);
+		transition-timing-function: ease-in-out;
 	}
 
 	.transition-fast {
-		transition: all var(--duration-fast) ease-in-out;
+		transition-property: color, background-color, border-color, fill, stroke,
+			transform, box-shadow, opacity;
+		transition-duration: var(--duration-fast);
+		transition-timing-function: ease-in-out;
 	}
 
 	.transition-slow {
-		transition: all var(--duration-slow) ease-in-out;
+		transition-property: color, background-color, border-color, fill, stroke,
+			transform, box-shadow, opacity;
+		transition-duration: var(--duration-slow);
+		transition-timing-function: ease-in-out;
 	}
 }
 
@@ -652,8 +641,8 @@ a.user-mention:hover {
 /* Placeholder styling */
 .ql-editor.ql-blank::before {
 	font-style: normal;
-	font-family: 'Poppins', sans-serif;
-	color: #9ca3af; /* Gray-400 */
+	font-family: var(--font-sans), sans-serif;
+	color: hsl(var(--muted-foreground)); /* placeholder */
 	font-size: 0.875rem;
 	font-weight: 400;
 	opacity: 0.8;
@@ -749,7 +738,7 @@ a.user-mention:hover {
 /* Styling for the editor itself */
 .ql-container.ql-snow {
 	border: none;
-	font-family: 'Poppins', sans-serif;
+	font-family: var(--font-sans), sans-serif;
 }
 
 .ql-editor {
@@ -841,28 +830,6 @@ a.user-mention:hover {
 	opacity: 0.5 !important;
 }
 
-/* General button styling for dark mode - subtle pink instead of bright pink */
-.dark button[class*="bg-secondary"],
-.dark .bg-secondary {
-	background-color: rgba(236, 72, 153, 0.15) !important;
-	color: rgba(236, 72, 153, 0.95) !important;
-	border: 1px solid rgba(236, 72, 153, 0.3) !important;
-	transition: all 0.2s ease-in-out !important;
-}
-
-.dark button[class*="bg-secondary"]:hover:not(:disabled),
-.dark .bg-secondary:hover:not(:disabled) {
-	background-color: rgba(236, 72, 153, 0.25) !important;
-	color: rgba(255, 255, 255, 0.98) !important;
-	border-color: rgba(236, 72, 153, 0.5) !important;
-	box-shadow: 0 0 12px rgba(236, 72, 153, 0.2) !important;
-	transform: translateY(-1px) !important;
-}
-
-.dark button[class*="bg-secondary"]:disabled,
-.dark .bg-secondary:disabled {
-	background-color: rgba(236, 72, 153, 0.08) !important;
-	color: rgba(236, 72, 153, 0.4) !important;
-	border-color: rgba(236, 72, 153, 0.15) !important;
-	opacity: 0.5 !important;
-}
+/* NOTE: the old `.dark button[class*="bg-secondary"]` softening hack was removed
+	 with the A2 primitive restyle — Button `secondary`, Switch and Checkbox no longer
+	 use `bg-secondary`, and `--secondary` is now an AI-accent/marketing garnish only. */

@@ -44,6 +44,7 @@ export const ThemeToggle = () => {
 	return (
 		<Button
 			aria-label="Toggle color theme"
+			className="rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
 			onClick={toggle}
 			size="iconSm"
 			variant="ghost"

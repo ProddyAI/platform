@@ -126,8 +126,8 @@ interface WorkspaceTitleProps {
  * workspace pages.
  */
 export const WorkspaceTitle = ({ icon: Icon, label }: WorkspaceTitleProps) => (
-	<h1 className="flex w-auto items-center overflow-hidden px-3 py-2 text-lg font-semibold text-white">
-		<Icon className="mr-2 size-5" />
+	<h1 className="flex w-auto items-center overflow-hidden px-3 py-2 text-lg font-semibold text-foreground">
+		<Icon className="mr-2 size-5 text-muted-foreground" />
 		<span className="truncate">{label}</span>
 	</h1>
 );

@@ -77,7 +77,7 @@ export const PomodoroTimer = () => {
 				>
 					<PopoverTrigger asChild>
 						<Button
-							className="relative text-white hover:bg-white/15 transition-colors"
+							className="relative rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 							onClick={() => setPopoverOpen(true)}
 							size="iconSm"
 							variant="ghost"

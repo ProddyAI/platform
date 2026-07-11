@@ -782,24 +782,23 @@ export const WorkspaceToolbar = () => {
 	}, [setSearchOpen]);
 
 	return (
-		// ml-[-2px] offsets the workspace sidebar's border-r-2 (see sidebar.tsx) so the
-		// same-color topbar and sidebar meet with no visible seam.
-		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 w-full min-w-0 max-w-full items-center overflow-x-hidden overflow-y-visible border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
+		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 w-full min-w-0 max-w-full items-center overflow-x-hidden overflow-y-visible border-b border-border bg-card">
 			{/* Left section - Entity info (Channel/Member/etc), supplied by the routed page */}
 			<div className="flex items-center px-2 md:px-6">{title}</div>
 
 			{/* Middle section - Search - Hidden on mobile */}
 			<div className="hidden md:block min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
 				<Button
-					className="h-9 w-full justify-start bg-white/10 px-3 hover:bg-white/20 transition-standard border border-white/10 rounded-[10px]"
+					className="h-9 w-full justify-start rounded-full border border-border bg-muted/50 px-4 text-muted-foreground hover:bg-muted transition-standard"
 					onClick={handleSearchOpen}
 					size="sm"
+					variant="ghost"
 				>
-					<Search className="mr-2 size-4 text-white" />
-					<span className="text-xs text-white">
+					<Search className="mr-2 size-4 text-muted-foreground" />
+					<span className="text-sm text-muted-foreground">
 						Search {workspace?.name ?? "workspace"}...
 					</span>
-					<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-90">
+					<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded-md border border-border bg-card px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
 						{isMac ? <span className="text-xs">⌘</span> : "Ctrl+"}K
 					</kbd>
 				</Button>
@@ -840,15 +839,15 @@ export const WorkspaceToolbar = () => {
 				{channelId && (
 					<div className="hidden md:flex">
 						<Button
-							className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
+							className="gap-2 h-9"
 							onClick={() => {
 								setAiNotemakerOpen(true);
 								generateNotes();
 							}}
 							size="sm"
-							variant="outline"
+							variant="secondary"
 						>
-							<Sparkles className="size-4" />
+							<Sparkles className="size-4 text-secondary" />
 							<span className="hidden sm:inline">Generate AI Notes</span>
 						</Button>
 					</div>
@@ -858,7 +857,7 @@ export const WorkspaceToolbar = () => {
 				<div className="md:hidden">
 					<Button
 						aria-label="Open search"
-						className="text-white relative hover:bg-white/15 transition-colors"
+						className="relative rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 						onClick={handleSearchOpen}
 						size="iconSm"
 						variant="ghost"
@@ -871,10 +870,10 @@ export const WorkspaceToolbar = () => {
 				<Hint label="Upgrade" side="bottom">
 					<Button
 						aria-label="Upgrade"
-						className="h-8 gap-1.5 px-2 text-white hover:bg-white/15 transition-colors sm:px-3"
+						className="h-8 gap-1.5 px-2 sm:px-3"
 						onClick={handleUpgradeClick}
 						size="sm"
-						variant="ghost"
+						variant="outline"
 					>
 						<ArrowUpCircle className="size-4" />
 						<span className="hidden text-xs font-medium sm:inline">
@@ -885,7 +884,7 @@ export const WorkspaceToolbar = () => {
 
 				<Hint label="Notifications" side="bottom">
 					<Button
-						className="text-white relative hover:bg-white/15 transition-colors"
+						className="relative rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 						onClick={handleNotificationsOpen}
 						size="iconSm"
 						variant="ghost"
@@ -894,7 +893,7 @@ export const WorkspaceToolbar = () => {
 							<Bell className="size-5" />
 							{!isLoadingMentions && counts && counts.total > 0 && (
 								<Badge
-									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500 border border-white shadow-sm text-[10px]"
+									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground ring-2 ring-card shadow-sm text-[10px]"
 									variant="default"
 								>
 									{counts.total > 9 ? "9+" : counts.total}

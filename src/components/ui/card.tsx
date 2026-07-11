@@ -2,19 +2,24 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<
-	HTMLDivElement,
-	React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-	<div
-		className={cn(
-			"rounded-lg border bg-card text-card-foreground shadow-sm",
-			className
-		)}
-		ref={ref}
-		{...props}
-	/>
-));
+type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+	interactive?: boolean;
+};
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+	({ className, interactive, ...props }, ref) => (
+		<div
+			className={cn(
+				"rounded-2xl border bg-card text-card-foreground shadow-sm",
+				interactive &&
+					"transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+				className
+			)}
+			ref={ref}
+			{...props}
+		/>
+	)
+);
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<
@@ -43,7 +48,7 @@ const CardTitle = React.forwardRef(
 		return (
 			<Element
 				className={cn(
-					"text-lg font-semibold leading-none tracking-tight",
+					"text-base font-semibold leading-none tracking-tight",
 					className
 				)}
 				ref={ref}

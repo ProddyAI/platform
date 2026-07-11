@@ -815,7 +815,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		() =>
 			channel ? (
 				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
+					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-foreground hover:bg-muted transition-standard"
 					onClick={() => setChannelDialogOpen(true)}
 					size="sm"
 					variant="ghost"
@@ -839,7 +839,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 	const channelSettingsDialog = channel ? (
 		<Dialog onOpenChange={setChannelDialogOpen} open={channelDialogOpen}>
-			<DialogContent className="overflow-hidden bg-gray-50 p-0">
+			<DialogContent className="overflow-hidden bg-muted p-0">
 				<DialogHeader className="border-b bg-card p-4">
 					<DialogTitle className="flex items-center gap-2">
 						<ChannelIcon

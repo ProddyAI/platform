@@ -13,6 +13,9 @@ const config: Config = {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+			},
 			colors: {
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",
@@ -43,6 +46,20 @@ const config: Config = {
 				destructive: {
 					DEFAULT: "hsl(var(--destructive))",
 					foreground: "hsl(var(--destructive-foreground))",
+				},
+				success: {
+					DEFAULT: "hsl(var(--success))",
+					foreground: "hsl(var(--success-foreground))",
+				},
+				warning: {
+					DEFAULT: "hsl(var(--warning))",
+					foreground: "hsl(var(--warning-foreground))",
+				},
+				sidebar: {
+					DEFAULT: "hsl(var(--sidebar))",
+					foreground: "hsl(var(--sidebar-foreground))",
+					accent: "hsl(var(--sidebar-accent))",
+					border: "hsl(var(--sidebar-border))",
 				},
 				border: "hsl(var(--border))",
 				input: "hsl(var(--input))",

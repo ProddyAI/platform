@@ -120,7 +120,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 								{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
 								<div
 									className={cn(
-										"h-full bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+										"h-full bg-sidebar overflow-y-auto overflow-x-hidden custom-scrollbar",
 										"transition-all duration-300 ease-in-out flex-shrink-0 relative z-10",
 										"hidden md:block",
 										isCollapsed ? "w-[70px]" : "w-[280px]"
@@ -138,7 +138,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 										{/* Backdrop */}
 										<button
 											aria-label="Close mobile sidebar"
-											className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+											className="md:hidden fixed inset-0 bg-black/50 z-40"
 											onClick={() => setShowMobileSidebar(false)}
 											type="button"
 										/>
@@ -146,7 +146,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 										<div
 											className={cn(
 												"md:hidden fixed left-0 z-50",
-												"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+												"bg-sidebar overflow-y-auto overflow-x-hidden custom-scrollbar",
 												"w-[280px] shadow-2xl",
 												"transform transition-transform duration-300 ease-in-out",
 												"overscroll-contain",
