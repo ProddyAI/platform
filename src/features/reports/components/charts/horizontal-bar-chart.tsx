@@ -56,20 +56,23 @@ export const HorizontalBarChart = ({
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>
 								{showValues && (
-									<span className="text-sm text-muted-foreground tabular-nums">
+									<span className="text-sm tabular-nums text-muted-foreground">
 										{formatValue(item.value)}
 									</span>
 								)}
 							</div>
 
 							<div
-								className="w-full bg-muted rounded-full overflow-hidden"
-								style={{ height: `${height ?? 12}px` }}
+								className={cn(
+									"w-full overflow-hidden rounded-full bg-muted",
+									!height && "h-2"
+								)}
+								style={height ? { height: `${height}px` } : undefined}
 							>
 								<div
 									className={cn(
 										"h-full rounded-full transition-all duration-500",
-										item.color || "bg-secondary",
+										item.color || "bg-primary",
 										isHovered ? "opacity-80" : "opacity-100",
 										animate &&
 											"animate-in slide-in-from-left motion-reduce:animate-none",

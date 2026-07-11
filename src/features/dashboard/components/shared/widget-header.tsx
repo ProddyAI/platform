@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface WidgetHeaderProps {
-	/** Icon element, e.g. `<FileText className="h-5 w-5 text-primary dark:text-purple-400" />`. */
+	/** Icon element, e.g. `<FileText className="h-5 w-5 text-primary" />`. */
 	icon: React.ReactNode;
 	title: string;
 	/** Count badge content, e.g. `sortedItems.length`. Omit/undefined to hide it. */
@@ -34,7 +34,7 @@ export const WidgetHeader = ({
 				{!isEditMode && badge != null && (
 					<Badge
 						className="ml-1 h-5 px-2 text-xs font-medium"
-						variant="secondary"
+						variant="primarySoft"
 					>
 						{badge}
 					</Badge>

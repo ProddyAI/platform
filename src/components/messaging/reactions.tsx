@@ -37,7 +37,7 @@ export const Reactions = ({ data, onChange }: ReactionsProps) => {
 						className={cn(
 							"flex h-7 items-center gap-x-1 rounded-full border border-transparent bg-muted px-2 text-foreground transition-standard hover:bg-muted/80",
 							reaction.memberIds.includes(currentMemberId) &&
-								"border-secondary bg-secondary/10 text-secondary hover:bg-secondary/20"
+								"border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
 						)}
 						onClick={() => onChange(reaction.value)}
 						type="button"
@@ -45,8 +45,8 @@ export const Reactions = ({ data, onChange }: ReactionsProps) => {
 						{reaction.value}{" "}
 						<span
 							className={cn(
-								"text-xs font-semibold text-muted-foreground",
-								reaction.memberIds.includes(currentMemberId) && "text-secondary"
+								"text-xs font-semibold tabular-nums text-muted-foreground",
+								reaction.memberIds.includes(currentMemberId) && "text-primary"
 							)}
 						>
 							{reaction.count}
@@ -57,7 +57,7 @@ export const Reactions = ({ data, onChange }: ReactionsProps) => {
 
 			<EmojiPopover hint="Add a reaction" onEmojiSelect={onChange}>
 				<button
-					className="flex h-7 items-center gap-x-1 rounded-full border border-transparent bg-muted px-3 text-foreground transition-standard hover:border-secondary hover:bg-muted/80"
+					className="flex h-7 items-center gap-x-1 rounded-full border border-transparent bg-muted px-3 text-foreground transition-standard hover:border-primary/40 hover:bg-muted/80"
 					type="button"
 				>
 					<SmilePlus className="size-4" />

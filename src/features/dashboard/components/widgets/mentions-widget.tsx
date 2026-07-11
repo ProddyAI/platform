@@ -155,7 +155,7 @@ export const MentionsWidget = ({
 					counts &&
 					counts.total > 0 && (
 						<Button
-							className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 							onClick={handleMarkAllAsRead}
 							size="sm"
 							variant="ghost"
@@ -168,7 +168,7 @@ export const MentionsWidget = ({
 				badge={counts && counts.total > 0 ? counts.total : undefined}
 				className="pr-2"
 				controls={controls}
-				icon={<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />}
+				icon={<AtSign className="h-5 w-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Mentions"
 			/>
@@ -234,7 +234,7 @@ export const MentionsWidget = ({
 												})()}
 											</p>
 											<Button
-												className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+												className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 												onClick={() => handleViewMention(mention)}
 												size="sm"
 												variant="ghost"

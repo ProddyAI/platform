@@ -157,7 +157,7 @@ export const CanvasWidget = ({
 			<WidgetHeader
 				action={
 					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 						onClick={handleViewAll}
 						size="sm"
 						variant="ghost"
@@ -169,7 +169,7 @@ export const CanvasWidget = ({
 					sortedCanvasItems.length > 0 ? sortedCanvasItems.length : undefined
 				}
 				controls={controls}
-				icon={<PenTool className="h-5 w-5 text-primary dark:text-purple-400" />}
+				icon={<PenTool className="h-5 w-5 text-primary" />}
 				isEditMode={isEditMode}
 				title={
 					firstChannel ? `Canvases in #${firstChannel.name}` : "Recent Canvases"
@@ -193,15 +193,12 @@ export const CanvasWidget = ({
 										/>
 									</div>
 									<div className="flex items-center gap-2">
-										<Badge
-											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
-											variant="outline"
-										>
+										<Badge className="h-5 px-2 text-xs" variant="outline">
 											# {item.channelName}
 										</Badge>
 									</div>
 									<Button
-										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 										onClick={() =>
 											item.channelId &&
 											handleViewCanvas(item._id, item.channelId, item.roomId)

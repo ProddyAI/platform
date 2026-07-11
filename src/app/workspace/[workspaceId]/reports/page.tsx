@@ -43,8 +43,7 @@ import {
 	WorkspaceTitle,
 } from "../workspace-title-context";
 
-const TAB_TRIGGER_CLASS =
-	"data-[state=active]:bg-secondary/20 data-[state=active]:border-2 data-[state=active]:border-secondary data-[state=active]:text-secondary text-xs md:text-sm px-2 md:px-3";
+const TAB_TRIGGER_CLASS = "text-xs md:text-sm px-2 md:px-3";
 
 const ReportsPage = () => {
 	// Set document title
@@ -212,10 +211,10 @@ const ReportsPage = () => {
 			<div className="border-b border-border bg-card px-4 py-4 flex-shrink-0">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
-						<h1 className="text-2xl font-bold tracking-tight text-foreground">
+						<h1 className="text-2xl font-semibold tracking-tight text-foreground">
 							Reports & Analytics
 						</h1>
-						<p className="text-muted-foreground/90">
+						<p className="text-muted-foreground">
 							Track workspace activity and performance metrics
 						</p>
 					</div>
@@ -225,26 +224,29 @@ const ReportsPage = () => {
 							<span className="text-xs md:text-sm font-medium text-foreground">
 								Time Range:
 							</span>
-							<div className="flex rounded-md border border-input bg-background overflow-hidden">
+							<div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
 								<Button
-									className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
+									className="rounded-full text-xs md:text-sm px-2 md:px-4"
 									onClick={() => setTimeRange("1d")}
+									size="sm"
 									type="button"
 									variant={timeRange === "1d" ? "default" : "ghost"}
 								>
 									1 day
 								</Button>
 								<Button
-									className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
+									className="rounded-full text-xs md:text-sm px-2 md:px-4"
 									onClick={() => setTimeRange("7d")}
+									size="sm"
 									type="button"
 									variant={timeRange === "7d" ? "default" : "ghost"}
 								>
 									7 days
 								</Button>
 								<Button
-									className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
+									className="rounded-full text-xs md:text-sm px-2 md:px-4"
 									onClick={() => setTimeRange("30d")}
+									size="sm"
 									type="button"
 									variant={timeRange === "30d" ? "default" : "ghost"}
 								>
@@ -375,7 +377,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="h-8 w-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>
@@ -412,7 +414,7 @@ const ReportsPage = () => {
 								</Tabs>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="h-8 w-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>
@@ -427,7 +429,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="h-8 w-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>
@@ -442,7 +444,7 @@ const ReportsPage = () => {
 								/>
 							) : (
 								<div className="flex items-center justify-center h-64">
-									<Loader className="h-8 w-8 animate-spin text-secondary" />
+									<Loader className="h-8 w-8 animate-spin text-primary" />
 								</div>
 							)}
 						</TabsContent>

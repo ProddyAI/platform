@@ -76,6 +76,10 @@ interface ImportDataManagementProps {
 	currentMember: Doc<"members">;
 }
 
+// Quiet, token-based icon swatch shared by every platform — purple stays the
+// app's single interactive accent, so brand marks read via icon + name only.
+const PLATFORM_ICON_CLASS = "bg-muted text-foreground border-border";
+
 // Platform configuration
 const PLATFORMS = [
 	{
@@ -84,8 +88,6 @@ const PLATFORMS = [
 		description:
 			"Import channels, messages, and user data from Slack workspaces",
 		icon: SiSlack,
-		color:
-			"bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
 		available: true,
 	},
 	{
@@ -93,8 +95,6 @@ const PLATFORMS = [
 		name: "Todoist",
 		description: "Import tasks, projects, and labels from Todoist",
 		icon: SiTodoist,
-		color:
-			"bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
 		available: true,
 	},
 	{
@@ -102,8 +102,6 @@ const PLATFORMS = [
 		name: "Linear",
 		description: "Import issues, projects, and workflows from Linear",
 		icon: SiLinear,
-		color:
-			"bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
 		available: true,
 	},
 	{
@@ -111,8 +109,6 @@ const PLATFORMS = [
 		name: "Notion",
 		description: "Import pages, databases, and content from Notion",
 		icon: SiNotion,
-		color:
-			"bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700",
 		available: false, // Coming soon
 	},
 	{
@@ -120,8 +116,6 @@ const PLATFORMS = [
 		name: "Miro",
 		description: "Import boards, frames, and collaboration data from Miro",
 		icon: SiMiro,
-		color:
-			"bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800",
 		available: false, // Coming soon
 	},
 	{
@@ -129,8 +123,6 @@ const PLATFORMS = [
 		name: "ClickUp",
 		description: "Import tasks, lists, and spaces from ClickUp",
 		icon: SiClickup,
-		color:
-			"bg-pink-100 text-pink-700 border-pink-300 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800",
 		available: false, // Coming soon
 	},
 ];
@@ -345,14 +337,17 @@ export const ImportDataManagement = ({
 			}
 		> = {
 			active: {
-				variant: "default",
+				variant: "success",
 				icon: <CheckCircle2 className="h-3 w-3" />,
 			},
 			expired: {
-				variant: "secondary",
+				variant: "warning",
 				icon: <AlertCircle className="h-3 w-3" />,
 			},
-			revoked: { variant: "destructive", icon: <Trash2 className="h-3 w-3" /> },
+			revoked: {
+				variant: "destructiveSoft",
+				icon: <Trash2 className="h-3 w-3" />,
+			},
 			pending: {
 				variant: "outline",
 				icon: <Loader2 className="h-3 w-3 animate-spin" />,
@@ -362,15 +357,15 @@ export const ImportDataManagement = ({
 				icon: <Loader2 className="h-3 w-3 animate-spin" />,
 			},
 			completed: {
-				variant: "default",
+				variant: "success",
 				icon: <CheckCircle2 className="h-3 w-3" />,
 			},
 			failed: {
-				variant: "destructive",
+				variant: "destructiveSoft",
 				icon: <AlertCircle className="h-3 w-3" />,
 			},
 			cancelled: {
-				variant: "secondary",
+				variant: "outline",
 				icon: <AlertCircle className="h-3 w-3" />,
 			},
 		};
@@ -405,13 +400,16 @@ export const ImportDataManagement = ({
 
 					return (
 						<Card
-							className={`relative ${!platform.available ? "opacity-60" : ""}`}
+							className={!platform.available ? "opacity-60" : undefined}
+							interactive={platform.available}
 							key={platform.id}
 						>
 							<CardHeader>
 								<div className="flex items-start justify-between">
 									<div className="flex items-center gap-3">
-										<div className={`p-2 rounded-lg border ${platform.color}`}>
+										<div
+											className={`p-2 rounded-lg border ${PLATFORM_ICON_CLASS}`}
+										>
 											<platform.icon className="h-6 w-6" />
 										</div>
 										<div>
@@ -419,7 +417,7 @@ export const ImportDataManagement = ({
 												{platform.name}
 											</CardTitle>
 											{!platform.available && (
-												<Badge className="mt-1" variant="secondary">
+												<Badge className="mt-1" variant="outline">
 													Coming Soon
 												</Badge>
 											)}

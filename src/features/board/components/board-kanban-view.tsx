@@ -405,7 +405,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 							/>
 						)}
 						{activeItem?.type === "status" && (
-							<div className="bg-background border border-primary/40 rounded-xl shadow-xl opacity-90 p-3">
+							<div className="bg-card border border-primary/40 rounded-2xl shadow-lg opacity-90 p-3">
 								<div className="flex items-center gap-2">
 									<span
 										className="w-2.5 h-2.5 rounded-full"

@@ -100,13 +100,13 @@ export const CalendarPreviewWidget = ({
 				</p>
 				<Badge
 					className="text-xs border-2"
-					variant={!event.time ? "outline" : "secondary"}
+					variant={!event.time ? "outline" : "primarySoft"}
 				>
 					{!event.time ? "All day" : event.time}
 				</Badge>
 			</div>
 			<Button
-				className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+				className="mt-1 w-full justify-start text-primary hover:bg-primary/10 hover:text-primary"
 				onClick={() => handleViewEvent(event._id)}
 				size="sm"
 				variant="ghost"
@@ -157,7 +157,7 @@ export const CalendarPreviewWidget = ({
 			<WidgetHeader
 				action={
 					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 						onClick={handleViewCalendar}
 						size="sm"
 						variant="ghost"
@@ -168,9 +168,7 @@ export const CalendarPreviewWidget = ({
 				badge={upcomingEvents.length > 0 ? upcomingEvents.length : undefined}
 				className="pr-2"
 				controls={controls}
-				icon={
-					<CalendarIcon className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<CalendarIcon className="h-5 w-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Upcoming Events"
 			/>
@@ -185,7 +183,7 @@ export const CalendarPreviewWidget = ({
 									className="space-y-2"
 									key={format(dayData.date, "yyyy-MM-dd")}
 								>
-									<div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1">
+									<div className="sticky top-0 z-10 bg-card py-1">
 										<h4 className="text-sm font-medium">
 											{isSameDay(dayData.date, today)
 												? "Today"

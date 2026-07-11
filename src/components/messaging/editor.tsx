@@ -998,7 +998,7 @@ const Editor = ({
 
 			<div
 				className={cn(
-					"chat-editor-compose relative flex flex-col overflow-hidden rounded-md border border-border bg-card transition focus-within:border-ring/50 focus-within:shadow-sm",
+					"chat-editor-compose relative flex flex-col overflow-hidden rounded-lg border border-input bg-card transition-standard focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
 					disabled && "opacity-50"
 				)}
 			>
@@ -1009,7 +1009,7 @@ const Editor = ({
 						<div className="group/image relative flex min-h-[62px] items-center justify-center rounded-xl border bg-muted/40 px-3 py-2">
 							<Hint label="Remove file">
 								<button
-									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
+									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-background bg-foreground/70 text-background hover:bg-foreground group-hover/image:flex"
 									onClick={() => {
 										setImage(null);
 

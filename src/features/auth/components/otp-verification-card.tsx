@@ -189,7 +189,7 @@ export const OTPVerificationCard = ({
 	};
 
 	return (
-		<Card className="size-full p-8 shadow-xl border-opacity-30 backdrop-blur-sm animate-slide-up rounded-[10px]">
+		<Card className="size-full p-8 shadow-xl animate-slide-up">
 			<CardHeader className="px-0 pt-0 flex flex-col items-center text-center">
 				<div className="mb-6 flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
 					<Mail className="w-8 h-8 text-primary" />
@@ -208,7 +208,7 @@ export const OTPVerificationCard = ({
 				<div
 					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm ${
 						errorType === "expired"
-							? "border border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-400"
+							? "border border-warning/20 bg-warning/10 text-warning"
 							: "bg-destructive/15 text-destructive"
 					}`}
 				>
@@ -242,7 +242,7 @@ export const OTPVerificationCard = ({
 				</div>
 
 				<Button
-					className="bg-primary w-full transition-all duration-300 hover:shadow-lg hover:bg-primary/90"
+					className="w-full"
 					disabled={pending || otp.length !== 6}
 					onClick={handleVerify}
 					size="lg"
@@ -256,7 +256,7 @@ export const OTPVerificationCard = ({
 					</p>
 					{canResend ? (
 						<button
-							className="text-sm font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							className="text-sm font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-primary/80"
 							disabled={pending}
 							onClick={handleResend}
 							type="button"

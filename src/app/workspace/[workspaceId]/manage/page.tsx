@@ -10,6 +10,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PageShell } from "@/components/page-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingSection } from "@/features/billing/components/billing-section";
 import { ImportDataManagement } from "@/features/manage/components/import-data-management";
@@ -120,7 +121,7 @@ const ManagePage = () => {
 		return (
 			<div className="flex h-full flex-col items-center justify-center">
 				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
-				<h2 className="text-2xl font-bold">Access Denied</h2>
+				<h2 className="text-2xl font-semibold tracking-tight">Access Denied</h2>
 				<p className="text-muted-foreground">
 					You don&apos;t have permission to access this page.
 				</p>
@@ -129,112 +130,103 @@ const ManagePage = () => {
 	}
 
 	return (
-		<div className="flex h-full flex-col">
-			{/* Content */}
-			<div className="flex-1 overflow-auto p-6 bg-background">
-				<div className="max-w-6xl mx-auto">
-					{/* For members, show only Integrations */}
-					{member.role === "member" ? (
-						<div>
-							<div className="mb-6">
-								<h2 className="text-2xl font-bold mb-2">My Integrations</h2>
-								<p className="text-muted-foreground">
-									Connect and manage your personal integrations with external
-									services. These connections are unique to you and will be used
-									when you interact with Proddy AI and other features.
-								</p>
-							</div>
-							<div className="bg-background rounded-lg p-6 shadow-sm border">
-								<IntegrationsManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</div>
-						</div>
-					) : (
-						/* For admins and owners, show all tabs */
-						<Tabs
-							className="w-full"
-							onValueChange={handleTabChange}
-							value={activeTab}
-						>
-							<TabsList className="grid w-full grid-cols-5 mb-8">
-								<TabsTrigger value="workspace">
-									<Settings className="h-4 w-4 mr-2" />
-									Workspace
-								</TabsTrigger>
-								<TabsTrigger value="members">
-									<Users className="h-4 w-4 mr-2" />
-									Members
-								</TabsTrigger>
-								<TabsTrigger value="billing">
-									<CreditCard className="h-4 w-4 mr-2" />
-									Billing
-								</TabsTrigger>
-								<TabsTrigger value="integrations">
-									<Plug className="h-4 w-4 mr-2" />
-									AI Integrations
-								</TabsTrigger>
-								<TabsTrigger value="import">
-									<Database className="h-4 w-4 mr-2" />
-									Import Data
-								</TabsTrigger>
-							</TabsList>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="workspace"
-							>
-								<WorkspaceManagement
-									currentMember={member}
-									workspace={workspace}
-								/>
-							</TabsContent>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="members"
-							>
-								<MembersManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="billing"
-							>
-								<BillingSection
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="integrations"
-							>
-								<IntegrationsManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="import"
-							>
-								<ImportDataManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
-						</Tabs>
-					)}
+		<PageShell>
+			{/* For members, show only Integrations */}
+			{member.role === "member" ? (
+				<div>
+					<div className="mb-6">
+						<h2 className="text-2xl font-semibold tracking-tight mb-2">
+							My Integrations
+						</h2>
+						<p className="text-muted-foreground">
+							Connect and manage your personal integrations with external
+							services. These connections are unique to you and will be used
+							when you interact with Proddy AI and other features.
+						</p>
+					</div>
+					<div className="bg-card rounded-2xl p-6 shadow-sm border">
+						<IntegrationsManagement
+							currentMember={member}
+							workspaceId={workspaceId}
+						/>
+					</div>
 				</div>
-			</div>
-		</div>
+			) : (
+				/* For admins and owners, show all tabs */
+				<Tabs
+					className="w-full"
+					onValueChange={handleTabChange}
+					value={activeTab}
+				>
+					<TabsList className="grid w-full grid-cols-5 mb-8">
+						<TabsTrigger value="workspace">
+							<Settings className="h-4 w-4 mr-2" />
+							Workspace
+						</TabsTrigger>
+						<TabsTrigger value="members">
+							<Users className="h-4 w-4 mr-2" />
+							Members
+						</TabsTrigger>
+						<TabsTrigger value="billing">
+							<CreditCard className="h-4 w-4 mr-2" />
+							Billing
+						</TabsTrigger>
+						<TabsTrigger value="integrations">
+							<Plug className="h-4 w-4 mr-2" />
+							AI Integrations
+						</TabsTrigger>
+						<TabsTrigger value="import">
+							<Database className="h-4 w-4 mr-2" />
+							Import Data
+						</TabsTrigger>
+					</TabsList>
+
+					<TabsContent
+						className="bg-card rounded-2xl p-6 shadow-sm border"
+						value="workspace"
+					>
+						<WorkspaceManagement currentMember={member} workspace={workspace} />
+					</TabsContent>
+
+					<TabsContent
+						className="bg-card rounded-2xl p-6 shadow-sm border"
+						value="members"
+					>
+						<MembersManagement
+							currentMember={member}
+							workspaceId={workspaceId}
+						/>
+					</TabsContent>
+
+					<TabsContent
+						className="bg-card rounded-2xl p-6 shadow-sm border"
+						value="billing"
+					>
+						<BillingSection currentMember={member} workspaceId={workspaceId} />
+					</TabsContent>
+
+					<TabsContent
+						className="bg-card rounded-2xl p-6 shadow-sm border"
+						value="integrations"
+					>
+						<IntegrationsManagement
+							currentMember={member}
+							workspaceId={workspaceId}
+						/>
+					</TabsContent>
+
+					<TabsContent
+						className="bg-card rounded-2xl p-6 shadow-sm border"
+						value="import"
+					>
+						<ImportDataManagement
+							currentMember={member}
+							workspaceId={workspaceId}
+						/>
+					</TabsContent>
+				</Tabs>
+			)}
+		</PageShell>
 	);
 };
 

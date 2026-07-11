@@ -6,6 +6,7 @@ import { Award, CheckSquare, Loader, Users } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { AnimatedNumber } from "@/components/animated-number";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -28,6 +29,7 @@ import {
 	STATUS_LABELS,
 	seriesColorClass,
 } from "@/features/reports/components/charts";
+import { cn } from "@/lib/utils";
 
 interface PerformanceMetricsDashboardProps {
 	workspaceId: Id<"workspaces">;
@@ -305,69 +307,56 @@ export const PerformanceMetricsDashboard = ({
 				<TabsContent className="space-y-4" value="tasks">
 					{/* Volume metrics — relocated from the reports page's old standalone
 					    Tasks tab; "Completed Tasks" isn't repeated here since the Task
-					    Completion Rate card below already covers that same metric. */}
+					    Completion Rate card below already covers that same metric. Plain
+					    tiles rather than StatCard: none of these have a previous-period
+					    comparison, and StatCard's caption only renders alongside a delta
+					    chip. */}
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									Total Tasks
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center">
-									<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-									<div className="text-2xl font-bold">
-										{taskData?.totalTasks ?? 0}
-									</div>
-								</div>
-								<CardDescription className="mt-2">
-									in the selected time period
-								</CardDescription>
-							</CardContent>
+						<Card className={cn("p-5", !hasTaskData && "opacity-50")}>
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<CheckSquare className="size-4" />
+								Total Tasks
+							</div>
+							<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+								<AnimatedNumber value={taskData?.totalTasks ?? 0} />
+							</div>
+							<div className="mt-2 text-xs text-muted-foreground">
+								in the selected time period
+							</div>
 						</Card>
 
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									In Progress
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center">
-									<CheckSquare
-										className="h-5 w-5 mr-2"
-										style={{ color: STATUS_COLORS.in_progress }}
-									/>
-									<div className="text-2xl font-bold">
-										{taskData?.statusCounts.in_progress ?? 0}
-									</div>
-								</div>
-								<CardDescription className="mt-2">
-									tasks currently in progress
-								</CardDescription>
-							</CardContent>
+						<Card className={cn("p-5", !hasTaskData && "opacity-50")}>
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<CheckSquare
+									className="size-4"
+									style={{ color: STATUS_COLORS.in_progress }}
+								/>
+								In Progress
+							</div>
+							<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+								<AnimatedNumber
+									value={taskData?.statusCounts.in_progress ?? 0}
+								/>
+							</div>
+							<div className="mt-2 text-xs text-muted-foreground">
+								tasks currently in progress
+							</div>
 						</Card>
 
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									High Priority
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="flex items-center">
-									<CheckSquare
-										className="h-5 w-5 mr-2"
-										style={{ color: PRIORITY_COLORS.high }}
-									/>
-									<div className="text-2xl font-bold">
-										{taskData?.priorityCounts.high ?? 0}
-									</div>
-								</div>
-								<CardDescription className="mt-2">
-									high priority tasks
-								</CardDescription>
-							</CardContent>
+						<Card className={cn("p-5", !hasTaskData && "opacity-50")}>
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<CheckSquare
+									className="size-4"
+									style={{ color: PRIORITY_COLORS.high }}
+								/>
+								High Priority
+							</div>
+							<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+								<AnimatedNumber value={taskData?.priorityCounts.high ?? 0} />
+							</div>
+							<div className="mt-2 text-xs text-muted-foreground">
+								high priority tasks
+							</div>
 						</Card>
 					</div>
 
@@ -384,7 +373,7 @@ export const PerformanceMetricsDashboard = ({
 									<>
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
-												<div className="text-2xl font-bold">
+												<div className="text-3xl font-semibold tracking-tight tabular-nums">
 													{taskCompletionRate}%
 												</div>
 												<Badge
@@ -413,7 +402,7 @@ export const PerformanceMetricsDashboard = ({
 								) : (
 									<div className="space-y-2">
 										<div className="flex items-center justify-between">
-											<div className="text-2xl font-bold text-muted-foreground/40">
+											<div className="text-3xl font-semibold tracking-tight tabular-nums text-muted-foreground/40">
 												0%
 											</div>
 											<Badge className="opacity-50" variant="outline">
@@ -438,7 +427,7 @@ export const PerformanceMetricsDashboard = ({
 							<CardContent>
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold text-muted-foreground/40">
+										<div className="text-3xl font-semibold tracking-tight tabular-nums text-muted-foreground/40">
 											—
 										</div>
 										<Badge variant="outline">Not tracked yet</Badge>
@@ -459,7 +448,7 @@ export const PerformanceMetricsDashboard = ({
 							<CardContent>
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold text-muted-foreground/40">
+										<div className="text-3xl font-semibold tracking-tight tabular-nums text-muted-foreground/40">
 											—
 										</div>
 										<Badge variant="outline">Not tracked yet</Badge>
@@ -646,7 +635,7 @@ export const PerformanceMetricsDashboard = ({
 													<div className="flex items-center justify-between">
 														<div className="font-medium flex items-center">
 															{index === 0 && (
-																<Award className="h-4 w-4 text-yellow-500 mr-1" />
+																<Award className="h-4 w-4 text-warning mr-1" />
 															)}
 															{user.name}
 														</div>

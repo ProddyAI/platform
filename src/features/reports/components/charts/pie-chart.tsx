@@ -196,7 +196,7 @@ export const PieChart = ({
 			});
 
 	const outerRadius = 44;
-	const innerRadius = 26;
+	const innerRadius = outerRadius * 0.7;
 	const centerX = 50;
 	const centerY = 50;
 
@@ -285,6 +285,15 @@ export const PieChart = ({
 						);
 					})}
 				</svg>
+
+				{/* Center total */}
+				{!isAllZero && (
+					<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+						<span className="text-2xl font-semibold tabular-nums text-foreground">
+							{formatValue(total)}
+						</span>
+					</div>
+				)}
 			</div>
 
 			{/* HTML Tooltip - Displayed following cursor */}
@@ -297,17 +306,18 @@ export const PieChart = ({
 						zIndex: 9999,
 					}}
 				>
-					<div
-						className="bg-popover rounded-lg shadow-xl border-2 px-3 py-2"
-						style={{
-							borderColor: segments[hoveredIndex].color,
-						}}
-					>
-						<div className="text-xs font-bold text-popover-foreground mb-0.5">
-							{segments[hoveredIndex].label}
+					<div className="rounded-xl border border-border bg-popover px-3 py-2 shadow-lg">
+						<div className="mb-0.5 flex items-center gap-1.5">
+							<span
+								className="size-1.5 flex-shrink-0 rounded-full"
+								style={{ backgroundColor: segments[hoveredIndex].color }}
+							/>
+							<span className="text-xs font-semibold text-popover-foreground">
+								{segments[hoveredIndex].label}
+							</span>
 						</div>
 						<div
-							className="text-xs font-bold"
+							className="text-xs font-semibold tabular-nums"
 							style={{
 								color: segments[hoveredIndex].color,
 							}}
@@ -364,17 +374,15 @@ export const PieChart = ({
 							>
 								{/* Color indicator */}
 								<span
-									className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+									className="size-1.5 flex-shrink-0 rounded-full"
 									style={{ backgroundColor: segment.color }}
 								/>
 
 								{/* Label */}
 								<span
 									className={cn(
-										"text-xs font-medium truncate min-w-0",
-										isHovered
-											? "text-foreground"
-											: "text-foreground/70 dark:text-foreground/60"
+										"truncate min-w-0 text-xs",
+										isHovered ? "text-foreground" : "text-muted-foreground"
 									)}
 								>
 									{segment.label}
@@ -382,10 +390,9 @@ export const PieChart = ({
 
 								{/* Value - Show either formatted value or percentage */}
 								<span
-									className="text-xs font-bold flex-shrink-0"
+									className="text-xs font-medium tabular-nums flex-shrink-0"
 									style={{
 										color: isHovered ? segment.color : "currentColor",
-										fontFamily: "ui-monospace, monospace",
 									}}
 								>
 									{formatValue(segment.value)}
@@ -398,8 +405,8 @@ export const PieChart = ({
 
 			{/* "No Data" message for all-zero case */}
 			{showLegend && isAllZero && (
-				<div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border border-border/40 shadow-lg">
-					<div className="w-2.5 h-2.5 rounded-full bg-muted-foreground flex-shrink-0" />
+				<div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-md">
+					<div className="size-1.5 flex-shrink-0 rounded-full bg-muted-foreground" />
 					<div className="text-xs font-medium text-muted-foreground">
 						No data available
 					</div>

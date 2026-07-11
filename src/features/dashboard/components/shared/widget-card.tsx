@@ -26,17 +26,18 @@ export const WidgetCard = ({
 	return (
 		<Card
 			className={cn(
-				"overflow-hidden border transition-fast hover:border-primary/30 dark:bg-card dark:border-border",
+				"overflow-hidden",
 				onClick &&
 					"cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 				className
 			)}
+			interactive
 			onClick={onClick}
 			onKeyDown={handleKeyDown}
 			role={onClick ? "button" : undefined}
 			tabIndex={onClick ? 0 : undefined}
 		>
-			<CardContent className={cn("p-3 dark:bg-card", contentClassName)}>
+			<CardContent className={cn("p-3", contentClassName)}>
 				{children}
 			</CardContent>
 		</Card>

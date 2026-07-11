@@ -15,6 +15,7 @@ import { Component, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import {
 	Card,
 	CardContent,
@@ -117,14 +118,10 @@ const ChannelActivityDashboardSkeleton = () => (
 
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 			{Array.from({ length: 4 }).map((_, index) => (
-				<Card className="border-border" key={`stat-skeleton-${index}`}>
-					<CardHeader className="pb-2">
-						<Skeleton className="h-4 w-24" />
-					</CardHeader>
-					<CardContent className="space-y-2">
-						<Skeleton className="h-7 w-16" />
-						<Skeleton className="h-3 w-32" />
-					</CardContent>
+				<Card className="space-y-2 p-5" key={`stat-skeleton-${index}`}>
+					<Skeleton className="h-4 w-24" />
+					<Skeleton className="h-7 w-16" />
+					<Skeleton className="h-3 w-32" />
 				</Card>
 			))}
 		</div>
@@ -332,82 +329,63 @@ const ChannelActivityDashboardContent = ({
 				)}
 			</div>
 
-			{/* Stats overview */}
+			{/* Stats overview. Plain tiles rather than StatCard: none of these
+			    metrics have a previous-period comparison, and StatCard's caption
+			    only renders alongside a delta chip. */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Total Channels
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold text-foreground">
-								{channelActivity.length}
-							</div>
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							Active in the selected period
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Hash className="size-4" />
+						Total Channels
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber value={channelActivity.length} />
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						Active in the selected period
+					</div>
 				</Card>
 
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Total Messages
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold text-foreground">
-								{totalMessages}
-							</div>
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							{avgMessagesPerChannel.toFixed(1)} per channel
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<MessageSquare className="size-4" />
+						Total Messages
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber value={totalMessages} />
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{avgMessagesPerChannel.toFixed(1)} per channel
+					</div>
 				</Card>
 
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Most Active Channel
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-xl font-bold truncate text-foreground">
-								{sortedByMessages[0]?.channel.name || "None"}
-							</div>
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							{sortedByMessages[0]?.messageCount || 0} messages
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Hash className="size-4" />
+						Most Active Channel
+					</div>
+					<div className="mt-2 truncate text-3xl font-semibold tracking-tight text-foreground">
+						{sortedByMessages[0]?.channel.name || "None"}
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{sortedByMessages[0]?.messageCount || 0} messages
+					</div>
 				</Card>
 
-				<Card className="border-border">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground/90">
-							Total Time Spent
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<Clock className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold text-foreground">
-								{formatDuration(totalTimeSpent, "short")}
-							</div>
-						</div>
-						<CardDescription className="text-muted-foreground/80">
-							{formatDuration(avgTimeSpentPerChannel, "short")} per channel
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Clock className="size-4" />
+						Total Time Spent
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber
+							format={(n) => formatDuration(n, "short")}
+							value={totalTimeSpent}
+						/>
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{formatDuration(avgTimeSpentPerChannel, "short")} per channel
+					</div>
 				</Card>
 			</div>
 

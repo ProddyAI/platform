@@ -439,7 +439,7 @@ export const UserProfileModal = ({
 						)}
 
 						<div className="flex flex-col items-center justify-center text-center h-full relative z-10">
-							<div className="w-full max-w-xs bg-card/70 dark:bg-card/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-border/40">
+							<div className="w-full max-w-xs bg-card/95 rounded-2xl p-6 shadow-lg border border-border/40">
 								<div className="space-y-4 flex-1 flex flex-col items-center justify-center">
 									<div className="relative">
 										<Avatar className="size-24 ring-4 ring-card shadow-lg">

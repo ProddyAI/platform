@@ -41,6 +41,7 @@ interface StressWidgetProps {
 type StressLevelConfig = {
 	color: string;
 	text: string;
+	fg: string;
 	label: string;
 	icon: typeof Zap;
 };
@@ -70,7 +71,7 @@ function StressWidgetTitleRow({
 
 function StressHighAlert() {
 	return (
-		<div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 motion-safe:animate-pulse">
+		<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
 			<div className="flex gap-2">
 				<AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
 				<p className="text-xs text-destructive font-medium leading-relaxed">
@@ -101,11 +102,25 @@ function FocusTaskDueDate({
 	);
 }
 
+const FOCUS_PRIORITY_VARIANT: Record<
+	string,
+	"outline" | "warning" | "destructiveSoft"
+> = {
+	low: "outline",
+	medium: "warning",
+	high: "destructiveSoft",
+};
+
 function FocusTaskMeta({ task }: { task: TaskSummary }) {
+	const priority = task.priority || "medium";
+
 	return (
 		<div className="flex items-center gap-2">
-			<Badge className="text-[9px] h-4 px-1 capitalize" variant="secondary">
-				{task.priority || "medium"}
+			<Badge
+				className="h-4 px-1 text-[9px] capitalize"
+				variant={FOCUS_PRIORITY_VARIANT[priority] ?? "outline"}
+			>
+				{priority}
 			</Badge>
 			{task.dueDate && (
 				<FocusTaskDueDate dueDate={task.dueDate} isOverdue={task.isOverdue} />
@@ -116,9 +131,9 @@ function FocusTaskMeta({ task }: { task: TaskSummary }) {
 
 function FocusTaskRow({ task }: { task: TaskSummary & { _id?: string } }) {
 	return (
-		<div className="group relative p-3 rounded-lg border bg-card hover:border-primary/30 transition-all duration-200 flex items-start gap-3">
-			<div className="space-y-1 min-w-0">
-				<p className="text-sm font-semibold truncate leading-none">
+		<div className="group relative flex items-start gap-3 rounded-lg border bg-card p-3 transition-fast hover:border-primary/30">
+			<div className="min-w-0 space-y-1">
+				<p className="truncate text-sm font-semibold leading-none">
 					{task.title}
 				</p>
 				<FocusTaskMeta task={task} />
@@ -157,7 +172,7 @@ function StressMeterBadge({
 	return (
 		<div className="text-right">
 			<Badge
-				className={cn("mb-1", config.color, "text-white border-none shadow-sm")}
+				className={cn("mb-1 border-none shadow-sm", config.color, config.fg)}
 			>
 				{config.label}
 			</Badge>
@@ -287,20 +302,23 @@ export const StressWidget = ({
 
 	const levelConfig = {
 		low: {
-			color: "bg-emerald-500",
-			text: "text-emerald-500",
+			color: "bg-success",
+			text: "text-success",
+			fg: "text-success-foreground",
 			label: "Healthy",
 			icon: Zap,
 		},
 		medium: {
-			color: "bg-amber-500",
-			text: "text-amber-500",
+			color: "bg-warning",
+			text: "text-warning",
+			fg: "text-warning-foreground",
 			label: "Elevated",
 			icon: Brain,
 		},
 		high: {
 			color: "bg-destructive",
 			text: "text-destructive",
+			fg: "text-destructive-foreground",
 			label: "High Stress",
 			icon: AlertTriangle,
 		},
@@ -338,7 +356,7 @@ export const StressWidget = ({
 				{/* Quick AI Actions */}
 				<div className="grid grid-cols-2 gap-2">
 					<Button
-						className="h-9 hover:border-primary hover:bg-primary/5 transition-all"
+						className="h-9 hover:border-primary hover:bg-primary/5"
 						onClick={() =>
 							metrics &&
 							openAssistantWithPrompt(buildStressDetectionPrompt(metrics))
@@ -350,7 +368,7 @@ export const StressWidget = ({
 						Analyze
 					</Button>
 					<Button
-						className="h-9 hover:border-destructive hover:bg-destructive/5 transition-all"
+						className="h-9 hover:border-destructive hover:bg-destructive/5"
 						onClick={() =>
 							focusTasks &&
 							openAssistantWithPrompt(

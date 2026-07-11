@@ -120,17 +120,17 @@ export const TasksWidget = ({
 	const getPriorityBadge = (priority: string | undefined) => {
 		if (!priority) return null;
 
-		const priorityColors: Record<string, string> = {
-			low: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-			medium:
-				"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-			high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+		const priorityVariant: Record<
+			string,
+			"outline" | "warning" | "destructiveSoft"
+		> = {
+			low: "outline",
+			medium: "warning",
+			high: "destructiveSoft",
 		};
 
 		return (
-			<Badge
-				className={priorityColors[priority] || "bg-muted text-muted-foreground"}
-			>
+			<Badge variant={priorityVariant[priority] ?? "outline"}>
 				{priority.charAt(0).toUpperCase() + priority.slice(1)}
 			</Badge>
 		);
@@ -141,7 +141,7 @@ export const TasksWidget = ({
 			<WidgetHeader
 				action={
 					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 						size="sm"
 						variant="ghost"
@@ -151,9 +151,7 @@ export const TasksWidget = ({
 				}
 				badge={sortedTasks.length > 0 ? sortedTasks.length : undefined}
 				controls={controls}
-				icon={
-					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-				}
+				icon={<CheckSquare className="h-5 w-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Your Tasks"
 			/>
@@ -183,7 +181,7 @@ export const TasksWidget = ({
 										{updatingTaskId === task._id ? (
 											<Loader className="h-4 w-4 animate-spin" />
 										) : task.completed ? (
-											<CheckCircle2 className="h-5 w-5 text-green-500" />
+											<CheckCircle2 className="h-5 w-5 text-success" />
 										) : (
 											<div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
 										)}
@@ -213,7 +211,7 @@ export const TasksWidget = ({
 										</div>
 									</div>
 									<Button
-										className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
+										className="h-7 px-2 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary flex-shrink-0"
 										onClick={() => handleViewTask(task._id)}
 										size="sm"
 										variant="ghost"

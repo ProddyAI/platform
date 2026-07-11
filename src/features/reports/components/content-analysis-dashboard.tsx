@@ -6,6 +6,7 @@ import { Calendar, FileText, Loader, MessageSquare, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { AnimatedNumber } from "@/components/animated-number";
 import {
 	Card,
 	CardContent,
@@ -232,12 +233,12 @@ export const ContentAnalysisDashboard = ({
 		if (!resolvedContentAnalysisData) return [];
 
 		return resolvedContentAnalysisData.channelResponseTimes.map((item) => {
-			let color = "bg-green-500";
+			let color = "bg-success";
 			if (item.avgResponseTime > 10) {
-				color = "bg-yellow-500";
+				color = "bg-warning";
 			}
 			if (item.avgResponseTime > 20) {
-				color = "bg-red-500";
+				color = "bg-destructive";
 			}
 
 			return {
@@ -315,51 +316,42 @@ export const ContentAnalysisDashboard = ({
 
 				{/* Messages Tab */}
 				<TabsContent className="space-y-4" value="messages">
+					{/* Plain tiles rather than StatCard: neither metric has a
+					    previous-period comparison, and StatCard's caption only
+					    renders alongside a delta chip. */}
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<Card className="border-border">
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground/90">
-									Daily Average
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								{isInitialLoading ? (
-									<Skeleton className="h-8 w-16" />
-								) : (
-									<div className="flex items-center">
-										<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-										<div className="text-2xl font-bold text-foreground">
-											{dailyAverageMessages}
-										</div>
-									</div>
-								)}
-								<CardDescription className="text-muted-foreground/80">
-									messages per day
-								</CardDescription>
-							</CardContent>
+						<Card className="p-5">
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<MessageSquare className="size-4" />
+								Daily Average
+							</div>
+							{isInitialLoading ? (
+								<Skeleton className="mt-2 h-8 w-16" />
+							) : (
+								<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+									<AnimatedNumber value={dailyAverageMessages} />
+								</div>
+							)}
+							<div className="mt-2 text-xs text-muted-foreground">
+								messages per day
+							</div>
 						</Card>
 
-						<Card className="border-border">
-							<CardHeader className="pb-2">
-								<CardTitle className="text-sm font-medium text-muted-foreground/90">
-									Top Sender
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								{isInitialLoading ? (
-									<Skeleton className="h-8 w-24" />
-								) : (
-									<div className="flex items-center">
-										<Users className="h-5 w-5 text-secondary mr-2" />
-										<div className="text-xl font-bold truncate text-foreground">
-											{topSender?.name ?? "No data"}
-										</div>
-									</div>
-								)}
-								<CardDescription className="text-muted-foreground/80">
-									{topSender ? `${topSender.count} messages` : ""}
-								</CardDescription>
-							</CardContent>
+						<Card className="p-5">
+							<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<Users className="size-4" />
+								Top Sender
+							</div>
+							{isInitialLoading ? (
+								<Skeleton className="mt-2 h-8 w-24" />
+							) : (
+								<div className="mt-2 truncate text-3xl font-semibold tracking-tight text-foreground">
+									{topSender?.name ?? "No data"}
+								</div>
+							)}
+							<div className="mt-2 text-xs text-muted-foreground">
+								{topSender ? `${topSender.count} messages` : ""}
+							</div>
 						</Card>
 					</div>
 

@@ -62,7 +62,7 @@ interface ViewSwitcherProps {
 }
 
 const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
-	<div className="flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/40">
+	<div className="flex items-center bg-muted rounded-full p-1">
 		{(
 			[
 				{ id: "kanban", icon: LayoutGrid, label: "Board" },
@@ -72,9 +72,9 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 			<Button
 				aria-label={label}
 				className={cn(
-					"h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs transition-all",
+					"h-7 px-3 flex items-center gap-1.5 rounded-full text-xs transition-colors duration-fast",
 					view === id
-						? "bg-background text-foreground shadow-sm"
+						? "bg-card text-foreground shadow-sm"
 						: "text-muted-foreground hover:text-foreground"
 				)}
 				key={id}
@@ -99,7 +99,7 @@ const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Add status"
-					className="h-8 gap-1.5 text-xs border-border/50 bg-transparent hover:bg-muted/60"
+					className="h-8 gap-1.5 text-xs"
 					onClick={onClick}
 					size="sm"
 					variant="outline"
@@ -181,9 +181,7 @@ const ConnectChannelButton = ({
 					}
 					className={cn(
 						"h-8 w-8 p-0 flex-shrink-0 relative transition-colors",
-						isConnected
-							? "text-emerald-500 hover:bg-emerald-500/10"
-							: "hover:bg-muted"
+						isConnected ? "text-success hover:bg-success/10" : "hover:bg-muted"
 					)}
 					onClick={onClick}
 					size="icon"
@@ -191,7 +189,7 @@ const ConnectChannelButton = ({
 				>
 					<Link2 className="w-4 h-4" />
 					{isConnected && (
-						<Check className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-background text-emerald-500" />
+						<Check className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-background text-success" />
 					)}
 				</Button>
 			</TooltipTrigger>
@@ -218,7 +216,7 @@ const AnalyzeBlockersButton = ({
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Detect blockers"
-					className="h-8 gap-1.5 text-xs border-border/50 bg-transparent hover:bg-muted/60"
+					className="h-8 gap-1.5 text-xs"
 					disabled={loading}
 					onClick={onClick}
 					size="sm"

@@ -8,7 +8,7 @@ const SignUpPage = () => {
 	useDocumentTitle("Sign Up");
 
 	return (
-		<div className="flex h-full items-center justify-center bg-primary">
+		<div className="flex h-full items-center justify-center bg-background">
 			<div className="md:h-auto md:w-[420px] animate-fade-in">
 				<SignUpCard isStandalone />
 			</div>

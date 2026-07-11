@@ -16,9 +16,51 @@ interface LineChartProps {
 	lineColor?: string;
 	pointColor?: string;
 	areaColor?: string;
+	smooth?: boolean;
 	formatValue?: (value: number) => string;
 	onPointClick?: (label: string, value: number, index: number) => void;
 }
+
+interface ChartPoint {
+	x: number;
+	y: number;
+	label: string;
+	value: number;
+	index: number;
+}
+
+/** Straight-segment path (`M`/`L` commands only). */
+const buildLinearPath = (points: ChartPoint[]): string =>
+	points
+		.map((point, index) =>
+			index === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
+		)
+		.join(" ");
+
+/**
+ * Smooth path through every point via a uniform Catmull-Rom spline,
+ * converted to cubic bezier segments (the standard 1/6-tension conversion).
+ * Falls back to endpoints/neighbors when a segment lacks a full neighbor set.
+ */
+const buildSmoothPath = (points: ChartPoint[]): string => {
+	if (points.length < 3) return buildLinearPath(points);
+
+	let path = `M ${points[0].x} ${points[0].y}`;
+	for (let i = 0; i < points.length - 1; i++) {
+		const p0 = points[i - 1] ?? points[i];
+		const p1 = points[i];
+		const p2 = points[i + 1];
+		const p3 = points[i + 2] ?? p2;
+
+		const cp1x = p1.x + (p2.x - p0.x) / 6;
+		const cp1y = p1.y + (p2.y - p0.y) / 6;
+		const cp2x = p2.x - (p3.x - p1.x) / 6;
+		const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+		path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+	}
+	return path;
+};
 
 export const LineChart = ({
 	data,
@@ -27,9 +69,12 @@ export const LineChart = ({
 	showLabels = true,
 	showGrid = true,
 	className,
-	lineColor = "stroke-secondary",
-	pointColor = "fill-secondary",
-	areaColor = "fill-secondary/20",
+	lineColor = "stroke-primary",
+	// Accepted for API compatibility; the hovered/active dot now always
+	// renders with the fixed white-fill/primary-stroke treatment below.
+	pointColor: _pointColor = "fill-primary",
+	areaColor = "fill-primary/10",
+	smooth = true,
 	formatValue = (value) => value.toString(),
 	onPointClick,
 }: LineChartProps) => {
@@ -129,24 +174,18 @@ export const LineChart = ({
 	const chartWidth = 100 - chartMargin * 2;
 	const chartHeight = 100 - chartMargin * 2;
 
-	const points = data.map((item, index) => {
+	const points: ChartPoint[] = data.map((item, index) => {
 		const x = chartMargin + (index / (data.length - 1)) * chartWidth;
 		const y =
 			chartMargin +
 			(100 -
 				chartMargin -
 				((item.value - adjustedMinValue) / adjustedRange) * chartHeight);
-		return { x, y, ...item, index };
+		return { x, y, label: item.label, value: item.value, index };
 	});
 
-	// Create the path for the line
-	const linePath = points
-		.map((point, index) => {
-			return index === 0
-				? `M ${point.x} ${point.y}`
-				: `L ${point.x} ${point.y}`;
-		})
-		.join(" ");
+	// Create the path for the line — smoothed via Catmull-Rom/bezier by default.
+	const linePath = smooth ? buildSmoothPath(points) : buildLinearPath(points);
 
 	// Create the path for the area under the line
 	const areaPath = `
@@ -183,37 +222,23 @@ export const LineChart = ({
 					viewBox="0 0 100 100"
 				>
 					<title>Line chart</title>
-					{/* Grid lines */}
-					{showGrid && (
-						<>
-							{/* Horizontal grid lines */}
-							{[chartMargin, 25, 50, 75, 100 - chartMargin].map((y) => (
-								<line
-									className="stroke-muted stroke-[0.5]"
-									key={`h-${y}`}
-									x1={chartMargin}
-									x2={100 - chartMargin}
-									y1={y}
-									y2={y}
-								/>
-							))}
-
-							{/* Vertical grid lines */}
-							{points.map((point) => (
-								<line
-									className="stroke-muted stroke-[0.5]"
-									key={`v-${point.index}`}
-									x1={point.x}
-									x2={point.x}
-									y1={chartMargin}
-									y2={100 - chartMargin}
-								/>
-							))}
-						</>
-					)}
+					{/* Grid lines — horizontal only */}
+					{showGrid &&
+						[chartMargin, 25, 50, 75, 100 - chartMargin].map((y) => (
+							<line
+								className="stroke-border"
+								key={`h-${y}`}
+								strokeDasharray="3 3"
+								strokeWidth={0.5}
+								x1={chartMargin}
+								x2={100 - chartMargin}
+								y1={y}
+								y2={y}
+							/>
+						))}
 
 					{/* Area under the line */}
-					<path className={areaColor} d={areaPath} />
+					<path className={cn(areaColor, "stroke-none")} d={areaPath} />
 
 					{/* Line */}
 					<path
@@ -223,21 +248,32 @@ export const LineChart = ({
 						strokeLinejoin="round"
 					/>
 
-					{/* Points */}
+					{/* Points — hidden at rest, only the hovered/active point renders */}
 					{showPoints &&
 						points.map((point) => {
 							const isHovered = hoveredIndex === point.index;
 
 							return (
 								<g key={point.index}>
+									{isHovered && (
+										<line
+											className="stroke-border pointer-events-none"
+											strokeWidth={0.5}
+											x1={point.x}
+											x2={point.x}
+											y1={chartMargin}
+											y2={100 - chartMargin}
+										/>
+									)}
+
+									{/* Hit target — always present so the whole line stays
+									    interactive even though the dot itself is hidden at rest. */}
 									<circle
 										aria-label={`${point.label}: ${formatValue(point.value)}`}
 										className={cn(
-											"stroke-white transition-all duration-200 outline-none",
-											isHovered ? "stroke-[3.5]" : "stroke-[2.5]",
-											pointColor,
+											"fill-transparent outline-none",
 											onPointClick &&
-												"cursor-pointer focus-visible:stroke-[4] focus-visible:stroke-ring"
+												"cursor-pointer focus-visible:fill-primary/10"
 										)}
 										cx={point.x}
 										cy={point.y}
@@ -272,17 +308,21 @@ export const LineChart = ({
 										}
 										onMouseEnter={() => setHoveredIndex(point.index)}
 										onMouseLeave={() => setHoveredIndex(null)}
-										r={isHovered ? "3" : "2"}
+										r={6}
 										role={onPointClick ? "button" : undefined}
 										tabIndex={onPointClick ? 0 : undefined}
 									/>
+
+									{/* Visible dot — only the hovered/active point */}
 									{isHovered && (
-										<line
-											className="stroke-secondary/30 stroke-[0.5] stroke-dashed pointer-events-none"
-											x1={point.x}
-											x2={point.x}
-											y1={chartMargin}
-											y2={100 - chartMargin}
+										<circle
+											className="pointer-events-none"
+											cx={point.x}
+											cy={point.y}
+											fill="white"
+											r={3}
+											stroke="hsl(var(--primary))"
+											strokeWidth={2}
 										/>
 									)}
 								</g>
@@ -293,13 +333,13 @@ export const LineChart = ({
 				{/* DOM-based tooltip */}
 				{hoveredIndex !== null && tooltipPos && (
 					<div
-						className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50 -translate-x-1/2"
+						className="pointer-events-none absolute z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background shadow-md"
 						style={{
 							top: tooltipPos.top,
 							left: tooltipPos.left,
 						}}
 					>
-						{formatValue(data[hoveredIndex].value)}
+						{`${data[hoveredIndex].label}: ${formatValue(data[hoveredIndex].value)}`}
 					</div>
 				)}
 			</div>

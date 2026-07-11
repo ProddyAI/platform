@@ -156,7 +156,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	return (
 		<div
 			className={cn(
-				"flex flex-col bg-background rounded-xl border border-border/70 shadow-sm w-full",
+				"flex flex-col bg-muted/50 rounded-2xl border border-border/70 w-full",
 				isDragging && "opacity-50 shadow-xl border-dashed",
 				isDockedEmpty ? "h-auto" : "h-full",
 				isFocused &&
@@ -165,7 +165,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 			ref={setSortableRef}
 			style={style}
 		>
-			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 rounded-t-xl bg-muted/50 flex-shrink-0">
+			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 rounded-t-2xl flex-shrink-0">
 				<button
 					aria-label="Drag to reorder column"
 					className={cn(
@@ -249,7 +249,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 			<div
 				className={cn(
-					"rounded-b-xl transition-colors duration-150",
+					"rounded-b-2xl transition-colors duration-150",
 					isDockedEmpty && !showDockedDropHint
 						? "min-h-2 overflow-hidden"
 						: "flex-1 flex flex-col min-h-0 overflow-y-auto",
@@ -261,7 +261,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					items={issues.map((i) => i._id)}
 					strategy={verticalListSortingStrategy}
 				>
-					<div className="flex flex-col gap-0.5 p-2">
+					<div className="flex flex-col gap-2 p-2">
 						{isDockedEmpty && !showDockedDropHint && <div className="h-1" />}
 						{issues.map((issue) => (
 							<BoardIssueRow
@@ -293,7 +293,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				{creating && (
 					<div className="px-2 pb-2">
 						<Input
-							className="h-8 text-sm bg-background border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/40"
+							className="h-8 text-sm bg-card border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/40"
 							onBlur={handleCreateIssue}
 							onChange={(e) => setNewTitle(e.target.value)}
 							onKeyDown={handleKeyDown}
@@ -309,7 +309,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 				{!creating && issues.length > 0 && (
 					<button
-						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-b-xl transition-colors border-t border-border/60 disabled:opacity-50 disabled:cursor-not-allowed"
+						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-b-2xl transition-colors border-t border-border/60 disabled:opacity-50 disabled:cursor-not-allowed"
 						disabled={disableCreateIssue}
 						onClick={handleStartCreating}
 						type="button"

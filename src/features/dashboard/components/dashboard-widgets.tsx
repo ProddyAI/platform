@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Check, Edit3, GripVertical, Plus, X } from "lucide-react";
 import { cloneElement, type ReactElement, useCallback, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -150,13 +151,10 @@ const SortableWidget = ({
 	const controls = isEditMode ? (
 		<div className="flex items-center gap-2">
 			{/* Size Toggle Buttons */}
-			<div className="flex items-center gap-1 bg-background/80 backdrop-blur-sm border border-border rounded-md shadow-sm p-0.5">
+			<div className="flex items-center gap-1 rounded-full border border-border bg-card p-0.5 shadow-sm">
 				<Button
 					aria-label="Small size"
-					className={cn(
-						"h-6 w-6 p-0 text-xs",
-						size === "small" && "edit-mode-button"
-					)}
+					className="h-6 w-6 p-0 text-xs"
 					onClick={() => onResize("small")}
 					size="sm"
 					variant={size === "small" ? "default" : "ghost"}
@@ -165,10 +163,7 @@ const SortableWidget = ({
 				</Button>
 				<Button
 					aria-label="Medium size"
-					className={cn(
-						"h-6 w-6 p-0 text-xs",
-						size === "medium" && "edit-mode-button"
-					)}
+					className="h-6 w-6 p-0 text-xs"
 					onClick={() => onResize("medium")}
 					size="sm"
 					variant={size === "medium" ? "default" : "ghost"}
@@ -177,10 +172,7 @@ const SortableWidget = ({
 				</Button>
 				<Button
 					aria-label="Large size"
-					className={cn(
-						"h-6 w-6 p-0 text-xs",
-						size === "large" && "edit-mode-button"
-					)}
+					className="h-6 w-6 p-0 text-xs"
 					onClick={() => onResize("large")}
 					size="sm"
 					variant={size === "large" ? "default" : "ghost"}
@@ -192,7 +184,7 @@ const SortableWidget = ({
 			{/* Delete Button */}
 			<Button
 				aria-label="Remove widget"
-				className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+				className="h-8 w-8 border border-border bg-card p-0 shadow-sm hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
 				onClick={onDelete}
 				size="sm"
 				variant="ghost"
@@ -203,7 +195,7 @@ const SortableWidget = ({
 			{/* Drag Handle */}
 			<button
 				aria-label="Reorder widget"
-				className="cursor-grab active:cursor-grabbing p-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-md shadow-sm hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+				className="cursor-grab rounded-full border border-border bg-card p-1.5 shadow-sm transition-fast hover:bg-muted/80 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 				type="button"
 				{...attributes}
 				{...listeners}
@@ -427,113 +419,101 @@ export const DashboardWidgets = ({
 
 	return (
 		<>
-			<div className="h-full">
-				<div className="pb-2">
-					<div className="flex items-center justify-between">
-						<h2 className="text-lg font-semibold">Workspace Overview</h2>
-						<div className="flex items-center gap-2">
-							{/* Add Widget Button - Only visible in edit mode */}
-							{isEditMode && (
-								<Button
-									className="h-8 px-3 gap-2"
-									disabled={availableWidgetsToAdd.length === 0}
-									onClick={() => setIsAddDialogOpen(true)}
-									size="sm"
-									variant="outline"
-								>
-									<Plus className="h-4 w-4" />
-									<span className="hidden sm:inline">Add Widget</span>
-								</Button>
-							)}
-
-							{/* Edit Mode Toggle */}
+			<div className="space-y-4">
+				<div className="flex items-center justify-between">
+					<h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+						Workspace Overview
+					</h2>
+					<div className="flex items-center gap-2">
+						{/* Add Widget Button - Only visible in edit mode */}
+						{isEditMode && (
 							<Button
-								className={cn(
-									"h-8 px-3 gap-2",
-									isEditMode && "edit-mode-button"
-								)}
-								onClick={toggleEditMode}
+								className="h-8 gap-2 px-3"
+								disabled={availableWidgetsToAdd.length === 0}
+								onClick={() => setIsAddDialogOpen(true)}
 								size="sm"
-								variant={isEditMode ? "default" : "ghost"}
+								variant="outline"
 							>
-								{isEditMode ? (
-									<>
-										<Check className="h-4 w-4" />
-										<span className="hidden sm:inline">Done</span>
-									</>
-								) : (
-									<>
-										<Edit3 className="h-4 w-4" />
-										<span className="hidden sm:inline">Edit</span>
-									</>
-								)}
+								<Plus className="h-4 w-4" />
+								<span className="hidden sm:inline">Add Widget</span>
 							</Button>
-						</div>
+						)}
+
+						{/* Edit Mode Toggle */}
+						<Button
+							className="h-8 gap-2 px-3"
+							onClick={toggleEditMode}
+							size="sm"
+							variant={isEditMode ? "default" : "ghost"}
+						>
+							{isEditMode ? (
+								<>
+									<Check className="h-4 w-4" />
+									<span className="hidden sm:inline">Done</span>
+								</>
+							) : (
+								<>
+									<Edit3 className="h-4 w-4" />
+									<span className="hidden sm:inline">Edit</span>
+								</>
+							)}
+						</Button>
 					</div>
 				</div>
-				<div className="p-4 pt-0">
-					<ScrollArea className="h-[calc(100vh-180px)] pb-8">
-						{isEditMode && (
-							<div className="mb-4 p-3 bg-muted/50 rounded-lg border border-dashed">
-								<p className="text-sm text-muted-foreground">
-									<strong>Edit Mode:</strong> Drag widgets to reorder, click the
-									size buttons (S/M/L) to resize, or click Remove to delete.
-								</p>
+
+				{isEditMode && (
+					<div className="rounded-lg border border-dashed border-border bg-muted/50 p-3">
+						<p className="text-sm text-muted-foreground">
+							<strong>Edit Mode:</strong> Drag widgets to reorder, click the
+							size buttons (S/M/L) to resize, or click Remove to delete.
+						</p>
+					</div>
+				)}
+
+				<DndContext
+					collisionDetection={closestCenter}
+					onDragEnd={handleDragEnd}
+					onDragStart={handleDragStart}
+					sensors={sensors}
+				>
+					<SortableContext
+						items={widgets.map((w) => w.id)}
+						strategy={rectSortingStrategy}
+					>
+						{/* Grid layout - 12 columns on desktop for more size flexibility */}
+						<div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-12">
+							{widgets.map((widget) => (
+								<SortableWidget
+									id={widget.id}
+									isEditMode={isEditMode}
+									key={widget.id}
+									onDelete={() => handleDeleteWidget(widget.id)}
+									onResize={(newSize) => updateWidgetSize(widget.id, newSize)}
+									size={widget.size}
+								>
+									{renderWidget(widget.id)}
+								</SortableWidget>
+							))}
+						</div>
+					</SortableContext>
+
+					{/* Drag overlay for visual feedback */}
+					<DragOverlay>
+						{activeId && isEditMode ? (
+							<div className="w-full overflow-hidden rounded-2xl opacity-90 shadow-lg ring-1 ring-border">
+								{renderWidget(activeId as WidgetType)}
 							</div>
-						)}
+						) : null}
+					</DragOverlay>
+				</DndContext>
 
-						<DndContext
-							collisionDetection={closestCenter}
-							onDragEnd={handleDragEnd}
-							onDragStart={handleDragStart}
-							sensors={sensors}
-						>
-							<SortableContext
-								items={widgets.map((w) => w.id)}
-								strategy={rectSortingStrategy}
-							>
-								{/* Grid layout - 12 columns on desktop for more size flexibility */}
-								<div className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-4">
-									{widgets.map((widget) => (
-										<SortableWidget
-											id={widget.id}
-											isEditMode={isEditMode}
-											key={widget.id}
-											onDelete={() => handleDeleteWidget(widget.id)}
-											onResize={(newSize) =>
-												updateWidgetSize(widget.id, newSize)
-											}
-											size={widget.size}
-										>
-											{renderWidget(widget.id)}
-										</SortableWidget>
-									))}
-								</div>
-							</SortableContext>
-
-							{/* Drag overlay for visual feedback */}
-							<DragOverlay>
-								{activeId && isEditMode ? (
-									<div className="opacity-80 w-full">
-										{renderWidget(activeId as WidgetType)}
-									</div>
-								) : null}
-							</DragOverlay>
-						</DndContext>
-
-						{widgets.length === 0 && (
-							<div className="flex flex-col items-center justify-center h-[400px] text-center">
-								<div className="text-muted-foreground mb-4">
-									<Plus className="h-12 w-12 mx-auto mb-2 opacity-50" />
-									<p className="text-lg font-medium">No widgets added yet</p>
-									<p className="text-sm">
-										Click &quot;Add Widget&quot; to get started
-									</p>
-								</div>
-							</div>
-						)}
-					</ScrollArea>
-				</div>
+				{widgets.length === 0 && (
+					<EmptyState
+						description='Click "Add Widget" to get started'
+						icon={Plus}
+						title="No widgets added yet"
+					/>
+				)}
 			</div>
 
 			{/* Add Widget Dialog */}
@@ -548,7 +528,7 @@ export const DashboardWidgets = ({
 					<ScrollArea className="max-h-[400px] pr-4">
 						<div className="grid gap-3 py-4">
 							{availableWidgetsToAdd.length === 0 ? (
-								<div className="text-center py-8 text-muted-foreground">
+								<div className="py-8 text-center text-muted-foreground">
 									<p>
 										All available widgets are already added to your dashboard.
 									</p>
@@ -559,26 +539,26 @@ export const DashboardWidgets = ({
 									return (
 										<button
 											className={cn(
-												"flex items-start gap-4 p-4 rounded-lg border transition-all text-left",
+												"flex items-start gap-4 rounded-lg border p-4 text-left transition-fast",
 												isSelected
-													? "bg-primary/10 border-primary hover:bg-primary/15"
-													: "border-border hover:bg-muted/50 hover:border-primary/50"
+													? "border-primary bg-primary/10 hover:bg-primary/15"
+													: "border-border hover:border-primary/50 hover:bg-muted/50"
 											)}
 											key={widget.id}
 											onClick={() => toggleWidgetSelection(widget.id)}
 											type="button"
 										>
 											<div className="flex-1">
-												<h4 className="font-medium mb-1">{widget.title}</h4>
+												<h4 className="mb-1 font-medium">{widget.title}</h4>
 												<p className="text-sm text-muted-foreground">
 													{widget.description}
 												</p>
 											</div>
 											<div
 												className={cn(
-													"h-5 w-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
+													"mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-fast",
 													isSelected
-														? "bg-primary border-primary"
+														? "border-primary bg-primary"
 														: "border-muted-foreground"
 												)}
 											>
@@ -593,13 +573,12 @@ export const DashboardWidgets = ({
 						</div>
 					</ScrollArea>
 					{availableWidgetsToAdd.length > 0 && (
-						<div className="flex items-center justify-between pt-4 border-t">
+						<div className="flex items-center justify-between border-t pt-4">
 							<p className="text-sm text-muted-foreground">
 								{selectedWidgets.length} widget
 								{selectedWidgets.length !== 1 ? "s" : ""} selected
 							</p>
 							<Button
-								className="edit-mode-button"
 								disabled={selectedWidgets.length === 0}
 								onClick={handleAddSelectedWidgets}
 							>

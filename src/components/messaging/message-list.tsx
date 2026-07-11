@@ -198,7 +198,7 @@ export const MessageList = ({
 										size="iconSm"
 										variant="ghost"
 									>
-										<Sparkles className="size-3 text-amber-500 dark:text-amber-400" />
+										<Sparkles className="size-3 text-warning" />
 									</Button>
 								</Hint>
 							</div>

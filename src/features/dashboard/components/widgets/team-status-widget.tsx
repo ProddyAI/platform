@@ -103,7 +103,7 @@ export const TeamStatusWidget = ({
 				badge={onlineCount > 0 ? `${onlineCount} online` : undefined}
 				className="pr-2"
 				controls={controls}
-				icon={<Users className="h-5 w-5 text-primary dark:text-purple-400" />}
+				icon={<Users className="h-5 w-5 text-primary" />}
 				isEditMode={isEditMode}
 				title="Team Status"
 			/>
@@ -149,7 +149,7 @@ export const TeamStatusWidget = ({
 											/>
 										</div>
 										<Button
-											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
 											onClick={() => handleStartChat(teamMember.userId)}
 											size="sm"
 											variant="ghost"

@@ -196,9 +196,7 @@ const EmailInviteSection = ({
 					<p className="text-sm text-destructive">{inviteError}</p>
 				)}
 				{inviteSuccess && (
-					<p className="text-sm text-green-700 dark:text-green-400">
-						Invite sent successfully
-					</p>
+					<p className="text-sm text-success">Invite sent successfully</p>
 				)}
 				<p className="text-xs text-muted-foreground">
 					Send an email invitation with a secure link to join the workspace
@@ -289,17 +287,17 @@ export const MembersManagement = ({
 		}
 	};
 
-	const getRoleBadgeVariant = (
-		role: string
-	): "default" | "secondary" | "outline" => {
+	const getRoleBadgeVariant = (role: string): "primarySoft" | "outline" => {
 		switch (role) {
 			case "owner":
-				return "default";
-			case "admin":
-				return "secondary";
+				return "primarySoft";
 			default:
 				return "outline";
 		}
+	};
+
+	const getRoleBadgeClassName = (role: string): string | undefined => {
+		return role === "admin" ? "border-primary/30 text-primary/80" : undefined;
 	};
 
 	return (
@@ -410,7 +408,10 @@ export const MembersManagement = ({
 									</div>
 								</TableCell>
 								<TableCell>
-									<Badge variant={getRoleBadgeVariant(member.role)}>
+									<Badge
+										className={getRoleBadgeClassName(member.role)}
+										variant={getRoleBadgeVariant(member.role)}
+									>
 										{member.role}
 									</Badge>
 								</TableCell>

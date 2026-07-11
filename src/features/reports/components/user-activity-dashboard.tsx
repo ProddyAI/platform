@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import {
 	Card,
 	CardContent,
@@ -132,14 +133,10 @@ export const UserActivityDashboard = ({
 
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 					{Array.from({ length: 4 }).map((_, index) => (
-						<Card key={`kpi-skeleton-${index}`}>
-							<CardHeader className="pb-2">
-								<Skeleton className="h-4 w-24" />
-							</CardHeader>
-							<CardContent>
-								<Skeleton className="h-8 w-20 mb-2" />
-								<Skeleton className="h-3 w-32" />
-							</CardContent>
+						<Card className="space-y-2 p-5" key={`kpi-skeleton-${index}`}>
+							<Skeleton className="h-4 w-24" />
+							<Skeleton className="h-8 w-20" />
+							<Skeleton className="h-3 w-32" />
 						</Card>
 					))}
 				</div>
@@ -248,85 +245,70 @@ export const UserActivityDashboard = ({
 				)}
 			</div>
 
-			{/* Stats overview */}
+			{/* Stats overview. Plain tiles rather than StatCard: none of these
+			    metrics have a previous-period comparison, and StatCard's caption
+			    only renders alongside a delta chip. */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Active Users
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<Users className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">{activeUsers}</div>
-						</div>
-						<CardDescription>
-							{activeUserPercentage}% of {totalMembers} total users
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Users className="size-4" />
+						Active Users
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber value={activeUsers} />
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{activeUserPercentage}% of {totalMembers} total users
+					</div>
 				</Card>
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Total Messages
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">{totalMessages}</div>
-						</div>
-						<CardDescription>
-							{totalMembers > 0
-								? (totalMessages / totalMembers).toFixed(1)
-								: "0"}{" "}
-							per user
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<MessageSquare className="size-4" />
+						Total Messages
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber value={totalMessages} />
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{totalMembers > 0 ? (totalMessages / totalMembers).toFixed(1) : "0"}{" "}
+						per user
+					</div>
 				</Card>
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Total Reactions
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<ThumbsUp className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">{totalReactions}</div>
-						</div>
-						<CardDescription>
-							{totalMembers > 0
-								? (totalReactions / totalMembers).toFixed(1)
-								: "0"}{" "}
-							per user
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<ThumbsUp className="size-4" />
+						Total Reactions
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber value={totalReactions} />
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{totalMembers > 0
+							? (totalReactions / totalMembers).toFixed(1)
+							: "0"}{" "}
+						per user
+					</div>
 				</Card>
 
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Total Time Spent
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center">
-							<Clock className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">
-								{formatDuration(totalTimeSpent, "short")}
-							</div>
-						</div>
-						<CardDescription>
-							{activeUsers > 0
-								? formatDuration(totalTimeSpent / activeUsers, "short")
-								: "0s"}{" "}
-							per active user
-						</CardDescription>
-					</CardContent>
+				<Card className="p-5">
+					<div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Clock className="size-4" />
+						Total Time Spent
+					</div>
+					<div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+						<AnimatedNumber
+							format={(n) => formatDuration(n, "short")}
+							value={totalTimeSpent}
+						/>
+					</div>
+					<div className="mt-2 text-xs text-muted-foreground">
+						{activeUsers > 0
+							? formatDuration(totalTimeSpent / activeUsers, "short")
+							: "0s"}{" "}
+						per active user
+					</div>
 				</Card>
 			</div>
 
