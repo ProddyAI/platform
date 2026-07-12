@@ -24,6 +24,34 @@ interface InitiateOptions {
  */
 type ConnectedAccountDeleteResult = boolean | undefined | { success: boolean };
 
+export type AppConnectionStatus =
+	| "ACTIVE"
+	| "PENDING"
+	| "EXPIRED"
+	| "ERROR"
+	| "DISABLED";
+
+/**
+ * Composio's own connection statuses (see @composio/core's ConnectionStatuses),
+ * mapped onto the smaller status set stored in our `connected_accounts` schema.
+ * Unrecognized/missing statuses map to ERROR so a stalled or unexpected
+ * Composio response never gets recorded as a working connection.
+ */
+const COMPOSIO_TO_APP_STATUS: Record<string, AppConnectionStatus> = {
+	ACTIVE: "ACTIVE",
+	INITIALIZING: "PENDING",
+	INITIATED: "PENDING",
+	FAILED: "ERROR",
+	EXPIRED: "EXPIRED",
+	INACTIVE: "DISABLED",
+};
+
+export function mapComposioStatusToAppStatus(
+	composioStatus: string | undefined
+): AppConnectionStatus {
+	return COMPOSIO_TO_APP_STATUS[composioStatus ?? ""] ?? "ERROR";
+}
+
 export const composio = new Composio({
 	apiKey: process.env.COMPOSIO_API_KEY || "dummy_composio_key_for_build",
 	provider: new VercelProvider(),

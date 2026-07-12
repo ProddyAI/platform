@@ -12,7 +12,11 @@ import {
 	logRouteError,
 	sanitizeErrorMessage,
 } from "@/lib/assistant-error-utils";
-import { initializeComposio } from "@/lib/composio";
+import {
+	type AppConnectionStatus,
+	initializeComposio,
+	mapComposioStatusToAppStatus,
+} from "@/lib/composio";
 
 const convexUrl =
 	process.env.NEXT_PUBLIC_CONVEX_URL || "https://dummy.convex.cloud";
@@ -335,7 +339,9 @@ async function storeOrUpdateConnectedAccount(
 	memberId: string,
 	entityId: string,
 	composioAccountId: string,
-	resolvedConnection: ComposioConnectionRecord
+	resolvedConnection: ComposioConnectionRecord,
+	status: AppConnectionStatus,
+	statusReason?: string
 ) {
 	try {
 		const authConfigIdOrResponse = await resolveAuthConfigId(
@@ -358,7 +364,8 @@ async function storeOrUpdateConnectedAccount(
 				api.imports.integrations.updateConnectedAccountStatus,
 				{
 					connectedAccountId: existingConnectedAccount._id,
-					status: "ACTIVE",
+					status,
+					statusReason,
 					lastUsed: Date.now(),
 					composioAccountId,
 					metadata: resolvedConnection,
@@ -372,7 +379,8 @@ async function storeOrUpdateConnectedAccount(
 				userId: entityId,
 				composioAccountId,
 				toolkit,
-				status: "ACTIVE",
+				status,
+				statusReason,
 				metadata: resolvedConnection,
 				connectedBy: memberId as Id<"members">,
 			});
@@ -394,7 +402,12 @@ async function handleCompleteAction(
 	apiClient: ApiClient,
 	toolkit: ToolkitName,
 	workspaceId: string,
-	memberId: unknown
+	memberId: unknown,
+	// Composio appends these to the callback URL itself (see hosted auth / connect
+	// link docs) — `composioAccountId` identifies the account it just created, and
+	// `composioStatus` is "success" or "failed" for that OAuth attempt.
+	composioAccountIdFromCallback?: string,
+	composioStatusFromCallback?: string
 ): Promise<NextResponse> {
 	const auth = await ensureMemberAuthorized(
 		memberId,
@@ -404,22 +417,51 @@ async function handleCompleteAction(
 
 	const entityId = `member_${auth.memberId}`;
 
-	try {
-		const connectionsResponse = await apiClient.getConnections(entityId);
-		const connectedAccounts = extractConnectedAccounts(connectionsResponse);
-		const resolvedConnection = selectConnectionForToolkit(
-			connectedAccounts,
-			String(toolkit ?? "")
+	if (composioStatusFromCallback === "failed") {
+		return NextResponse.json(
+			buildActionableErrorPayload({
+				message: `${toolkit} authorization was not completed.`,
+				nextStep: "Retry connecting the account.",
+				code: "AGENTAUTH_OAUTH_FAILED",
+				recoverable: true,
+			}),
+			{ status: 400 }
 		);
-		const composioAccountId =
-			resolvedConnection?.id ?? resolvedConnection?.connectionId;
+	}
 
-		if (!resolvedConnection || !composioAccountId) {
+	try {
+		let composioAccountId = composioAccountIdFromCallback;
+		let resolvedConnection: ComposioConnectionRecord | undefined;
+
+		if (!composioAccountId) {
+			// Fallback for callers that didn't forward Composio's own redirect
+			// params: find the account by listing and matching on toolkit.
+			const connectionsResponse = await apiClient.getConnections(entityId);
+			const connectedAccounts = extractConnectedAccounts(connectionsResponse);
+			resolvedConnection = selectConnectionForToolkit(
+				connectedAccounts,
+				String(toolkit ?? "")
+			);
+			composioAccountId =
+				resolvedConnection?.id ?? resolvedConnection?.connectionId;
+		}
+
+		if (!composioAccountId) {
 			return NextResponse.json(
 				{ error: "No connected account found" },
 				{ status: 404 }
 			);
 		}
+
+		// Never trust a client-supplied "success" status: ask Composio for the
+		// account's real, current status before persisting anything.
+		const liveAccount = (await apiClient.getConnectionStatus(
+			composioAccountId
+		)) as { status?: string; [key: string]: unknown } | undefined;
+		const appStatus = mapComposioStatusToAppStatus(liveAccount?.status);
+		resolvedConnection = (liveAccount ??
+			resolvedConnection ??
+			{}) as ComposioConnectionRecord;
 
 		const errResponse = await storeOrUpdateConnectedAccount(
 			toolkit,
@@ -427,9 +469,27 @@ async function handleCompleteAction(
 			auth.memberId,
 			entityId,
 			composioAccountId,
-			resolvedConnection
+			resolvedConnection,
+			appStatus,
+			liveAccount?.status
+				? undefined
+				: "Composio did not return a connection status"
 		);
 		if (errResponse) return errResponse;
+
+		if (appStatus !== "ACTIVE") {
+			return NextResponse.json(
+				buildActionableErrorPayload({
+					message: `${toolkit} did not connect successfully (status: ${
+						liveAccount?.status ?? "unknown"
+					}).`,
+					nextStep: "Retry connecting the account.",
+					code: "AGENTAUTH_CONNECTION_NOT_ACTIVE",
+					recoverable: true,
+				}),
+				{ status: 409 }
+			);
+		}
 
 		return NextResponse.json({
 			success: true,
@@ -464,7 +524,15 @@ async function handleCompleteAction(
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();
-		const { action, userId, toolkit, workspaceId, memberId } = body;
+		const {
+			action,
+			userId,
+			toolkit,
+			workspaceId,
+			memberId,
+			composioAccountId,
+			status,
+		} = body;
 
 		if (!userId || !toolkit || !workspaceId) {
 			return NextResponse.json(
@@ -489,7 +557,9 @@ export async function POST(req: NextRequest) {
 				apiClient,
 				toolkit,
 				workspaceId,
-				memberId
+				memberId,
+				typeof composioAccountId === "string" ? composioAccountId : undefined,
+				typeof status === "string" ? status : undefined
 			);
 		}
 

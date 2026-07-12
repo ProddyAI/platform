@@ -154,9 +154,17 @@ export const IntegrationsManagement = ({
 	}, [workspaceId, currentMember._id]);
 
 	const handleConnectionComplete = useCallback(
-		async (toolkit: string, userId?: string) => {
+		async (
+			toolkit: string,
+			userId?: string,
+			composioAccountId?: string,
+			composioStatus?: string
+		) => {
 			try {
-				// Complete connection using AgentAuth with member-scoped entity ID
+				// Complete connection using AgentAuth with member-scoped entity ID.
+				// composioAccountId/composioStatus (when present) are Composio's own
+				// callback params, forwarded so the server can verify against Composio
+				// directly instead of guessing which connection just completed.
 				const response = await fetch("/api/assistant/composio/agentauth", {
 					method: "POST",
 					headers: {
@@ -168,18 +176,31 @@ export const IntegrationsManagement = ({
 						toolkit,
 						workspaceId,
 						memberId: currentMember._id,
+						composioAccountId,
+						status: composioStatus,
 					}),
 				});
 
+				const data = await response.json().catch(() => null);
+
 				if (!response.ok) {
-					throw new Error("Failed to complete AgentAuth connection");
+					throw new Error(data?.error || "Failed to complete connection setup");
 				}
 
-				// Refresh the data
+				toast.success(
+					`${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} connected`
+				);
+			} catch (error) {
+				toast.error(
+					error instanceof Error
+						? error.message
+						: "Failed to complete connection setup"
+				);
+			} finally {
+				// Refresh regardless of outcome so the card reflects whatever status
+				// (ACTIVE, PENDING, ERROR, ...) the server actually persisted.
 				await fetchData();
 				setRefreshKey((prev) => prev + 1);
-			} catch (_error) {
-				toast.error("Failed to complete connection setup");
 			}
 		},
 		[workspaceId, currentMember._id, fetchData]
@@ -190,16 +211,26 @@ export const IntegrationsManagement = ({
 		const connected = searchParams.get("connected");
 		const toolkit = searchParams.get("toolkit");
 		const userId = searchParams.get("userId");
+		// Composio appends these itself once the hosted auth flow finishes —
+		// see https://docs.composio.dev/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link
+		const composioAccountId = searchParams.get("connectedAccountId");
+		const composioStatus = searchParams.get("status");
 
 		if (connected === "true" && toolkit && !handledCallbackRef.current) {
 			handledCallbackRef.current = true;
 
-			toast.success(
-				`${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} connected`
-			);
-
-			// Handle the connection completion using AgentAuth
-			handleConnectionComplete(toolkit, userId || undefined);
+			if (composioStatus === "failed") {
+				toast.error(
+					`${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} authorization failed`
+				);
+			} else {
+				handleConnectionComplete(
+					toolkit,
+					userId || undefined,
+					composioAccountId || undefined,
+					composioStatus || undefined
+				);
+			}
 
 			// Remove the query parameters (including memberId added by our callbackUrl)
 			const newUrl = new URL(window.location.href);
@@ -207,9 +238,10 @@ export const IntegrationsManagement = ({
 			newUrl.searchParams.delete("toolkit");
 			newUrl.searchParams.delete("userId");
 			newUrl.searchParams.delete("memberId");
-			// Also remove any Composio-appended params
+			// Also remove Composio-appended params
 			newUrl.searchParams.delete("connectedAccountId");
 			newUrl.searchParams.delete("appName");
+			newUrl.searchParams.delete("status");
 			router.replace(newUrl.pathname + newUrl.search);
 		}
 	}, [searchParams, router, handleConnectionComplete]);

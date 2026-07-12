@@ -91,7 +91,8 @@ const MessageContentComponent = ({
 		parsedBodyType !== null &&
 		(parsedBodyType.includes("canvas") ||
 			parsedBodyType.includes("note") ||
-			parsedBodyType === "file");
+			parsedBodyType === "file" ||
+			parsedBodyType === "meeting");
 
 	const isFileMessage = parsedBodyType === "file";
 

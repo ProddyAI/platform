@@ -53,6 +53,13 @@ export const HeroSection = () => {
 
 	return (
 		<section className="relative w-full pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-muted/30">
+			{/* Ambient brand wash — a soft purple aurora that grounds the hero in
+			    primary without tinting the readable content above it. */}
+			<div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+				<div className="absolute left-1/2 -top-24 h-[560px] w-[900px] max-w-[95vw] -translate-x-1/2 rounded-full bg-primary/25 blur-[130px]" />
+				<div className="absolute left-[12%] top-1/3 h-[380px] w-[380px] rounded-full bg-secondary/10 blur-[120px]" />
+				<div className="absolute right-[10%] top-1/4 h-[320px] w-[320px] rounded-full bg-primary/15 blur-[120px]" />
+			</div>
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
 				<m.div
 					animate={isVisible ? "visible" : "hidden"}

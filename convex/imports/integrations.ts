@@ -479,6 +479,7 @@ export const updateConnectedAccountStatus = mutation({
 		isDisabled: v.optional(v.boolean()),
 		lastUsed: v.optional(v.number()),
 		composioAccountId: v.optional(v.string()),
+		statusReason: v.optional(v.string()),
 		// metadata can contain integration-specific data like OAuth tokens, refresh tokens, or provider-specific settings
 		metadata: v.optional(v.record(v.string(), v.any())),
 	},
@@ -488,6 +489,7 @@ export const updateConnectedAccountStatus = mutation({
 			isDisabled?: boolean;
 			lastUsed?: number;
 			composioAccountId?: string;
+			statusReason?: string;
 			metadata?: Record<string, unknown>;
 		} = {
 			status: args.status,
@@ -503,6 +505,10 @@ export const updateConnectedAccountStatus = mutation({
 
 		if (args.composioAccountId !== undefined) {
 			updateData.composioAccountId = args.composioAccountId;
+		}
+
+		if (args.statusReason !== undefined) {
+			updateData.statusReason = args.statusReason;
 		}
 
 		if (args.metadata !== undefined) {
