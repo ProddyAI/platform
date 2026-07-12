@@ -193,7 +193,7 @@ async function handleAuthorizeAction(
 			process.env.NEXT_PUBLIC_APP_URL ||
 			process.env.SITE_URL ||
 			"https://localhost:3000";
-		const callbackUrl = `${appUrl}/workspace/${workspaceId}/manage?connected=true&toolkit=${encodeURIComponent(toolkit)}&memberId=${encodeURIComponent(auth.memberId)}&userId=${encodeURIComponent(entityId)}`;
+		const callbackUrl = `${appUrl}/workspace/${workspaceId}/integrations?connected=true&toolkit=${encodeURIComponent(toolkit)}&memberId=${encodeURIComponent(auth.memberId)}&userId=${encodeURIComponent(entityId)}`;
 
 		const connection = await apiClient.createConnection(
 			entityId,

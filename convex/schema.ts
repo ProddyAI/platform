@@ -189,6 +189,23 @@ const schema = defineSchema({
 		.index("by_workspace_month", ["workspaceId", "month"])
 		.index("by_user_month", ["userId", "month"]),
 
+	// Workspace-level rollup of usageStats (summed across all members) for the
+	// current month, maintained on every usage increment. Lets limit checks read
+	// one row instead of collecting every member's per-user row on each create.
+	workspaceUsageTotals: defineTable({
+		workspaceId: v.id("workspaces"),
+		month: v.string(),
+		aiRequestCount: v.optional(v.number()),
+		aiDiagramCount: v.optional(v.number()),
+		aiSummaryCount: v.optional(v.number()),
+		messageCount: v.optional(v.number()),
+		taskCount: v.optional(v.number()),
+		channelCount: v.optional(v.number()),
+		boardCount: v.optional(v.number()),
+		noteCount: v.optional(v.number()),
+		updatedAt: v.number(),
+	}).index("by_workspace_month", ["workspaceId", "month"]),
+
 	members: defineTable({
 		userId: v.id("users"),
 		workspaceId: v.id("workspaces"),
@@ -220,6 +237,9 @@ const schema = defineSchema({
 		createdBy: v.id("members"),
 		createdAt: v.number(),
 		updatedAt: v.number(),
+		// Denormalized count of issues in the board channel, maintained on
+		// issue create/delete so project listing avoids scanning every issue.
+		issueCount: v.optional(v.number()),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_board_channel_id", [
@@ -251,12 +271,29 @@ const schema = defineSchema({
 				time: v.optional(v.string()), // optional time string
 			})
 		),
+		// Denormalized thread metadata on the PARENT message, maintained when a
+		// reply is created/deleted. Avoids collecting every reply just to show a
+		// thread's count + last-reply preview on each message in a list.
+		replyCount: v.optional(v.number()),
+		lastReplyTime: v.optional(v.number()),
+		lastReplyMemberId: v.optional(v.id("members")),
+		// Denormalized plain text of `body` (rich text is stored as JSON), set on
+		// every write. Backs the full-text search index below.
+		plainText: v.optional(v.string()),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_channel_id", ["channelId"])
 		.index("by_conversation_id", ["conversationId"])
 		.index("by_parent_message_id", ["parentMessageId"])
+		.index("by_workspace_id_parent_message_id", [
+			"workspaceId",
+			"parentMessageId",
+		])
+		.searchIndex("search_plain_text", {
+			searchField: "plainText",
+			filterFields: ["workspaceId", "channelId", "conversationId"],
+		})
 		.index("by_channel_id_parent_message_id_conversation_id", [
 			"channelId",
 			"parentMessageId",
@@ -275,7 +312,9 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_date", ["date"])
 		.index("by_message_id", ["messageId"])
-		.index("by_member_id", ["memberId"]),
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id_date", ["workspaceId", "date"])
+		.index("by_member_id_date", ["memberId", "date"]),
 
 	reactions: defineTable({
 		workspaceId: v.id("workspaces"),
@@ -415,9 +454,34 @@ const schema = defineSchema({
 		// Watchers and relationships
 		watchers: v.optional(v.array(v.id("members"))),
 		blockedBy: v.optional(v.array(v.id("cards"))),
+		// Denormalized workspace (cards reach it via list -> channel) so
+		// workspace-wide due-date scans can use an index instead of walking
+		// every channel and list.
+		workspaceId: v.optional(v.id("workspaces")),
 	})
 		.index("by_list_id", ["listId"])
-		.index("by_parent_card_id", ["parentCardId"]),
+		.index("by_parent_card_id", ["parentCardId"])
+		.index("by_workspace_id_due_date", ["workspaceId", "dueDate"]),
+
+	// Assignee link tables — one row per (item, member). Let "issues/cards
+	// assigned to me" resolve via a single indexed lookup instead of scanning
+	// every issue/card in the workspace and filtering the assignees array in
+	// memory. Kept in sync on create/update/delete; rebuildable via backfill.
+	issueAssignees: defineTable({
+		issueId: v.id("issues"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+	})
+		.index("by_issue_id", ["issueId"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
+
+	cardAssignees: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
 
 	// Card comments for discussions on cards
 	card_comments: defineTable({
@@ -586,7 +650,9 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_channel_id", ["channelId"])
 		.index("by_activity_type", ["activityType"])
-		.index("by_timestamp", ["timestamp"]),
+		.index("by_timestamp", ["timestamp"])
+		.index("by_member_id_timestamp", ["memberId", "timestamp"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
 
 	channelSessions: defineTable({
 		memberId: v.id("members"),
@@ -599,7 +665,8 @@ const schema = defineSchema({
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_channel_id", ["channelId"])
-		.index("by_start_time", ["startTime"]),
+		.index("by_start_time", ["startTime"])
+		.index("by_member_id_start_time", ["memberId", "startTime"]),
 
 	dailyStats: defineTable({
 		workspaceId: v.id("workspaces"),
@@ -738,13 +805,21 @@ const schema = defineSchema({
 		coverImage: v.optional(v.id("_storage")),
 		icon: v.optional(v.string()),
 		tags: v.optional(v.array(v.string())), // Added from new schema
+		// Public sharing: when isPublic is true the note is viewable at
+		// /share/note/<publicShareId> without authentication. sharePasswordHash,
+		// when present, gates that page behind a password (SHA-256, base64).
+		isPublic: v.optional(v.boolean()),
+		publicShareId: v.optional(v.string()),
+		sharePasswordHash: v.optional(v.string()),
+		sharedAt: v.optional(v.number()),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_channel_id", ["channelId"])
 		.index("by_member_id", ["memberId"])
-		.index("by_workspace_id_channel_id", ["workspaceId", "channelId"]),
+		.index("by_workspace_id_channel_id", ["workspaceId", "channelId"])
+		.index("by_public_share_id", ["publicShareId"]),
 
 	chatHistory: defineTable({
 		workspaceId: v.id("workspaces"),

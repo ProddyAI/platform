@@ -4,6 +4,13 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { mutation, query } from "../_generated/server";
 import { enforceWorkspaceLimit } from "../billing/usageTracking";
+import {
+	adjustProjectIssueCount,
+	removeCardAssignees,
+	removeIssueAssignees,
+	syncCardAssignees,
+	syncIssueAssignees,
+} from "../lib/denormalize";
 import { addIssueBlockingRelationshipHelper } from "../lib/issueBlocking";
 import {
 	getUserEmailFromMemberId,
@@ -157,7 +164,12 @@ const deleteIssueCascade = async (
 		await ctx.db.delete(relation._id);
 	}
 
+	const issueToDelete = await ctx.db.get(issueId);
+	await removeIssueAssignees(ctx, issueId);
 	await ctx.db.delete(issueId);
+	if (issueToDelete) {
+		await adjustProjectIssueCount(ctx, issueToDelete.channelId, -1);
+	}
 };
 
 // LISTS
@@ -197,6 +209,7 @@ export const deleteList = mutation({
 			.withIndex("by_list_id", (q) => q.eq("listId", listId))
 			.collect();
 		for (const card of cards) {
+			await removeCardAssignees(ctx, card._id);
 			await ctx.db.delete(card._id);
 		}
 		// Delete the list
@@ -274,7 +287,12 @@ export const createCard = mutation({
 		await enforceWorkspaceLimit(ctx, channel.workspaceId, "board");
 
 		// Insert the card
-		const cardId = await ctx.db.insert("cards", args);
+		const cardId = await ctx.db.insert("cards", {
+			...args,
+			workspaceId: channel.workspaceId,
+		});
+
+		await syncCardAssignees(ctx, cardId, channel.workspaceId, args.assignees);
 
 		// Track board card usage
 		const boardUserId = (await ctx.auth.getUserIdentity())?.subject.split(
@@ -426,6 +444,15 @@ export const updateCard = mutation({
 		// Update the card
 		await ctx.db.patch(cardId, updates);
 
+		if (updates.assignees !== undefined) {
+			await syncCardAssignees(
+				ctx,
+				cardId,
+				channel.workspaceId,
+				updates.assignees
+			);
+		}
+
 		// Check if assignees were updated
 		if (updates.assignees !== undefined) {
 			try {
@@ -519,6 +546,7 @@ export const deleteCard = mutation({
 			.withIndex("by_parent_card_id", (q) => q.eq("parentCardId", cardId))
 			.collect();
 		for (const subtask of subtasks) {
+			await removeCardAssignees(ctx, subtask._id);
 			await ctx.db.delete(subtask._id);
 		}
 
@@ -541,6 +569,7 @@ export const deleteCard = mutation({
 		}
 
 		// Delete the card itself
+		await removeCardAssignees(ctx, cardId);
 		return await ctx.db.delete(cardId);
 	},
 });
@@ -608,134 +637,6 @@ export const getLists = query({
 	},
 });
 
-export const getCards = query({
-	args: { listId: v.id("lists") },
-	handler: async (ctx: QueryCtx, { listId }: { listId: Id<"lists"> }) => {
-		const cards = await ctx.db
-			.query("cards")
-			.withIndex("by_list_id", (q) => q.eq("listId", listId))
-			.order("asc")
-			.collect();
-
-		// Filter out subtasks (only show parent cards at top level)
-		const parentCards = cards.filter((card) => !card.parentCardId);
-
-		// Enhance cards with subtask stats
-		const cardsWithStats = await Promise.all(
-			parentCards.map(async (card) => {
-				const subtasks = await ctx.db
-					.query("cards")
-					.withIndex("by_parent_card_id", (q) => q.eq("parentCardId", card._id))
-					.collect();
-
-				const completedCount = subtasks.filter((s) => s.isCompleted).length;
-				const totalCount = subtasks.length;
-
-				return {
-					...card,
-					subtaskStats: {
-						completed: completedCount,
-						total: totalCount,
-						percentage:
-							totalCount > 0 ? (completedCount / totalCount) * 100 : 0,
-					},
-				};
-			})
-		);
-
-		return cardsWithStats;
-	},
-});
-
-export const getAllCardsForChannel = query({
-	args: { channelId: v.id("channels") },
-	handler: async (ctx, { channelId }) => {
-		const lists = await ctx.db
-			.query("lists")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
-			.collect();
-		const allCards = [];
-		for (const list of lists) {
-			const cards = await ctx.db
-				.query("cards")
-				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
-				.collect();
-			allCards.push(...cards);
-		}
-		return allCards;
-	},
-});
-
-export const getUniqueLabels = query({
-	args: { channelId: v.id("channels") },
-	handler: async (ctx, { channelId }) => {
-		const lists = await ctx.db
-			.query("lists")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
-			.collect();
-		const allLabels = new Set<string>();
-
-		for (const list of lists) {
-			const cards = await ctx.db
-				.query("cards")
-				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
-				.collect();
-
-			// Collect all labels
-			for (const card of cards) {
-				if (card.labels && Array.isArray(card.labels)) {
-					card.labels.forEach((label) => {
-						if (label) allLabels.add(label);
-					});
-				}
-			}
-		}
-
-		return Array.from(allLabels);
-	},
-});
-
-export const getCardsWithDueDate = query({
-	args: { workspaceId: v.id("workspaces") },
-	handler: async (ctx, { workspaceId }) => {
-		// Get all channels in the workspace
-		const channels = await ctx.db
-			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
-			.collect();
-
-		const cardsWithDueDate = [];
-
-		// For each channel, get all lists and cards
-		for (const channel of channels) {
-			const lists = await ctx.db
-				.query("lists")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
-				.collect();
-
-			for (const list of lists) {
-				const cards = await ctx.db
-					.query("cards")
-					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
-					.filter((q) => q.neq(q.field("dueDate"), undefined))
-					.collect();
-
-				// Add channel and list info to each card
-				const cardsWithContext = cards.map((card) => ({
-					...card,
-					channelId: channel._id,
-					channelName: channel.name,
-					listTitle: list.title,
-				}));
-
-				cardsWithDueDate.push(...cardsWithContext);
-			}
-		}
-
-		return cardsWithDueDate;
-	},
-});
-
 // Get members for a channel's workspace (for assignee selection)
 export const getMembersForChannel = query({
 	args: { channelId: v.id("channels") },
@@ -753,12 +654,16 @@ export const getMembersForChannel = query({
 			.collect();
 
 		// Populate user data for each member
+		const users = await Promise.all(
+			members.map((member) => ctx.db.get(member.userId))
+		);
+
 		const membersWithUserData = [];
-		for (const member of members) {
-			const user = await ctx.db.get(member.userId);
+		for (let i = 0; i < members.length; i++) {
+			const user = users[i];
 			if (user) {
 				membersWithUserData.push({
-					...member,
+					...members[i],
 					user: {
 						name: user.name,
 						image: user.image,
@@ -946,7 +851,9 @@ export const deleteStatus = mutation({
 			for (const mention of mentions) {
 				await ctx.db.delete(mention._id);
 			}
+			await removeIssueAssignees(ctx, issue._id);
 			await ctx.db.delete(issue._id);
+			await adjustProjectIssueCount(ctx, issue.channelId, -1);
 		}
 		return await ctx.db.delete(statusId);
 	},
@@ -1069,6 +976,14 @@ export const createIssue = mutation({
 			createdAt: now,
 			updatedAt: now,
 		});
+
+		await syncIssueAssignees(
+			ctx,
+			issueId,
+			channel.workspaceId,
+			validatedAssignees
+		);
+		await adjustProjectIssueCount(ctx, args.channelId, 1);
 
 		// Notify assignees
 		if (validatedAssignees && validatedAssignees.length > 0) {
@@ -1210,6 +1125,15 @@ export const updateIssue = mutation({
 				: {}),
 			updatedAt: Date.now(),
 		});
+
+		if (updates.assignees !== undefined) {
+			await syncIssueAssignees(
+				ctx,
+				issueId,
+				channel.workspaceId,
+				validatedAssignees
+			);
+		}
 
 		// Notify new assignees
 		if (validatedAssignees !== undefined) {
@@ -1496,53 +1420,65 @@ export const getBatchSubIssueStats = query({
 	args: { issueIds: v.array(v.id("issues")) },
 	handler: async (ctx, { issueIds }) => {
 		const stats: Record<string, { total: number; completed: number }> = {};
-		const checkedWorkspaceIds = new Set<string>();
-		const completedStatusIdsByChannel = new Map<string, Set<Id<"statuses">>>();
 		const uniqueIssueIds = [...new Set(issueIds)];
 
 		for (const issueId of uniqueIssueIds) {
-			const parentIssue = await ctx.db.get(issueId);
-			if (!parentIssue) {
-				stats[issueId] = { total: 0, completed: 0 };
-				continue;
-			}
+			stats[issueId] = { total: 0, completed: 0 };
+		}
 
-			const channel = await ctx.db.get(parentIssue.channelId);
-			if (!channel) {
-				stats[issueId] = { total: 0, completed: 0 };
-				continue;
+		const parentIssues = await Promise.all(
+			uniqueIssueIds.map((issueId) => ctx.db.get(issueId))
+		);
+
+		const parentIdsByChannel = new Map<Id<"channels">, Id<"issues">[]>();
+		for (const parentIssue of parentIssues) {
+			if (!parentIssue) continue;
+			const existing = parentIdsByChannel.get(parentIssue.channelId);
+			if (existing) {
+				existing.push(parentIssue._id);
+			} else {
+				parentIdsByChannel.set(parentIssue.channelId, [parentIssue._id]);
 			}
+		}
+
+		const checkedWorkspaceIds = new Set<string>();
+
+		for (const [channelId, parentIds] of parentIdsByChannel) {
+			const channel = await ctx.db.get(channelId);
+			if (!channel) continue;
 
 			if (!checkedWorkspaceIds.has(channel.workspaceId)) {
 				await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 				checkedWorkspaceIds.add(channel.workspaceId);
 			}
 
-			const subIssues = await ctx.db
-				.query("issues")
-				.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
-				.collect();
+			const [channelIssues, completedStatusIds] = await Promise.all([
+				ctx.db
+					.query("issues")
+					.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+					.collect(),
+				getCompletedStatusIdsForChannel(ctx, channelId),
+			]);
 
-			let completedStatusIds = completedStatusIdsByChannel.get(
-				parentIssue.channelId
-			);
-			if (!completedStatusIds) {
-				completedStatusIds = await getCompletedStatusIdsForChannel(
-					ctx,
-					parentIssue.channelId
-				);
-				completedStatusIdsByChannel.set(
-					parentIssue.channelId,
-					completedStatusIds
-				);
+			const subIssuesByParent = new Map<string, Doc<"issues">[]>();
+			for (const issue of channelIssues) {
+				if (!issue.parentIssueId) continue;
+				const existing = subIssuesByParent.get(issue.parentIssueId);
+				if (existing) {
+					existing.push(issue);
+				} else {
+					subIssuesByParent.set(issue.parentIssueId, [issue]);
+				}
 			}
 
-			const total = subIssues.length;
-			const completed = subIssues.filter((issue) =>
-				completedStatusIds.has(issue.statusId)
-			).length;
-
-			stats[issueId] = { total, completed };
+			for (const parentId of parentIds) {
+				const subIssues = subIssuesByParent.get(parentId) ?? [];
+				const total = subIssues.length;
+				const completed = subIssues.filter((issue) =>
+					completedStatusIds.has(issue.statusId)
+				).length;
+				stats[parentId] = { total, completed };
+			}
 		}
 
 		return stats;
@@ -2025,6 +1961,14 @@ export const createSubIssue = mutation({
 			updatedAt: now,
 		});
 
+		await syncIssueAssignees(
+			ctx,
+			subIssueId,
+			channel.workspaceId,
+			validatedAssignees
+		);
+		await adjustProjectIssueCount(ctx, parentIssue.channelId, 1);
+
 		// Notify assignees
 		if (validatedAssignees && validatedAssignees.length > 0) {
 			try {
@@ -2269,33 +2213,34 @@ export const getAssignedIssues = query({
 			throw new Error("Member does not belong to this workspace");
 		}
 
-		const channels = await ctx.db
-			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+		const links = await ctx.db
+			.query("issueAssignees")
+			.withIndex("by_workspace_id_member_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("memberId", memberId)
+			)
 			.collect();
 
+		const issues = await Promise.all(
+			links.map((link) => ctx.db.get(link.issueId))
+		);
+
+		const channelCache = new Map<Id<"channels">, Doc<"channels"> | null>();
 		const assignedIssues = [];
 
-		for (const channel of channels) {
-			const issues = await ctx.db
-				.query("issues")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
-				.collect();
+		for (const issue of issues) {
+			if (!issue) continue;
+			let channel = channelCache.get(issue.channelId);
+			if (channel === undefined) {
+				channel = await ctx.db.get(issue.channelId);
+				channelCache.set(issue.channelId, channel);
+			}
+			if (!channel) continue;
 
-			const memberIssues = issues.filter(
-				(issue) =>
-					issue.assignees &&
-					Array.isArray(issue.assignees) &&
-					issue.assignees.includes(memberId)
-			);
-
-			const issuesWithContext = memberIssues.map((issue) => ({
+			assignedIssues.push({
 				...issue,
 				channelId: channel._id,
 				channelName: channel.name,
-			}));
-
-			assignedIssues.push(...issuesWithContext);
+			});
 		}
 
 		return assignedIssues;
@@ -2409,7 +2354,7 @@ export const migrateListsToStatuses = mutation({
 			const now = Date.now();
 			for (const card of cards) {
 				if (card.parentCardId) continue; // Skip subtasks
-				await ctx.db.insert("issues", {
+				const migratedIssueId = await ctx.db.insert("issues", {
 					channelId,
 					statusId,
 					title: card.title,
@@ -2422,6 +2367,13 @@ export const migrateListsToStatuses = mutation({
 					createdAt: card._creationTime,
 					updatedAt: now,
 				});
+				await syncIssueAssignees(
+					ctx,
+					migratedIssueId,
+					channel.workspaceId,
+					card.assignees
+				);
+				await adjustProjectIssueCount(ctx, channelId, 1);
 			}
 		}
 
@@ -2497,7 +2449,15 @@ export const createSubtask = mutation({
 			parentCardId: args.parentCardId,
 			isCompleted: false,
 			assignees: args.assignees,
+			workspaceId: channel.workspaceId,
 		});
+
+		await syncCardAssignees(
+			ctx,
+			subtaskId,
+			channel.workspaceId,
+			args.assignees
+		);
 
 		// Log activity
 		const auth = await ctx.auth.getUserIdentity();
@@ -2945,46 +2905,43 @@ export const getAssignedCards = query({
 		memberId: v.id("members"),
 	},
 	handler: async (ctx, { workspaceId, memberId }) => {
-		// Get all channels in the workspace
-		const channels = await ctx.db
-			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+		const links = await ctx.db
+			.query("cardAssignees")
+			.withIndex("by_workspace_id_member_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("memberId", memberId)
+			)
 			.collect();
 
+		const cards = await Promise.all(
+			links.map((link) => ctx.db.get(link.cardId))
+		);
+
+		const listCache = new Map<Id<"lists">, Doc<"lists"> | null>();
+		const channelCache = new Map<Id<"channels">, Doc<"channels"> | null>();
 		const assignedCards = [];
 
-		// For each channel, get all lists and cards
-		for (const channel of channels) {
-			const lists = await ctx.db
-				.query("lists")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
-				.collect();
-
-			for (const list of lists) {
-				// Get all cards in the list
-				const cards = await ctx.db
-					.query("cards")
-					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
-					.collect();
-
-				// Filter cards that have the member as an assignee
-				const memberCards = cards.filter(
-					(card) =>
-						card.assignees &&
-						Array.isArray(card.assignees) &&
-						card.assignees.includes(memberId)
-				);
-
-				// Add channel and list info to each card
-				const cardsWithContext = memberCards.map((card) => ({
-					...card,
-					channelId: channel._id,
-					channelName: channel.name,
-					listTitle: list.title,
-				}));
-
-				assignedCards.push(...cardsWithContext);
+		for (const card of cards) {
+			if (!card) continue;
+			let list = listCache.get(card.listId);
+			if (list === undefined) {
+				list = await ctx.db.get(card.listId);
+				listCache.set(card.listId, list);
 			}
+			if (!list) continue;
+
+			let channel = channelCache.get(list.channelId);
+			if (channel === undefined) {
+				channel = await ctx.db.get(list.channelId);
+				channelCache.set(list.channelId, channel);
+			}
+			if (!channel) continue;
+
+			assignedCards.push({
+				...card,
+				channelId: channel._id,
+				channelName: channel.name,
+				listTitle: list.title,
+			});
 		}
 
 		return assignedCards;

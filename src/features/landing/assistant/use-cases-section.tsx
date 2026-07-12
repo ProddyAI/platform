@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { Bot, Briefcase, CheckSquare, Code, Target, Users } from "lucide-react";
 import { useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -66,7 +66,7 @@ export const UseCasesSection = () => {
 		>
 			<div className="container px-6 md:px-8 mx-auto max-w-7xl relative z-10">
 				<div className="text-center mb-16">
-					<motion.h2
+					<m.h2
 						animate={
 							isUseCasesInView
 								? { opacity: 1, y: 0 }
@@ -77,8 +77,8 @@ export const UseCasesSection = () => {
 						transition={{ duration: 0.5 }}
 					>
 						How Teams Use <span className="text-primary">Proddy AI</span>
-					</motion.h2>
-					<motion.p
+					</m.h2>
+					<m.p
 						animate={
 							isUseCasesInView
 								? { opacity: 1, y: 0 }
@@ -90,11 +90,11 @@ export const UseCasesSection = () => {
 					>
 						Real-world applications that boost productivity across different
 						team functions
-					</motion.p>
+					</m.p>
 				</div>
 
 				<Tabs className="w-full" defaultValue="marketing">
-					<motion.div
+					<m.div
 						animate={
 							isUseCasesInView
 								? { opacity: 1, y: 0 }
@@ -126,13 +126,13 @@ export const UseCasesSection = () => {
 								</TabsTrigger>
 							))}
 						</TabsList>
-					</motion.div>
+					</m.div>
 
 					<TabsContent
 						className="mt-8 animate-in fade-in-50 duration-300"
 						value="marketing"
 					>
-						<motion.div
+						<m.div
 							animate={
 								isUseCasesInView
 									? { opacity: 1, y: 0 }
@@ -241,14 +241,14 @@ export const UseCasesSection = () => {
 									</div>
 								</div>
 							</div>
-						</motion.div>
+						</m.div>
 					</TabsContent>
 
 					<TabsContent
 						className="mt-8 animate-in fade-in-50 duration-300"
 						value="product"
 					>
-						<motion.div
+						<m.div
 							animate={
 								isUseCasesInView
 									? { opacity: 1, y: 0 }
@@ -344,14 +344,14 @@ export const UseCasesSection = () => {
 									</div>
 								</div>
 							</div>
-						</motion.div>
+						</m.div>
 					</TabsContent>
 
 					<TabsContent
 						className="mt-8 animate-in fade-in-50 duration-300"
 						value="engineering"
 					>
-						<motion.div
+						<m.div
 							animate={
 								isUseCasesInView
 									? { opacity: 1, y: 0 }
@@ -455,14 +455,14 @@ export const UseCasesSection = () => {
 									</div>
 								</div>
 							</div>
-						</motion.div>
+						</m.div>
 					</TabsContent>
 
 					<TabsContent
 						className="mt-8 animate-in fade-in-50 duration-300"
 						value="leadership"
 					>
-						<motion.div
+						<m.div
 							animate={
 								isUseCasesInView
 									? { opacity: 1, y: 0 }
@@ -569,7 +569,7 @@ export const UseCasesSection = () => {
 									</div>
 								</div>
 							</div>
-						</motion.div>
+						</m.div>
 					</TabsContent>
 				</Tabs>
 			</div>

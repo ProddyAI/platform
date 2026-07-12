@@ -2,6 +2,7 @@
 
 import { CalendarIcon, Loader } from "lucide-react";
 import dynamic from "next/dynamic";
+import { memo, useMemo } from "react";
 import { Reactions } from "@/components/messaging/reactions";
 import { ThreadBar } from "@/components/messaging/thread-bar";
 import { Thumbnail } from "@/components/messaging/thumbnail";
@@ -55,7 +56,7 @@ interface MessageContentProps {
 	onContextMenu: (e: React.MouseEvent) => void;
 }
 
-export const MessageContent = ({
+const MessageContentComponent = ({
 	id,
 	body,
 	image,
@@ -77,14 +78,14 @@ export const MessageContent = ({
 }: MessageContentProps) => {
 	// Custom message components (canvas/note/file) are JSON payloads with a
 	// `type` field; parse it instead of matching substrings against the raw body.
-	const parsedBodyType = (() => {
+	const parsedBodyType = useMemo(() => {
 		try {
 			const parsed = JSON.parse(body);
 			return typeof parsed?.type === "string" ? parsed.type : null;
 		} catch {
 			return null;
 		}
-	})();
+	}, [body]);
 
 	const hasCustomMessageComponent =
 		parsedBodyType !== null &&
@@ -93,6 +94,14 @@ export const MessageContent = ({
 			parsedBodyType === "file");
 
 	const isFileMessage = parsedBodyType === "file";
+
+	const editorDefaultValue = useMemo(() => {
+		try {
+			return JSON.parse(body);
+		} catch {
+			return "";
+		}
+	}, [body]);
 
 	return (
 		<div
@@ -121,13 +130,7 @@ export const MessageContent = ({
 					>
 						{isEditing ? (
 							<Editor
-								defaultValue={(() => {
-									try {
-										return JSON.parse(body);
-									} catch {
-										return "";
-									}
-								})()}
+								defaultValue={editorDefaultValue}
 								disabled={isPending}
 								onCancel={onCancel}
 								onSubmit={onUpdate}
@@ -186,3 +189,5 @@ export const MessageContent = ({
 		</div>
 	);
 };
+
+export const MessageContent = memo(MessageContentComponent);

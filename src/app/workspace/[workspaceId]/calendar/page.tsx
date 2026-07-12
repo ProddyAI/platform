@@ -2,10 +2,10 @@
 
 import { addMonths, getMonth, getYear, subMonths } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
-import Renderer from "@/components/messaging/renderer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-events";
 import type { CalendarFilterOptions } from "@/features/calendar/components/calendar-filter";
@@ -19,6 +19,10 @@ import {
 	useSetWorkspaceTitle,
 	WorkspaceTitle,
 } from "../workspace-title-context";
+
+const Renderer = dynamic(() => import("@/components/messaging/renderer"), {
+	ssr: false,
+});
 
 // Quiet, token-based priority chips for the compact event cards in the month
 // grid — high/highest align with the warning tier, medium with primary, and

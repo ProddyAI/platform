@@ -1,14 +1,16 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { FileText, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
+import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
-import { useGetNotes } from "@/features/notes/api/use-get-notes";
+import type { Note } from "@/features/notes/types";
 import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
 import { WidgetEmptyState } from "../shared/widget-empty-state";
@@ -83,14 +85,13 @@ export const NotesWidget = ({
 	const router = useRouter();
 	const { data: channels } = useGetChannels({ workspaceId });
 
-	// useGetNotes requires a channelId or it skips the query, but the
-	// underlying query already returns every note in the workspace
-	// regardless of which channel id is passed in — so this widget shows
-	// workspace-wide notes, each tagged with its real channel below.
-	const firstChannel =
-		channels && channels.length > 0 ? channels[0] : undefined;
-	const firstChannelId = firstChannel?._id;
-	const { data: channelNotes } = useGetNotes(workspaceId, firstChannelId);
+	// getByChannel returns every note in the workspace regardless of channel,
+	// so the notes query runs on mount independently of the channels query —
+	// each note is tagged with its real channel below.
+	const channelNotes = useQuery(
+		api.content.notes.getByChannel,
+		workspaceId ? { workspaceId } : "skip"
+	) as Note[] | undefined;
 
 	// Combine notes with channel info
 	const allNotes = useMemo(() => {

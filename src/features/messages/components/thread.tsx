@@ -4,7 +4,7 @@ import { differenceInMinutes, format, isToday, isYesterday } from "date-fns";
 import { AlertTriangle, Check, Edit2, Loader, X, XIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import type Quill from "quill";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -196,20 +196,24 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 		}
 	};
 
-	const groupedMessages = results?.reduce(
-		(groups, message) => {
-			const date = new Date(message._creationTime);
-			const dateKey = format(date, "yyyy-MM-dd");
+	const groupedMessages = useMemo(
+		() =>
+			results?.reduce(
+				(groups, message) => {
+					const date = new Date(message._creationTime);
+					const dateKey = format(date, "yyyy-MM-dd");
 
-			if (!groups[dateKey]) {
-				groups[dateKey] = [];
-			}
+					if (!groups[dateKey]) {
+						groups[dateKey] = [];
+					}
 
-			groups[dateKey].unshift(message);
+					groups[dateKey].unshift(message);
 
-			return groups;
-		},
-		{} as Record<string, typeof results>
+					return groups;
+				},
+				{} as Record<string, typeof results>
+			),
+		[results]
 	);
 
 	const handleSaveTitle = async () => {

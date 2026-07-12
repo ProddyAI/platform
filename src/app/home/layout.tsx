@@ -1,5 +1,6 @@
 "use client";
 
+import { domAnimation, LazyMotion } from "framer-motion";
 import { type PropsWithChildren, useEffect } from "react";
 
 const HomeLayout = ({ children }: Readonly<PropsWithChildren>) => {
@@ -17,7 +18,13 @@ const HomeLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		document.documentElement.classList.remove("dark");
 	}, []);
 
-	return <div className="light">{children}</div>;
+	return (
+		<div className="light">
+			<LazyMotion features={domAnimation} strict>
+				{children}
+			</LazyMotion>
+		</div>
+	);
 };
 
 export default HomeLayout;

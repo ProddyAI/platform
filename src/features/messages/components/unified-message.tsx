@@ -75,26 +75,30 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	const isMeeting = data.type === "meeting";
 
 	// Get members from the database to display real names for live sessions
-	const members = useQuery(api.workspace.members.get, { workspaceId });
+	const members = useQuery(
+		api.workspace.members.get,
+		isLive ? { workspaceId } : "skip"
+	);
 
-	// Check meeting status by looking for completed meetingNotes
-	const meetingNotes = useQuery(
-		api.content.meetingNotes.getByWorkspace,
-		isMeeting && workspaceId ? { workspaceId } : "skip"
+	// Check meeting status by looking for the completed meetingNote
+	const meetingNote = useQuery(
+		api.content.meetingNotes.getByRoom,
+		isMeeting && workspaceId && data.meetingId
+			? { workspaceId, roomId: data.meetingId }
+			: "skip"
 	);
 
 	// Determine if the meeting is over
 	const meetingStatus = useMemo(() => {
-		if (!isMeeting || !data.meetingId || !meetingNotes) return null;
-		const note = meetingNotes.find((n) => n.roomId === data.meetingId);
-		if (note && note.status === "completed") {
+		if (!isMeeting || !data.meetingId || !meetingNote) return null;
+		if (meetingNote.status === "completed") {
 			const duration = data.startedAt
-				? Math.round((note.createdAt - data.startedAt) / 60000)
+				? Math.round((meetingNote.createdAt - data.startedAt) / 60000)
 				: null;
-			return { ended: true, duration, createdAt: note.createdAt };
+			return { ended: true, duration, createdAt: meetingNote.createdAt };
 		}
 		return null;
-	}, [isMeeting, data.meetingId, data.startedAt, meetingNotes]);
+	}, [isMeeting, data.meetingId, data.startedAt, meetingNote]);
 
 	// Update participant names when members data is available
 	useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { useContextMenu } from "@/contexts/context-menu-context";
 import { CompactMessage } from "@/features/chats/components/compact-message";
 import { FullMessage } from "@/features/chats/components/full-message";
@@ -134,6 +134,4 @@ const MessageComponent = ({
 	);
 };
 
-export const Message = (props: MessageProps) => {
-	return <MessageComponent {...props} />;
-};
+export const Message = memo(MessageComponent);

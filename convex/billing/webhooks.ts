@@ -187,7 +187,7 @@ const notifyAdminsOfPlanChange = async (
 	}
 	await ctx.scheduler.runAfter(
 		0,
-		internal.notify.email.sendWorkspacePlanChangeEmail,
+		internal.notify.emailActions.sendWorkspacePlanChangeEmail,
 		emailArgs
 	);
 };

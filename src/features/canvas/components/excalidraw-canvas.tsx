@@ -1100,7 +1100,7 @@ export const ExcalidrawCanvas = ({
 
 						pendingCommitRef.current = commitSave;
 						setSaveStatus("pending");
-						saveTimerRef.current = window.setTimeout(commitSave, 250);
+						saveTimerRef.current = window.setTimeout(commitSave, 1500);
 					}}
 					onPointerUpdate={({
 						pointer,

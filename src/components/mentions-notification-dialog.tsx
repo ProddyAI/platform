@@ -63,7 +63,7 @@ export const MentionsNotificationDialog = ({
 	const { data: mentions, isLoading: isLoadingMentions } =
 		useGetMentionedMessages(true); // Get all mentions
 	const { data: directMessages, isLoading: isLoadingDirectMessages } =
-		useGetDirectMessages(true); // Get all direct messages
+		useGetDirectMessages(true, open); // Get all direct messages when open
 	const markMentionAsRead = useMarkMentionAsRead();
 	const markDirectMessageAsRead = useMarkDirectMessageAsRead();
 	const markAllMentionsAsReadMutation = useMarkAllMentionsAsRead();

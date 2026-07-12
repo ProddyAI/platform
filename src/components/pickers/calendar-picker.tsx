@@ -215,10 +215,9 @@ export const CalendarPicker = ({
 				<div className="grid gap-4 py-4 max-w-[350px] mx-auto">
 					<div className="grid gap-2">
 						<Label id="date-option-label">Date</Label>
-						<div
+						<fieldset
 							aria-labelledby="date-option-label"
-							className="flex flex-wrap gap-2"
-							role="group"
+							className="flex flex-wrap gap-2 border-0 p-0 m-0"
 						>
 							<Button
 								onClick={() => handleDateTypeChange("today")}
@@ -248,7 +247,7 @@ export const CalendarPicker = ({
 							>
 								Custom
 							</Button>
-						</div>
+						</fieldset>
 
 						{dateType === "next-week" &&
 							showNextWeekOptions &&

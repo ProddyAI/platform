@@ -1,12 +1,15 @@
 "use client";
 
+import type { FunctionReturnType } from "convex/server";
 import { CheckCircle2, Circle } from "lucide-react";
 import { useState } from "react";
+import type { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { EmptyState } from "@/components/empty-state";
 import { badgeVariants } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useGetTaskCategories } from "../api/use-get-task-categories";
 import { TaskItem } from "./task-item";
 
 export type TaskData = {
@@ -18,6 +21,10 @@ export type TaskData = {
 	priority?: "low" | "medium" | "high";
 	categoryId?: Id<"categories">;
 };
+
+export type TaskCategory = FunctionReturnType<
+	typeof api.planning.tasks.getTaskCategories
+>[number];
 
 interface TaskToggleViewProps {
 	tasks: TaskData[];
@@ -33,6 +40,7 @@ export const TaskToggleView = ({
 	const [activeView, setActiveView] = useState<"active" | "completed">(
 		"active"
 	);
+	const { data: categories } = useGetTaskCategories({ workspaceId });
 
 	const activeTasks = tasks.filter((task) => !task.completed);
 	const completedTasks = tasks.filter((task) => task.completed);
@@ -58,6 +66,7 @@ export const TaskToggleView = ({
 			<div className="grid gap-4">
 				{viewTasks.map((task) => (
 					<TaskItem
+						category={categories?.find((cat) => cat._id === task.categoryId)}
 						categoryId={task.categoryId}
 						completed={task.completed}
 						description={task.description}

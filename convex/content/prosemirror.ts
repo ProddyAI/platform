@@ -15,16 +15,23 @@ export const {
 	submitSteps,
 } = prosemirrorSync.syncApi({
 	async checkRead(ctx, noteId) {
+		// Get the note first so publicly-shared notes can be read without auth.
+		const note = await ctx.db.get(noteId);
+		if (!note) {
+			throw new Error("Note not found");
+		}
+
+		// Publicly shared notes are readable by anyone. The share page only
+		// hands out the noteId after any password gate passes (see
+		// notesShare.getPublicNote), so this powers the read-only public viewer.
+		if (note.isPublic) {
+			return;
+		}
+
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
 			throw new Error("Unauthorized");
-		}
-
-		// Get the note to check workspace access
-		const note = await ctx.db.get(noteId);
-		if (!note) {
-			throw new Error("Note not found");
 		}
 
 		// Verify the user has access to this note's workspace

@@ -143,12 +143,11 @@ export const getUserActivitySummary = query({
 			// Count messages
 			const messages = await ctx.db
 				.query("messages")
-				.withIndex("by_member_id", (q) => q.eq("memberId", member._id))
-				.filter((q) =>
-					q.and(
-						q.gte(q.field("_creationTime"), startDate),
-						q.lte(q.field("_creationTime"), endDate)
-					)
+				.withIndex("by_member_id", (q) =>
+					q
+						.eq("memberId", member._id)
+						.gte("_creationTime", startDate)
+						.lte("_creationTime", endDate)
 				)
 				.collect();
 			const messageCount = messages.length;
@@ -156,12 +155,11 @@ export const getUserActivitySummary = query({
 			// Count reactions
 			const reactions = await ctx.db
 				.query("reactions")
-				.withIndex("by_member_id", (q) => q.eq("memberId", member._id))
-				.filter((q) =>
-					q.and(
-						q.gte(q.field("_creationTime"), startDate),
-						q.lte(q.field("_creationTime"), endDate)
-					)
+				.withIndex("by_member_id", (q) =>
+					q
+						.eq("memberId", member._id)
+						.gte("_creationTime", startDate)
+						.lte("_creationTime", endDate)
 				)
 				.collect();
 			const reactionCount = reactions.length;
@@ -169,12 +167,11 @@ export const getUserActivitySummary = query({
 			// Get total time spent in channels
 			const channelSessions = await ctx.db
 				.query("channelSessions")
-				.withIndex("by_member_id", (q) => q.eq("memberId", member._id))
-				.filter((q) =>
-					q.and(
-						q.gte(q.field("startTime"), startDate),
-						q.lte(q.field("startTime"), endDate)
-					)
+				.withIndex("by_member_id_start_time", (q) =>
+					q
+						.eq("memberId", member._id)
+						.gte("startTime", startDate)
+						.lte("startTime", endDate)
 				)
 				.collect();
 
@@ -185,12 +182,11 @@ export const getUserActivitySummary = query({
 			// Get activity by type
 			const activities = await ctx.db
 				.query("userActivities")
-				.withIndex("by_member_id", (q) => q.eq("memberId", member._id))
-				.filter((q) =>
-					q.and(
-						q.gte(q.field("timestamp"), startDate),
-						q.lte(q.field("timestamp"), endDate)
-					)
+				.withIndex("by_member_id_timestamp", (q) =>
+					q
+						.eq("memberId", member._id)
+						.gte("timestamp", startDate)
+						.lte("timestamp", endDate)
 				)
 				.collect();
 
@@ -255,13 +251,10 @@ export const getActiveUsersCount = query({
 		const messages = await ctx.db
 			.query("messages")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) =>
-				q.and(
-					q.gte(q.field("_creationTime"), startDate),
-					q.lte(q.field("_creationTime"), endDate)
-				)
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("_creationTime", startDate)
+					.lte("_creationTime", endDate)
 			)
 			.collect();
 		messages.forEach((message) => {
@@ -272,13 +265,10 @@ export const getActiveUsersCount = query({
 		const reactions = await ctx.db
 			.query("reactions")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) =>
-				q.and(
-					q.gte(q.field("_creationTime"), startDate),
-					q.lte(q.field("_creationTime"), endDate)
-				)
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("_creationTime", startDate)
+					.lte("_creationTime", endDate)
 			)
 			.collect();
 		reactions.forEach((reaction) => {
@@ -320,33 +310,22 @@ export const getActiveUsersCount = query({
 		});
 
 		// ALSO add currently logged-in users (users who are online right now)
-		// Get all user IDs from workspace members
-		const memberUserIds = members.map((member) => member.userId);
-
 		// Get current login status for all workspace members
-		const userStatuses = await ctx.db
+		const onlineStatuses = await ctx.db
 			.query("history")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_status", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("status", "online")
 			)
 			.collect();
 
 		// Add currently online users to active users
 		const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
-		userStatuses.forEach((status) => {
-			// Check if this user is a member of the workspace
-			if (memberUserIds.includes(status.userId)) {
-				const isRecentlyActive = status.lastSeen > twoMinutesAgo;
-				const effectiveStatus =
-					status.status === "online" && isRecentlyActive ? "online" : "offline";
-
-				if (effectiveStatus === "online") {
-					// Find the member ID for this user
-					const member = members.find((m) => m.userId === status.userId);
-					if (member) {
-						activeUserIds.add(member._id);
-					}
-				}
+		onlineStatuses.forEach((status) => {
+			if (status.lastSeen <= twoMinutesAgo) return;
+			// Find the member ID for this user
+			const member = members.find((m) => m.userId === status.userId);
+			if (member) {
+				activeUserIds.add(member._id);
 			}
 		});
 
@@ -357,9 +336,10 @@ export const getActiveUsersCount = query({
 				: 0;
 
 		// Get active user details for tooltip
+		const memberById = new Map(members.map((m) => [m._id, m]));
 		const activeUserDetails = await Promise.all(
 			Array.from(activeUserIds).map(async (memberId) => {
-				const member = await ctx.db.get(memberId);
+				const member = memberById.get(memberId);
 				if (!member) return null;
 
 				const user = await ctx.db.get(member.userId);
@@ -424,13 +404,10 @@ export const getWorkspaceOverview = query({
 		const messages = await ctx.db
 			.query("messages")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) =>
-				q.and(
-					q.gte(q.field("_creationTime"), startDate),
-					q.lte(q.field("_creationTime"), endDate)
-				)
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("_creationTime", startDate)
+					.lte("_creationTime", endDate)
 			)
 			.collect();
 
@@ -463,13 +440,10 @@ export const getWorkspaceOverview = query({
 		const reactions = await ctx.db
 			.query("reactions")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) =>
-				q.and(
-					q.gte(q.field("_creationTime"), startDate),
-					q.lte(q.field("_creationTime"), endDate)
-				)
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("_creationTime", startDate)
+					.lte("_creationTime", endDate)
 			)
 			.collect();
 		reactions.forEach((reaction) => {
@@ -511,33 +485,22 @@ export const getWorkspaceOverview = query({
 		});
 
 		// ALSO add currently logged-in users (users who are online right now)
-		// Get all user IDs from workspace members
-		const memberUserIds = members.map((member) => member.userId);
-
 		// Get current login status for all workspace members
-		const userStatuses = await ctx.db
+		const onlineStatuses = await ctx.db
 			.query("history")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_status", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("status", "online")
 			)
 			.collect();
 
 		// Add currently online users to active users
 		const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
-		userStatuses.forEach((status) => {
-			// Check if this user is a member of the workspace
-			if (memberUserIds.includes(status.userId)) {
-				const isRecentlyActive = status.lastSeen > twoMinutesAgo;
-				const effectiveStatus =
-					status.status === "online" && isRecentlyActive ? "online" : "offline";
-
-				if (effectiveStatus === "online") {
-					// Find the member ID for this user
-					const member = members.find((m) => m.userId === status.userId);
-					if (member) {
-						activeUserIds.add(member._id);
-					}
-				}
+		onlineStatuses.forEach((status) => {
+			if (status.lastSeen <= twoMinutesAgo) return;
+			// Find the member ID for this user
+			const member = members.find((m) => m.userId === status.userId);
+			if (member) {
+				activeUserIds.add(member._id);
 			}
 		});
 
@@ -548,9 +511,10 @@ export const getWorkspaceOverview = query({
 				: 0;
 
 		// Get active user details for tooltip
+		const memberById = new Map(members.map((m) => [m._id, m]));
 		const activeUserDetails = await Promise.all(
 			Array.from(activeUserIds).map(async (memberId) => {
-				const member = await ctx.db.get(memberId);
+				const member = memberById.get(memberId);
 				if (!member) return null;
 
 				const user = await ctx.db.get(member.userId);
@@ -755,13 +719,10 @@ export const getMessageAnalytics = query({
 		const messages = await ctx.db
 			.query("messages")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) =>
-				q.and(
-					q.gte(q.field("_creationTime"), startDate),
-					q.lte(q.field("_creationTime"), endDate)
-				)
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("_creationTime", startDate)
+					.lte("_creationTime", endDate)
 			)
 			.collect();
 
@@ -976,13 +937,10 @@ export const getContentAnalysis = query({
 		const messages = await ctx.db
 			.query("messages")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) =>
-				q.and(
-					q.gte(q.field("_creationTime"), startDate),
-					q.lte(q.field("_creationTime"), endDate)
-				)
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("_creationTime", startDate)
+					.lte("_creationTime", endDate)
 			)
 			.collect();
 

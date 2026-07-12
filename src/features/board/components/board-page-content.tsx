@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Loader } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -14,7 +16,6 @@ import {
 	BoardEditStatusModal,
 } from "@/features/board/components/board-card-edit-dialog";
 import BoardHeader from "@/features/board/components/board-header";
-import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
 import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
@@ -24,12 +25,19 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 
+const BoardIssueDrawer = dynamic(
+	() => import("@/features/board/components/board-issue-drawer"),
+	{ ssr: false }
+);
+
 interface BoardPageContentProps {
 	channelId: Id<"channels">;
 	projectId?: Id<"projects">;
 	projectConnectedChannelName?: string;
 	isProjectChannelConnected?: boolean;
 }
+
+const EMPTY_ISSUES: FunctionReturnType<typeof api.board.board.getIssues> = [];
 
 export const BoardPageContent = ({
 	channelId,
@@ -53,7 +61,8 @@ export const BoardPageContent = ({
 
 	// ── New: issues & statuses ──────────────────────────────────────────────
 	const statuses = useQuery(api.board.board.getStatuses, { channelId });
-	const allIssues = useQuery(api.board.board.getIssues, { channelId }) || [];
+	const allIssues =
+		useQuery(api.board.board.getIssues, { channelId }) ?? EMPTY_ISSUES;
 	const [optimisticIssues, setOptimisticIssues] = useState<
 		typeof allIssues | null
 	>(null);
@@ -154,15 +163,16 @@ export const BoardPageContent = ({
 	const isFilteredBoardView = boardSearchQuery.trim().length > 0;
 
 	// Filter issues based on global search query
-	const filteredIssues = displayedIssues.filter((issue) => {
-		if (!boardSearchQuery) return true;
+	const filteredIssues = useMemo(() => {
+		if (!boardSearchQuery) return displayedIssues;
 		const query = boardSearchQuery.toLowerCase();
-		return (
-			issue.title.toLowerCase().includes(query) ||
-			issue.description?.toLowerCase().includes(query) ||
-			issue.labels?.some((label) => label.toLowerCase().includes(query))
+		return displayedIssues.filter(
+			(issue) =>
+				issue.title.toLowerCase().includes(query) ||
+				issue.description?.toLowerCase().includes(query) ||
+				issue.labels?.some((label) => label.toLowerCase().includes(query))
 		);
-	});
+	}, [displayedIssues, boardSearchQuery]);
 
 	// ── Status modal state ──────────────────────────────────────────────────
 	const [addStatusOpen, setAddStatusOpen] = useState(false);
@@ -340,41 +350,77 @@ export const BoardPageContent = ({
 		}
 	};
 
-	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
-		if (boardLimitReached) {
-			toast.error(
-				"Board cards limit reached. Upgrade your plan to create more."
+	const handleCreateIssue = useCallback(
+		async (statusId: Id<"statuses">, title: string) => {
+			if (boardLimitReached) {
+				toast.error(
+					"Board cards limit reached. Upgrade your plan to create more."
+				);
+				return;
+			}
+			const statusIssues = (optimisticIssues ?? allIssues).filter(
+				(i) => i.statusId === statusId
 			);
-			return;
-		}
-		const statusIssues = (optimisticIssues ?? allIssues).filter(
-			(i) => i.statusId === statusId
-		);
-		await createIssue({
-			channelId,
-			statusId,
-			title,
-			order: statusIssues.length,
-		});
-	};
+			await createIssue({
+				channelId,
+				statusId,
+				title,
+				order: statusIssues.length,
+			});
+		},
+		[boardLimitReached, optimisticIssues, allIssues, createIssue, channelId]
+	);
 
-	const handleClickIssue = (issue: {
-		_id: Id<"issues">;
-		title: string;
-		description?: string;
-		statusId: Id<"statuses">;
-		channelId: Id<"channels">;
-		priority?: "urgent" | "high" | "medium" | "low" | "no_priority";
-		assignees?: Id<"members">[];
-		labels?: string[];
-		dueDate?: number;
-		order: number;
-		createdAt: number;
-		updatedAt: number;
-	}) => {
-		setSelectedIssue(issue);
-		setDrawerOpen(true);
-	};
+	const handleClickIssue = useCallback(
+		(issue: {
+			_id: Id<"issues">;
+			title: string;
+			description?: string;
+			statusId: Id<"statuses">;
+			channelId: Id<"channels">;
+			priority?: "urgent" | "high" | "medium" | "low" | "no_priority";
+			assignees?: Id<"members">[];
+			labels?: string[];
+			dueDate?: number;
+			order: number;
+			createdAt: number;
+			updatedAt: number;
+		}) => {
+			setSelectedIssue(issue);
+			setDrawerOpen(true);
+		},
+		[]
+	);
+
+	const handleOpenEditStatus = useCallback(
+		(status: {
+			_id: Id<"statuses">;
+			name: string;
+			color: string;
+			order: number;
+			channelId: Id<"channels">;
+		}) => {
+			setStatusToEdit(status);
+			setStatusName(status.name);
+			setStatusColor(status.color);
+			setEditStatusOpen(true);
+		},
+		[]
+	);
+
+	const handleOpenDeleteStatus = useCallback(
+		(status: {
+			_id: Id<"statuses">;
+			name: string;
+			color: string;
+			order: number;
+			channelId: Id<"channels">;
+		}) => {
+			setStatusToDelete(status);
+			setDeleteStatusOpen(true);
+		},
+		[]
+	);
 
 	// ── Reorder statuses (optimistic) ───────────────────────────────────────
 	const handleReorderStatuses = (
@@ -390,105 +436,108 @@ export const BoardPageContent = ({
 		setOptimisticStatuses(newOrder.map((s, idx) => ({ ...s, order: idx })));
 	};
 
-	const handleMoveIssueStatus = async (
-		issueId: Id<"issues">,
-		toStatusId: Id<"statuses">,
-		order: number
-	) => {
-		const currentIssues = optimisticIssues ?? allIssues;
-		const movingIssue = currentIssues.find((issue) => issue._id === issueId);
-		if (!movingIssue) return;
+	const handleMoveIssueStatus = useCallback(
+		async (
+			issueId: Id<"issues">,
+			toStatusId: Id<"statuses">,
+			order: number
+		) => {
+			const currentIssues = optimisticIssues ?? allIssues;
+			const movingIssue = currentIssues.find((issue) => issue._id === issueId);
+			if (!movingIssue) return;
 
-		const fromStatusId = movingIssue.statusId;
-		let nextIssues: typeof currentIssues;
+			const fromStatusId = movingIssue.statusId;
+			let nextIssues: typeof currentIssues;
 
-		if (fromStatusId === toStatusId) {
-			const sameStatusIssues = currentIssues
-				.filter((issue) => issue.statusId === fromStatusId)
-				.sort((a, b) => a.order - b.order);
+			if (fromStatusId === toStatusId) {
+				const sameStatusIssues = currentIssues
+					.filter((issue) => issue.statusId === fromStatusId)
+					.sort((a, b) => a.order - b.order);
 
-			const fromIndex = sameStatusIssues.findIndex(
-				(issue) => issue._id === issueId
-			);
-			if (fromIndex === -1) return;
+				const fromIndex = sameStatusIssues.findIndex(
+					(issue) => issue._id === issueId
+				);
+				if (fromIndex === -1) return;
 
-			const reorderedSameStatus = [...sameStatusIssues];
-			const [removedIssue] = reorderedSameStatus.splice(fromIndex, 1);
-			if (!removedIssue) return;
+				const reorderedSameStatus = [...sameStatusIssues];
+				const [removedIssue] = reorderedSameStatus.splice(fromIndex, 1);
+				if (!removedIssue) return;
 
-			const targetIndex = Math.max(
-				0,
-				Math.min(order, reorderedSameStatus.length)
-			);
-			reorderedSameStatus.splice(targetIndex, 0, {
-				...removedIssue,
-				statusId: toStatusId,
-				order: targetIndex,
-			});
+				const targetIndex = Math.max(
+					0,
+					Math.min(order, reorderedSameStatus.length)
+				);
+				reorderedSameStatus.splice(targetIndex, 0, {
+					...removedIssue,
+					statusId: toStatusId,
+					order: targetIndex,
+				});
 
-			const normalizedSameStatus = reorderedSameStatus.map((issue, idx) => ({
-				...issue,
-				order: idx,
-			}));
-
-			const untouchedIssues = currentIssues.filter(
-				(issue) => issue.statusId !== fromStatusId
-			);
-
-			nextIssues = [...untouchedIssues, ...normalizedSameStatus];
-		} else {
-			const sourceIssues = currentIssues
-				.filter(
-					(issue) => issue.statusId === fromStatusId && issue._id !== issueId
-				)
-				.sort((a, b) => a.order - b.order)
-				.map((issue, idx) => ({ ...issue, order: idx }));
-
-			const destinationIssues = currentIssues
-				.filter(
-					(issue) => issue.statusId === toStatusId && issue._id !== issueId
-				)
-				.sort((a, b) => a.order - b.order);
-
-			const insertAt = Math.max(0, Math.min(order, destinationIssues.length));
-			destinationIssues.splice(insertAt, 0, {
-				...movingIssue,
-				statusId: toStatusId,
-				order: insertAt,
-			});
-
-			const normalizedDestinationIssues = destinationIssues.map(
-				(issue, idx) => ({
+				const normalizedSameStatus = reorderedSameStatus.map((issue, idx) => ({
 					...issue,
 					order: idx,
-				})
-			);
+				}));
 
-			const untouchedIssues = currentIssues.filter(
-				(issue) =>
-					issue.statusId !== fromStatusId && issue.statusId !== toStatusId
-			);
+				const untouchedIssues = currentIssues.filter(
+					(issue) => issue.statusId !== fromStatusId
+				);
 
-			nextIssues = [
-				...untouchedIssues,
-				...sourceIssues,
-				...normalizedDestinationIssues,
-			];
-		}
+				nextIssues = [...untouchedIssues, ...normalizedSameStatus];
+			} else {
+				const sourceIssues = currentIssues
+					.filter(
+						(issue) => issue.statusId === fromStatusId && issue._id !== issueId
+					)
+					.sort((a, b) => a.order - b.order)
+					.map((issue, idx) => ({ ...issue, order: idx }));
 
-		// Apply optimistic update immediately for smooth animation
-		setOptimisticIssues(nextIssues);
+				const destinationIssues = currentIssues
+					.filter(
+						(issue) => issue.statusId === toStatusId && issue._id !== issueId
+					)
+					.sort((a, b) => a.order - b.order);
 
-		try {
-			await moveIssueStatus({ issueId, toStatusId, order });
-			// Don't clear optimistic state - let Convex's natural reactivity handle it
-			// The allIssues query will update automatically and replace optimisticIssues
-		} catch (error) {
-			// On error, revert immediately
-			setOptimisticIssues(currentIssues);
-			throw error;
-		}
-	};
+				const insertAt = Math.max(0, Math.min(order, destinationIssues.length));
+				destinationIssues.splice(insertAt, 0, {
+					...movingIssue,
+					statusId: toStatusId,
+					order: insertAt,
+				});
+
+				const normalizedDestinationIssues = destinationIssues.map(
+					(issue, idx) => ({
+						...issue,
+						order: idx,
+					})
+				);
+
+				const untouchedIssues = currentIssues.filter(
+					(issue) =>
+						issue.statusId !== fromStatusId && issue.statusId !== toStatusId
+				);
+
+				nextIssues = [
+					...untouchedIssues,
+					...sourceIssues,
+					...normalizedDestinationIssues,
+				];
+			}
+
+			// Apply optimistic update immediately for smooth animation
+			setOptimisticIssues(nextIssues);
+
+			try {
+				await moveIssueStatus({ issueId, toStatusId, order });
+				// Don't clear optimistic state - let Convex's natural reactivity handle it
+				// The allIssues query will update automatically and replace optimisticIssues
+			} catch (error) {
+				// On error, revert immediately
+				setOptimisticIssues(currentIssues);
+				throw error;
+			}
+		},
+		[optimisticIssues, allIssues, moveIssueStatus]
+	);
 
 	// ── Search filter is now handled by global search via boardSearchQuery ──
 
@@ -541,16 +590,8 @@ export const BoardPageContent = ({
 								: undefined
 						}
 						onCreateIssue={handleCreateIssue}
-						onDeleteStatus={(status) => {
-							setStatusToDelete(status);
-							setDeleteStatusOpen(true);
-						}}
-						onEditStatus={(status) => {
-							setStatusToEdit(status);
-							setStatusName(status.name);
-							setStatusColor(status.color);
-							setEditStatusOpen(true);
-						}}
+						onDeleteStatus={handleOpenDeleteStatus}
+						onEditStatus={handleOpenEditStatus}
 						onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 						onMoveIssueStatus={handleMoveIssueStatus}
 						onReorderStatuses={handleReorderStatuses}

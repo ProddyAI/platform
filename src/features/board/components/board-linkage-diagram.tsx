@@ -26,10 +26,13 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 	open,
 	onOpenChange,
 }) => {
-	const issues = useQuery(api.board.board.getIssues, { channelId });
+	const issues = useQuery(
+		api.board.board.getIssues,
+		open ? { channelId } : "skip"
+	);
 	const relationships = useQuery(
 		api.board.board.getActiveBlockingRelationshipsForChannel,
-		{ channelId }
+		open ? { channelId } : "skip"
 	);
 
 	const svgRef = useRef<HTMLDivElement>(null);

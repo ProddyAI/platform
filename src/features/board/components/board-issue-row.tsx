@@ -36,16 +36,20 @@ export type IssuePriority =
 interface IssueRowProps {
 	issue: {
 		_id: Id<"issues">;
+		channelId: Id<"channels">;
+		statusId: Id<"statuses">;
 		title: string;
 		priority?: IssuePriority;
 		assignees?: Id<"members">[];
 		labels?: string[];
 		dueDate?: number;
 		order: number;
+		createdAt: number;
+		updatedAt: number;
 	};
 	statusColor: string;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
-	onClick: () => void;
+	onClickIssue: (issue: IssueRowProps["issue"]) => void;
 	isDragOverlay?: boolean;
 	subIssueStats?: { total: number; completed: number };
 	disableDrag?: boolean;
@@ -323,7 +327,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	issue,
 	statusColor,
 	assigneeData = {},
-	onClick,
+	onClickIssue,
 	isDragOverlay = false,
 	subIssueStats,
 	disableDrag = false,
@@ -388,7 +392,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			<button
 				className="flex flex-1 min-w-0 items-center gap-2 text-left cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
 				onClick={() => {
-					if (!isDragging) onClick();
+					if (!isDragging) onClickIssue(issue);
 				}}
 				type="button"
 			>

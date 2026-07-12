@@ -6,12 +6,11 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
+import type { UserStatus } from "@/../convex/workspace/userStatus";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useGetMember } from "@/features/members/api/use-get-member";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
-import { useUserStatus } from "@/features/presence/hooks/use-user-status";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { generateUserColor } from "@/lib/placeholder-image";
 import { cn } from "@/lib/utils";
@@ -81,33 +80,28 @@ export const SidebarItem = ({
 // MemberItem Component
 interface MemberItemProps {
 	id: Id<"members">;
+	userId: Id<"users">;
 	label?: string;
 	image?: string;
+	status?: UserStatus;
 	isActive?: boolean;
 	isCollapsed?: boolean;
 }
 
 export const MemberItem = ({
 	id,
+	userId,
 	label = "Member",
 	image,
+	status = "offline",
 	isActive = false,
 	isCollapsed = false,
 }: MemberItemProps) => {
 	const workspaceId = useWorkspaceId();
 	const avatarFallback = label.charAt(0).toUpperCase();
 
-	// Get the member data to access the userId
-	const { data: member } = useGetMember({ id });
-
-	// Get the user's status using the enhanced status system
-	const { status } = useUserStatus({
-		userId: member?.userId,
-		workspaceId: workspaceId as Id<"workspaces">,
-	});
-
 	// Generate background color for avatar fallback
-	const backgroundColor = generateUserColor(member?.userId || label);
+	const backgroundColor = generateUserColor(userId);
 
 	return (
 		<Button
@@ -141,12 +135,10 @@ export const MemberItem = ({
 										{avatarFallback}
 									</AvatarFallback>
 								</Avatar>
-								{member && (
-									<PresenceIndicator
-										className="size-2 md:w-2.5 md:h-2.5"
-										status={status}
-									/>
-								)}
+								<PresenceIndicator
+									className="size-2 md:w-2.5 md:h-2.5"
+									status={status}
+								/>
 							</div>
 						</Hint>
 					</div>
@@ -162,12 +154,10 @@ export const MemberItem = ({
 									{avatarFallback}
 								</AvatarFallback>
 							</Avatar>
-							{member && (
-								<PresenceIndicator
-									className="size-2 md:w-2.5 md:h-2.5"
-									status={status}
-								/>
-							)}
+							<PresenceIndicator
+								className="size-2 md:w-2.5 md:h-2.5"
+								status={status}
+							/>
 						</div>
 						<span className="truncate min-w-0 text-sm flex-1">{label}</span>
 					</>

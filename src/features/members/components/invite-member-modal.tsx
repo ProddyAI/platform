@@ -454,7 +454,7 @@ export const InviteMemberModal = () => {
 	const [open, setOpen] = useInviteMemberModal();
 	const workspace = useQuery(
 		api.workspace.workspaces.getById,
-		workspaceId ? { id: workspaceId } : "skip"
+		open && workspaceId ? { id: workspaceId } : "skip"
 	);
 	const { data: currentMember } = useCurrentMember({ workspaceId });
 
@@ -473,7 +473,7 @@ export const InviteMemberModal = () => {
 
 	const seatUsage = useQuery(
 		api.workspace.invites.getSeatUsage,
-		workspaceId ? { workspaceId } : "skip"
+		open && workspaceId ? { workspaceId } : "skip"
 	);
 
 	const totalSeats =

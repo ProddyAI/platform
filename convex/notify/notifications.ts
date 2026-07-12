@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { logger } from "../../src/lib/logger";
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { action, internalAction, mutation } from "../_generated/server";
 
 // Delay push notifications to allow OneSignal client SDK login to complete.
@@ -61,31 +61,21 @@ export const sendPushNotification = internalAction({
 
 		const filteredUserIds: string[] = [];
 
-		// Fetch all users and preferences in parallel to avoid N+1 query pattern
+		// Resolve all users and preferences in a single query transaction to
+		// avoid 2N function invocations.
 		const userIds = args.userIds;
-		const users = await Promise.all(
-			userIds.map((id) =>
-				ctx.runQuery(internal.workspace.users._getUserById, { id })
-			)
-		);
-		const notificationPrefs = await Promise.all(
-			userIds.map((userId) =>
-				ctx.runQuery(
-					api.workspace.preferences.getNotificationPreferencesByUserId,
-					{
-						userId,
-					}
-				)
-			)
+		const targets = await ctx.runQuery(
+			internal.workspace.preferences._getPushTargets,
+			{ userIds }
 		);
 
 		for (let i = 0; i < userIds.length; i++) {
 			const userId = userIds[i];
-			const user = users[i];
-			if (!user) {
+			const target = targets[i];
+			if (!target) {
 				continue;
 			}
-			const notifications = notificationPrefs[i];
+			const notifications = target.notificationPrefs;
 
 			const browserEnabled = notifications?.browserNotificationsEnabled ?? true;
 			const browserPrefs = notifications?.notificationBrowserPrefs;
@@ -106,7 +96,7 @@ export const sendPushNotification = internalAction({
 			}
 
 			// Only add users who have a valid OneSignal external ID
-			const oneSignalExternalId = user.onesignalExternalId;
+			const oneSignalExternalId = target.onesignalExternalId;
 			if (!oneSignalExternalId) {
 				logger.warn("User not subscribed to OneSignal", { userId });
 				continue;

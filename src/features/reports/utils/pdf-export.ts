@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { jsPDF } from "jspdf";
+import type { jsPDF as JsPDF } from "jspdf";
 
 interface OverviewData {
 	totalMessages?: number;
@@ -65,13 +65,13 @@ interface MetricItem {
 }
 
 export class PDFExporter {
-	private doc: jsPDF;
+	private doc: JsPDF;
 	private currentY = 20;
 	private pageHeight = 280;
 	private margin = 20;
 
-	constructor() {
-		this.doc = new jsPDF();
+	constructor(JsPDFClass: typeof JsPDF) {
+		this.doc = new JsPDFClass();
 	}
 
 	private addTitle(title: string, fontSize = 16) {
@@ -467,6 +467,7 @@ export const exportReportToPDF = async (
 	data: ExportData,
 	filename?: string
 ): Promise<void> => {
-	const exporter = new PDFExporter();
+	const { jsPDF } = await import("jspdf");
+	const exporter = new PDFExporter(jsPDF);
 	await exporter.exportReportToPDF(data, filename);
 };

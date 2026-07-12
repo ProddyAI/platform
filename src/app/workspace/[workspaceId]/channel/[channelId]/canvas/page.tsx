@@ -2,13 +2,13 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { Loader2, Palette, Plus } from "lucide-react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { StreamAudioRoom } from "@/features/audio";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { ExcalidrawCanvas } from "@/features/canvas/components/excalidraw-canvas";
 import { LiveblocksRoom, LiveHeader, LiveSidebar } from "@/features/live";
@@ -16,6 +16,14 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+
+const StreamAudioRoom = dynamic(
+	() =>
+		import("@/features/audio/components/stream-audio-room").then(
+			(m) => m.StreamAudioRoom
+		),
+	{ ssr: false }
+);
 
 interface CanvasItem {
 	_id: Id<"messages">;

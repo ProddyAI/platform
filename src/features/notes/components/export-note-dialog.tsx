@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { jsPDF } from "jspdf";
 import {
 	Download,
 	FileJson,
@@ -230,7 +229,8 @@ export const ExportNoteDialog = ({
 		}
 	};
 
-	const convertToPDF = (note: Note): string => {
+	const convertToPDF = async (note: Note): Promise<string> => {
+		const { jsPDF } = await import("jspdf");
 		const doc = new jsPDF();
 
 		doc.setFontSize(16);
@@ -300,7 +300,7 @@ export const ExportNoteDialog = ({
 					break;
 
 				case "pdf":
-					exportData = convertToPDF(note);
+					exportData = await convertToPDF(note);
 					_contentType = "application/pdf";
 					fileExtension = "pdf";
 					break;
@@ -391,7 +391,7 @@ export const ExportNoteDialog = ({
 					break;
 
 				case "pdf":
-					exportData = convertToPDF(note);
+					exportData = await convertToPDF(note);
 					contentType = "application/pdf";
 					fileExtension = "pdf";
 					break;

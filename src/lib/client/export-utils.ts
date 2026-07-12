@@ -1,13 +1,3 @@
-import {
-	AlignmentType,
-	Document,
-	HeadingLevel,
-	Packer,
-	Paragraph,
-	TextRun,
-} from "docx";
-import jsPDF from "jspdf";
-
 /** Native browser file download — no external package needed */
 const saveAs = (blob: Blob, filename: string) => {
 	const url = URL.createObjectURL(blob);
@@ -26,7 +16,8 @@ interface ExportData {
 	date?: string;
 }
 
-export const exportToPDF = (data: ExportData) => {
+export const exportToPDF = async (data: ExportData) => {
+	const { default: jsPDF } = await import("jspdf");
 	const doc = new jsPDF();
 	const margin = 20;
 	let y = 20;
@@ -84,6 +75,8 @@ export const exportToPDF = (data: ExportData) => {
 };
 
 export const exportToWord = async (data: ExportData) => {
+	const { AlignmentType, Document, HeadingLevel, Packer, Paragraph, TextRun } =
+		await import("docx");
 	const doc = new Document({
 		sections: [
 			{

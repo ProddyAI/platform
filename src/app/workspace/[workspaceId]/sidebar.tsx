@@ -10,6 +10,7 @@ import {
 	ChartNoAxesGantt,
 	CheckSquare,
 	ChevronDown,
+	CreditCard,
 	FolderKanban,
 	Hash,
 	LayoutDashboard,
@@ -17,6 +18,7 @@ import {
 	MessageSquareText,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Plug,
 	PlusIcon,
 	SendHorizonal,
 	Settings,
@@ -35,6 +37,7 @@ import { useCreateChannelModal } from "@/features/channels/store/use-create-chan
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useInviteMemberModal } from "@/features/members/store/use-invite-member-modal";
+import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
 import { useGetProjects } from "@/features/projects/api/use-get-projects";
 import { useCreateProjectModal } from "@/features/projects/store/use-create-project-modal";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
@@ -253,7 +256,6 @@ export const WorkspaceSidebar = ({
 	// server-rendered and first client render agree, avoiding a hydration
 	// mismatch. Everything starts collapsed unless the user previously
 	// expanded it.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally rehydrates once on mount only.
 	useEffect(() => {
 		if (typeof window === "undefined") {
 			return;
@@ -300,23 +302,21 @@ export const WorkspaceSidebar = ({
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
 		id: workspaceId as Id<"workspaces">,
 	});
-	const { data: channels, isLoading: channelsLoading } = useGetChannels({
+	const { data: channels } = useGetChannels({
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
-	const { data: projects, isLoading: projectsLoading } = useGetProjects({
+	const { data: projects } = useGetProjects({
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
-	const { data: members, isLoading: membersLoading } = useGetMembers({
+	const { data: members } = useGetMembers({
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
+	const { getUserStatus } = useMultipleUserStatuses(
+		(members || []).map((item) => item.userId),
+		workspaceId as Id<"workspaces">
+	);
 
-	if (
-		memberLoading ||
-		workspaceLoading ||
-		channelsLoading ||
-		projectsLoading ||
-		membersLoading
-	) {
+	if (memberLoading || workspaceLoading) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center bg-sidebar">
 				<Loader className="size-6 animate-spin text-muted-foreground animate-pulse-subtle" />
@@ -509,6 +509,8 @@ export const WorkspaceSidebar = ({
 										isActive={item._id === memberId}
 										isCollapsed={isCollapsed}
 										label={item.user.name}
+										status={getUserStatus(item.userId)}
+										userId={item.userId}
 									/>
 								</MobileCloseWrapper>
 							))}
@@ -647,14 +649,38 @@ export const WorkspaceSidebar = ({
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
-								href={`/workspace/${workspaceId}/manage`}
-								icon={SlidersHorizontal}
-								id="manage"
-								isActive={pathname.includes("/manage")}
+								href={`/workspace/${workspaceId}/integrations`}
+								icon={Plug}
+								id="integrations"
+								isActive={pathname.includes("/integrations")}
 								isCollapsed={isCollapsed}
-								label="Manage"
+								label="Integrations"
 							/>
 						</MobileCloseWrapper>
+						{(member.role === "admin" || member.role === "owner") && (
+							<MobileCloseWrapper onClose={onMobileClose}>
+								<SidebarItem
+									href={`/workspace/${workspaceId}/billing`}
+									icon={CreditCard}
+									id="billing"
+									isActive={pathname.includes("/billing")}
+									isCollapsed={isCollapsed}
+									label="Billing"
+								/>
+							</MobileCloseWrapper>
+						)}
+						{(member.role === "admin" || member.role === "owner") && (
+							<MobileCloseWrapper onClose={onMobileClose}>
+								<SidebarItem
+									href={`/workspace/${workspaceId}/manage`}
+									icon={SlidersHorizontal}
+									id="manage"
+									isActive={pathname.includes("/manage")}
+									isCollapsed={isCollapsed}
+									label="Manage"
+								/>
+							</MobileCloseWrapper>
+						)}
 					</DroppableItem>
 				</div>
 			</div>

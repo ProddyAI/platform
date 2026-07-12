@@ -14,8 +14,7 @@ import {
 	Plus,
 	Trash,
 } from "lucide-react";
-import type React from "react";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +41,7 @@ interface Status {
 	name: string;
 	color: string;
 	order: number;
+	channelId: Id<"channels">;
 }
 
 interface Issue {
@@ -62,8 +62,8 @@ interface BoardStatusColumnProps {
 	status: Status;
 	issues: Issue[];
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
-	onEditStatus: () => void;
-	onDeleteStatus: () => void;
+	onEditStatus: (status: Status) => void;
+	onDeleteStatus: (status: Status) => void;
 	onClickIssue: (issue: Issue) => void;
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	disableColumnDrag?: boolean;
@@ -77,7 +77,7 @@ interface BoardStatusColumnProps {
 	isFocused?: boolean;
 }
 
-const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
+const BoardStatusColumn = React.memo(function BoardStatusColumn({
 	status,
 	issues,
 	assigneeData = {},
@@ -91,7 +91,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	disableIssueDrag = false,
 	disableCreateIssue = false,
 	isFocused = false,
-}) => {
+}: BoardStatusColumnProps) {
 	const [creating, setCreating] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -234,13 +234,13 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-40">
-						<DropdownMenuItem onClick={onEditStatus}>
+						<DropdownMenuItem onClick={() => onEditStatus(status)}>
 							<Pencil className="size-3.5 mr-2" />
 							Edit status
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							className="text-destructive focus:text-destructive"
-							onClick={onDeleteStatus}
+							onClick={() => onDeleteStatus(status)}
 						>
 							<Trash className="size-3.5 mr-2" />
 							Delete status
@@ -272,7 +272,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 								disableDrag={disableIssueDrag}
 								issue={issue}
 								key={issue._id}
-								onClick={() => onClickIssue(issue)}
+								onClickIssue={onClickIssue}
 								statusColor={status.color}
 								subIssueStats={subIssueStatsMap?.[issue._id]}
 							/>
@@ -323,6 +323,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 			</div>
 		</div>
 	);
-};
+});
 
 export default BoardStatusColumn;

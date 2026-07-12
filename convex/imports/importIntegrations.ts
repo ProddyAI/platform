@@ -10,6 +10,10 @@ import {
 	mutation,
 	query,
 } from "../_generated/server";
+import {
+	adjustProjectIssueCount,
+	syncIssueAssignees,
+} from "../lib/denormalize";
 import type { ImportProgress } from "./importPipeline";
 
 // ============================================================================
@@ -2221,6 +2225,9 @@ export const storeImportedLinearIssue = internalMutation({
 			updatedAt: Date.now(),
 		});
 
+		await syncIssueAssignees(ctx, issueId, args.workspaceId, args.assignees);
+		await adjustProjectIssueCount(ctx, args.channelId, 1);
+
 		// Store metadata about the external issue
 		await ctx.db.insert("import_issue_metadata", {
 			workspaceId: args.workspaceId,
@@ -2737,7 +2744,7 @@ export const _getOrCreateMemberByEmail = internalMutation({
 				if (workspace && normalizedEmail) {
 					await ctx.scheduler.runAfter(
 						0,
-						internal.imports.importIntegrations.sendAutoInviteEmail,
+						internal.notify.emailActions.sendAutoInviteEmail,
 						{
 							email: normalizedEmail,
 							name: args.name.trim(),
@@ -2820,104 +2827,6 @@ export const createDefaultStatus = internalMutation({
 		});
 
 		return statusId;
-	},
-});
-
-/**
- * Send a workspace invitation email to a user auto-added during an import (internal only).
- * Uses Resend directly (same pattern as sendImportCompletionEmail in email.ts).
- */
-export const sendAutoInviteEmail = internalAction({
-	args: {
-		email: v.string(),
-		name: v.string(),
-		workspaceId: v.id("workspaces"),
-		workspaceName: v.string(),
-		platform: v.string(), // e.g., "linear", "slack"
-	},
-	handler: async (_ctx, args) => {
-		try {
-			const apiKey = process.env.RESEND_API_KEY;
-			const fromEmail = process.env.RESEND_FROM_EMAIL;
-			const siteUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
-
-			if (!apiKey || !fromEmail || !siteUrl) {
-				console.log(
-					"[AutoInvite] Email not configured, skipping invite email for",
-					args.email
-				);
-				return { success: false, reason: "Email service not configured" };
-			}
-
-			const workspaceUrl = `${siteUrl}/workspace/${args.workspaceId}`;
-			const firstName = args.name.split(" ")[0] || args.name;
-			const platformName =
-				args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
-
-			const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-    .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px; }
-    .button { display: inline-block; background: #667eea; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; font-weight: 600; }
-    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; font-size: 24px;">You've been added to ${args.workspaceName}!</h1>
-    </div>
-    <div class="content">
-      <p>Hi ${firstName},</p>
-      <p>Your ${platformName} account was linked to the <strong>${args.workspaceName}</strong> workspace on Proddy during a ${platformName.toLowerCase()} import. Content assigned to you has been automatically imported.</p>
-      <p>Sign in to Proddy to view your assigned issues and collaborate with your team:</p>
-      <div style="text-align: center;">
-        <a class="button" href="${workspaceUrl}">Open Workspace</a>
-      </div>
-      <p style="margin-top: 24px; color: #666; font-size: 14px;">If you don't have an account yet, sign up using this email address (${args.email}) and you'll automatically get access.</p>
-    </div>
-    <div class="footer">
-      <p>© 2026 Proddy. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-			const response = await fetch("https://api.resend.com/emails", {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${apiKey}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					from: fromEmail,
-					to: args.email,
-					subject: `You've been added to ${args.workspaceName} on Proddy`,
-					html,
-				}),
-			});
-
-			if (!response.ok) {
-				const errData = await response.json();
-				console.error("[AutoInvite] Resend error:", errData);
-				return { success: false, error: `Resend error: ${response.status}` };
-			}
-
-			console.log("[AutoInvite] Invite email sent to", args.email);
-			return { success: true };
-		} catch (error) {
-			console.error("[AutoInvite] Failed to send invite email:", error);
-			return {
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			};
-		}
 	},
 });
 

@@ -948,7 +948,7 @@ const createRecoveryCheckoutUrl = async (
 			workspaceId: args.workspaceId,
 			plan: args.planName,
 		},
-		return_url: `${siteUrl}/workspace/${args.workspaceId}/manage#billing`,
+		return_url: `${siteUrl}/workspace/${args.workspaceId}/billing`,
 		billing_currency: "USD",
 		feature_flags: {
 			allow_discount_code: true,
@@ -976,7 +976,7 @@ const sendDodoCustomerPortalEmail = async (
 				customer_id: customerId,
 				send_email: true,
 				...(appUrl
-					? { return_url: `${appUrl}/workspace/${workspaceId}/manage#billing` }
+					? { return_url: `${appUrl}/workspace/${workspaceId}/billing` }
 					: {}),
 			});
 			return;
@@ -1252,7 +1252,7 @@ export const applyWorkspaceSubscriptionQuantity = internalMutation({
 			if (args.refundCurrency) emailArgs.refundCurrency = args.refundCurrency;
 			await ctx.scheduler.runAfter(
 				0,
-				internal.notify.email.sendWorkspacePlanChangeEmail,
+				internal.notify.emailActions.sendWorkspacePlanChangeEmail,
 				emailArgs
 			);
 		}
@@ -1448,7 +1448,7 @@ export const applyWorkspaceFreePlan = internalMutation({
 			if (args.refundCurrency) emailArgs.refundCurrency = args.refundCurrency;
 			await ctx.scheduler.runAfter(
 				0,
-				internal.notify.email.sendWorkspacePlanChangeEmail,
+				internal.notify.emailActions.sendWorkspacePlanChangeEmail,
 				emailArgs
 			);
 		}
@@ -1667,16 +1667,15 @@ export const getBillingConsumptionForPeriod = internalQuery({
 					.lte("occurredAt", periodEnd)
 			)
 			.take(1000);
-		const activities = await ctx.db
+		const periodActivities = await ctx.db
 			.query("userActivities")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_timestamp", (q) =>
+				q
+					.eq("workspaceId", args.workspaceId)
+					.gte("timestamp", periodStart)
+					.lte("timestamp", periodEnd)
 			)
-			.take(1000);
-		const periodActivities = activities.filter(
-			(activity) =>
-				activity.timestamp >= periodStart && activity.timestamp <= periodEnd
-		);
+			.collect();
 		const members = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id", (q) =>
@@ -2162,7 +2161,7 @@ export const createCheckoutSession = action({
 				workspace_id: workspaceId,
 				plan: planName,
 			},
-			return_url: `${siteUrl}/workspace/${workspaceId}/manage#billing`,
+			return_url: `${siteUrl}/workspace/${workspaceId}/billing`,
 			billing_currency: "USD",
 			feature_flags: {
 				allow_discount_code: true,
@@ -2288,7 +2287,7 @@ export const getCustomerPortal = action({
 				send_email: args.send_email ?? false,
 				...(appUrl
 					? {
-							return_url: `${appUrl}/workspace/${args.workspaceId}/manage#billing`,
+							return_url: `${appUrl}/workspace/${args.workspaceId}/billing`,
 						}
 					: {}),
 			};
@@ -3230,7 +3229,7 @@ export const updateSubscriptionQuantity = action({
 					{
 						subscription_id: dodoSubscriptionId,
 						return_url: siteUrl
-							? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+							? `${siteUrl}/workspace/${workspaceId}/billing`
 							: undefined,
 					}
 				);
@@ -3385,7 +3384,7 @@ export const updateSubscriptionQuantity = action({
 						{
 							subscription_id: dodoSubscriptionId,
 							return_url: siteUrl
-								? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+								? `${siteUrl}/workspace/${workspaceId}/billing`
 								: undefined,
 						}
 					);
@@ -3504,7 +3503,7 @@ export const updateSubscriptionQuantity = action({
 			const paymentSetupResult = await subscriptions.updatePaymentMethod(ctx, {
 				subscription_id: dodoSubscriptionId,
 				return_url: siteUrl
-					? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+					? `${siteUrl}/workspace/${workspaceId}/billing`
 					: undefined,
 			});
 			const paymentUrl = findDodoPaymentUrl(paymentSetupResult);

@@ -1,11 +1,11 @@
 import { differenceInMinutes, format, isToday, isYesterday } from "date-fns";
 import { Loader, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ContextMenuProvider } from "@/contexts/context-menu-context";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import type { GetMessagesReturnType } from "@/features/messages/api/use-get-messages";
-import { DailyRecapModal } from "@/features/smart/components/daily-recap-modal";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Hint } from "../hint";
@@ -13,6 +13,14 @@ import { Button } from "../ui/button";
 import { ChannelHero } from "./channel-hero";
 import { ConversationHero } from "./conversation-hero";
 import { Message } from "./message";
+
+const DailyRecapModal = dynamic(
+	() =>
+		import("@/features/smart/components/daily-recap-modal").then(
+			(m) => m.DailyRecapModal
+		),
+	{ ssr: false }
+);
 
 const TIME_THRESHOLD = 15;
 
@@ -63,20 +71,24 @@ export const MessageList = ({
 	type MessageItem = NonNullable<GetMessagesReturnType>[number];
 
 	const { data: currentMember } = useCurrentMember({ workspaceId });
-	const groupedMessages = data?.reduce(
-		(groups: Record<string, MessageItem[]>, message: MessageItem) => {
-			const date = new Date(message._creationTime);
-			const dateKey = format(date, "yyyy-MM-dd");
+	const groupedMessages = useMemo(
+		() =>
+			data?.reduce(
+				(groups: Record<string, MessageItem[]>, message: MessageItem) => {
+					const date = new Date(message._creationTime);
+					const dateKey = format(date, "yyyy-MM-dd");
 
-			if (!groups[dateKey]) {
-				groups[dateKey] = [];
-			}
+					if (!groups[dateKey]) {
+						groups[dateKey] = [];
+					}
 
-			groups[dateKey].unshift(message);
+					groups[dateKey].unshift(message);
 
-			return groups;
-		},
-		{} as Record<string, MessageItem[]>
+					return groups;
+				},
+				{} as Record<string, MessageItem[]>
+			),
+		[data]
 	);
 
 	const handleGenerateRecap = async (

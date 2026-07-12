@@ -5,42 +5,37 @@ import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { mutation, type QueryCtx, query } from "../_generated/server";
 import { enforceWorkspaceLimit } from "../billing/usageTracking";
+import {
+	onReplyDeleted,
+	onReplyInserted,
+	plainTextFromBody,
+} from "../lib/messageDenorm";
 
 const populateThread = async (ctx: QueryCtx, messageId: Id<"messages">) => {
-	const messages = await ctx.db
-		.query("messages")
-		.withIndex("by_parent_message_id", (q) =>
-			q.eq("parentMessageId", messageId)
-		)
-		.collect();
+	const empty = {
+		count: 0,
+		image: undefined,
+		timestamp: 0,
+		name: "",
+	};
 
-	if (messages.length === 0) {
-		return {
-			count: 0,
-			image: undefined,
-			timestamp: 0,
-			name: "",
-		};
+	const parent = await ctx.db.get(messageId);
+	const count = parent?.replyCount ?? 0;
+	if (!parent || count === 0 || !parent.lastReplyMemberId) {
+		return empty;
 	}
 
-	const lastMessage = messages[messages.length - 1];
-	const lastMessageMember = await populateMember(ctx, lastMessage.memberId);
-
+	const lastMessageMember = await populateMember(ctx, parent.lastReplyMemberId);
 	if (!lastMessageMember) {
-		return {
-			count: 0,
-			image: undefined,
-			timestamp: 0,
-			name: "",
-		};
+		return empty;
 	}
 
 	const lastMessageUser = await populateUser(ctx, lastMessageMember.userId);
 
 	return {
-		count: messages.length,
+		count,
 		image: lastMessageUser?.image,
-		timestamp: lastMessage._creationTime,
+		timestamp: parent.lastReplyTime ?? 0,
 		name: lastMessageUser?.name,
 	};
 };
@@ -112,18 +107,17 @@ export const get = query({
 			page: (
 				await Promise.all(
 					results.page.map(async (message) => {
-						const member = await populateMember(ctx, message.memberId);
+						const [member, reactions, thread, image] = await Promise.all([
+							populateMember(ctx, message.memberId),
+							populateReactions(ctx, message._id),
+							populateThread(ctx, message._id),
+							message.image ? ctx.storage.getUrl(message.image) : undefined,
+						]);
 						const user = member
 							? await populateUser(ctx, member?.userId)
 							: null;
 
 						if (!member || !user) return null;
-
-						const reactions = await populateReactions(ctx, message._id);
-						const thread = await populateThread(ctx, message._id);
-						const image = message.image
-							? await ctx.storage.getUrl(message.image)
-							: undefined;
 
 						const reactionsWithCounts = reactions.map((reaction) => ({
 							...reaction,
@@ -207,15 +201,17 @@ export const getById = query({
 
 		if (!currentMember) return null;
 
-		const member = await populateMember(ctx, message.memberId);
+		const [member, reactions, image] = await Promise.all([
+			populateMember(ctx, message.memberId),
+			populateReactions(ctx, message._id),
+			message.image ? ctx.storage.getUrl(message.image) : undefined,
+		]);
 
 		if (!member) return null;
 
 		const user = await populateUser(ctx, member.userId);
 
 		if (!user) return null;
-
-		const reactions = await populateReactions(ctx, message._id);
 
 		const reactionsWithCounts = reactions.map((reaction) => ({
 			...reaction,
@@ -248,9 +244,7 @@ export const getById = query({
 
 		return {
 			...message,
-			image: message.image
-				? await ctx.storage.getUrl(message.image)
-				: undefined,
+			image,
 			user,
 			member,
 			reactions: reactionsWithoutMemberIdProperty,
@@ -318,7 +312,15 @@ export const create = mutation({
 			parentMessageId: args.parentMessageId,
 			calendarEvent: args.calendarEvent,
 			tags: args.tags,
+			plainText: plainTextFromBody(args.body),
 		});
+
+		if (args.parentMessageId) {
+			const insertedReply = await ctx.db.get(messageId);
+			if (insertedReply) {
+				await onReplyInserted(ctx, insertedReply);
+			}
+		}
 
 		// Track message usage
 		await ctx.scheduler.runAfter(
@@ -574,9 +576,15 @@ export const update = mutation({
 		if (!member || member._id !== message.memberId)
 			throw new Error("Unauthorized.");
 
-		const updateData: { body: string; updatedAt: number; tags?: string[] } = {
+		const updateData: {
+			body: string;
+			updatedAt: number;
+			tags?: string[];
+			plainText: string;
+		} = {
 			body: args.body,
 			updatedAt: Date.now(),
+			plainText: plainTextFromBody(args.body),
 		};
 
 		if (args.tags !== undefined) {
@@ -615,7 +623,9 @@ export const remove = mutation({
 		if (!member || member._id !== message.memberId)
 			throw new Error("Unauthorized.");
 
+		const parentMessageId = message.parentMessageId;
 		await ctx.db.delete(args.id);
+		await onReplyDeleted(ctx, parentMessageId);
 
 		return args.id;
 	},
@@ -652,10 +662,7 @@ export const getUserMessages = query({
 		// Get all messages for the current member in this workspace
 		const messages = await ctx.db
 			.query("messages")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) => q.eq(q.field("memberId"), currentMember._id))
+			.withIndex("by_member_id", (q) => q.eq("memberId", currentMember._id))
 			.order("desc")
 			.collect();
 
@@ -834,15 +841,18 @@ export const getThreadMessages = query({
 			return [];
 		}
 
-		// Get all thread messages in the workspace
-		const threadMessages = await ctx.db
-			.query("messages")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) => q.neq(q.field("parentMessageId"), null))
-			.order("desc")
-			.collect();
+		// Read only actual replies via the composite index (parentMessageId > null
+		// excludes non-replies, which store it as undefined). The index orders by
+		// parentMessageId then _creationTime, so re-sort to the chronological
+		// (newest-first) order the old by_workspace_id scan produced.
+		const threadMessages = (
+			await ctx.db
+				.query("messages")
+				.withIndex("by_workspace_id_parent_message_id", (q) =>
+					q.eq("workspaceId", args.workspaceId).gt("parentMessageId", null)
+				)
+				.collect()
+		).sort((a, b) => b._creationTime - a._creationTime);
 
 		// Get all parent messages in one go
 		const parentMessageIds = new Set(
@@ -1004,26 +1014,28 @@ export const getMessageBodies = query({
 			// Early return if no message IDs provided
 			if (args.messageIds.length === 0) return [];
 
-			// Fetch all messages in a single batch query
-			const messages = await ctx.db
-				.query("messages")
-				.filter((q) =>
-					q.or(...args.messageIds.map((id) => q.eq(q.field("_id"), id)))
+			// Fetch all messages via point lookups
+			const messages = (
+				await Promise.all(
+					Array.from(new Set(args.messageIds)).map((id) => ctx.db.get(id))
 				)
-				.collect();
+			)
+				.filter(
+					(message): message is NonNullable<typeof message> => message !== null
+				)
+				.sort((a, b) => a._creationTime - b._creationTime);
 
 			if (messages.length === 0) return [];
 
 			// Extract all unique member IDs from messages
 			const memberIds = new Set(messages.map((msg) => msg.memberId));
 
-			// Fetch all members in a single batch
-			const members = await ctx.db
-				.query("members")
-				.filter((q) =>
-					q.or(...Array.from(memberIds).map((id) => q.eq(q.field("_id"), id)))
-				)
-				.collect();
+			// Fetch all members via point lookups
+			const members = (
+				await Promise.all(Array.from(memberIds).map((id) => ctx.db.get(id)))
+			).filter(
+				(member): member is NonNullable<typeof member> => member !== null
+			);
 
 			// Create a map of member ID to member
 			const memberMap = new Map(members.map((member) => [member._id, member]));
@@ -1031,13 +1043,10 @@ export const getMessageBodies = query({
 			// Extract all unique user IDs from members
 			const userIds = new Set(members.map((member) => member.userId));
 
-			// Fetch all users in a single batch
-			const users = await ctx.db
-				.query("users")
-				.filter((q) =>
-					q.or(...Array.from(userIds).map((id) => q.eq(q.field("_id"), id)))
-				)
-				.collect();
+			// Fetch all users via point lookups
+			const users = (
+				await Promise.all(Array.from(userIds).map((id) => ctx.db.get(id)))
+			).filter((user): user is NonNullable<typeof user> => user !== null);
 
 			// Create a map of user ID to user
 			const userMap = new Map(users.map((user) => [user._id, user]));
@@ -1275,6 +1284,9 @@ export const getRecentWorkspaceChannelMessages = query({
 			_creationTime: number;
 		}> = [];
 
+		const memberCache = new Map<Id<"members">, Doc<"members"> | null>();
+		const userCache = new Map<Id<"users">, Doc<"users"> | null>();
+
 		// Fetch messages from each channel
 		for (const channel of channels) {
 			const messages = await ctx.db
@@ -1301,9 +1313,17 @@ export const getRecentWorkspaceChannelMessages = query({
 			// Get author info for each message
 			for (const message of nonThreadMessages) {
 				if (message.body) {
-					const member = await ctx.db.get(message.memberId);
+					let member = memberCache.get(message.memberId);
+					if (member === undefined) {
+						member = await ctx.db.get(message.memberId);
+						memberCache.set(message.memberId, member);
+					}
 					if (member) {
-						const user = await ctx.db.get(member.userId);
+						let user = userCache.get(member.userId);
+						if (user === undefined) {
+							user = await ctx.db.get(member.userId);
+							userCache.set(member.userId, user);
+						}
 						allMessages.push({
 							channelName: channel.name,
 							authorName: user?.name || "Unknown",
@@ -1362,13 +1382,12 @@ export const getRecentChannelMessages = query({
 			// Extract all unique member IDs from filtered messages
 			const memberIds = new Set(filteredMessages.map((msg) => msg.memberId));
 
-			// Fetch all members in a single batch
-			const members = await ctx.db
-				.query("members")
-				.filter((q) =>
-					q.or(...Array.from(memberIds).map((id) => q.eq(q.field("_id"), id)))
-				)
-				.collect();
+			// Fetch all members via point lookups
+			const members = (
+				await Promise.all(Array.from(memberIds).map((id) => ctx.db.get(id)))
+			).filter(
+				(member): member is NonNullable<typeof member> => member !== null
+			);
 
 			// Create a map of member ID to member
 			const memberMap = new Map(members.map((member) => [member._id, member]));
@@ -1376,13 +1395,10 @@ export const getRecentChannelMessages = query({
 			// Extract all unique user IDs from members
 			const userIds = new Set(members.map((member) => member.userId));
 
-			// Fetch all users in a single batch
-			const users = await ctx.db
-				.query("users")
-				.filter((q) =>
-					q.or(...Array.from(userIds).map((id) => q.eq(q.field("_id"), id)))
-				)
-				.collect();
+			// Fetch all users via point lookups
+			const users = (
+				await Promise.all(Array.from(userIds).map((id) => ctx.db.get(id)))
+			).filter((user): user is NonNullable<typeof user> => user !== null);
 
 			// Create a map of user ID to user
 			const userMap = new Map(users.map((user) => [user._id, user]));
@@ -1431,33 +1447,13 @@ export const getThreadReplyCounts = query({
 			// If no parent message IDs provided, return empty array
 			if (args.parentMessageIds.length === 0) return [];
 
-			// Fetch all replies in a single query using 'or' filter
-			const allReplies = await ctx.db
-				.query("messages")
-				.withIndex("by_parent_message_id")
-				.filter((q) =>
-					q.or(
-						...args.parentMessageIds.map((id) =>
-							q.eq(q.field("parentMessageId"), id)
-						)
-					)
-				)
-				.collect();
-
-			// Group replies by parent message ID and count
-			const countsByParent = new Map<string, number>();
-			for (const reply of allReplies) {
-				if (reply.parentMessageId) {
-					const key = reply.parentMessageId;
-					countsByParent.set(key, (countsByParent.get(key) ?? 0) + 1);
-				}
-			}
-
-			// Build result array with counts (0 for parents with no replies)
-			const counts = args.parentMessageIds.map((parentMessageId) => ({
-				parentMessageId,
-				count: countsByParent.get(parentMessageId) ?? 0,
-			}));
+			// Read the denormalized reply count off each parent message.
+			const counts = await Promise.all(
+				args.parentMessageIds.map(async (parentMessageId) => {
+					const parent = await ctx.db.get(parentMessageId);
+					return { parentMessageId, count: parent?.replyCount ?? 0 };
+				})
+			);
 
 			return counts;
 		} catch (error) {

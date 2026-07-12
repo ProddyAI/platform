@@ -2,6 +2,7 @@
 
 import usePresence from "@convex-dev/presence/react";
 import { useQuery } from "convex/react";
+import { useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -33,19 +34,31 @@ export const useWorkspacePresence = ({
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
+	// Index members by userId once for O(1) enrichment lookups
+	const memberMap = useMemo(() => {
+		const map = new Map<Id<"users">, NonNullable<typeof members>[number]>();
+		members?.forEach((member) => {
+			map.set(member.userId, member);
+		});
+		return map;
+	}, [members]);
+
 	// Combine presence data with member information
-	const enrichedPresence =
-		presenceState?.map((presence) => {
-			const member = members?.find((m) => m.userId === presence.userId);
-			return {
-				...presence,
-				user: member?.user || {
-					name: actualUserName,
-					image: undefined,
-				},
-				memberId: member?._id,
-			};
-		}) || [];
+	const enrichedPresence = useMemo(
+		() =>
+			presenceState?.map((presence) => {
+				const member = memberMap.get(presence.userId as Id<"users">);
+				return {
+					...presence,
+					user: member?.user || {
+						name: actualUserName,
+						image: undefined,
+					},
+					memberId: member?._id,
+				};
+			}) || [],
+		[presenceState, memberMap, actualUserName]
+	);
 
 	return {
 		presenceState: enrichedPresence,

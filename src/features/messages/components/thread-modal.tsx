@@ -13,12 +13,12 @@ import {
 	Paintbrush,
 	User,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import type Quill from "quill";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import Editor from "@/components/messaging/editor";
 import { Thumbnail } from "@/components/messaging/thumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+
+const Editor = dynamic(() => import("@/components/messaging/editor"), {
+	ssr: false,
+	loading: () => (
+		<div className="flex h-full items-center justify-center">
+			<Loader className="size-6 animate-spin text-muted-foreground" />
+		</div>
+	),
+});
 
 interface ThreadMessage {
 	message: {

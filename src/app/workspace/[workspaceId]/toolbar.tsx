@@ -637,7 +637,7 @@ export const WorkspaceToolbar = () => {
 	}, []);
 
 	const handleUpgradeClick = useCallback(() => {
-		router.push(`/workspace/${workspaceId}/manage#billing`);
+		router.push(`/workspace/${workspaceId}/billing`);
 	}, [router, workspaceId]);
 
 	const handleToggleAI = useCallback(() => {

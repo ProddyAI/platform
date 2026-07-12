@@ -307,6 +307,248 @@
 	}
 }
 
+/* ─── Assistant hero: "The Living Answer" ─────────────────────────────── */
+/* Registered so the cursor position can be smoothly interpolated (@property
+   makes custom props animatable/transitionable). */
+@property --hero-mx {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 50%;
+}
+@property --hero-my {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 26%;
+}
+
+.hero-live {
+	--hero-mx: 50%;
+	--hero-my: 26%;
+	/* Trailing follow: the glow eases toward the cursor rather than snapping. */
+	transition:
+		--hero-mx 220ms ease-out,
+		--hero-my 220ms ease-out;
+}
+
+.hero-mesh {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* Cursor-reactive purple/magenta glow. */
+.hero-mesh::before {
+	content: "";
+	position: absolute;
+	inset: -20%;
+	background:
+		radial-gradient(
+			36rem 36rem at var(--hero-mx) var(--hero-my),
+			hsl(280 77% 23% / 0.16),
+			transparent 62%
+		),
+		radial-gradient(
+			28rem 28rem at calc(100% - var(--hero-mx)) calc(var(--hero-my) + 22%),
+			hsl(326 100% 44% / 0.08),
+			transparent 60%
+		);
+}
+
+/* Slow ambient drift, independent of the cursor, for depth. */
+.hero-mesh::after {
+	content: "";
+	position: absolute;
+	inset: -30%;
+	background: radial-gradient(
+		22rem 22rem at 68% 62%,
+		hsl(280 60% 40% / 0.07),
+		transparent 60%
+	);
+	animation: hero-drift 20s ease-in-out infinite;
+}
+
+/* Faint workspace grid, revealed near the cursor via a radial mask. */
+.hero-grid {
+	position: absolute;
+	inset: -10%;
+	background-image:
+		linear-gradient(hsl(221 40% 11% / 0.04) 1px, transparent 1px),
+		linear-gradient(90deg, hsl(221 40% 11% / 0.04) 1px, transparent 1px);
+	background-size: 44px 44px;
+	-webkit-mask-image: radial-gradient(
+		42rem 42rem at var(--hero-mx) var(--hero-my),
+		#000,
+		transparent 72%
+	);
+	mask-image: radial-gradient(
+		42rem 42rem at var(--hero-mx) var(--hero-my),
+		#000,
+		transparent 72%
+	);
+}
+
+.dark .hero-grid {
+	background-image:
+		linear-gradient(hsl(210 15% 95% / 0.05) 1px, transparent 1px),
+		linear-gradient(90deg, hsl(210 15% 95% / 0.05) 1px, transparent 1px);
+}
+
+.dark .hero-mesh::before {
+	background:
+		radial-gradient(
+			36rem 36rem at var(--hero-mx) var(--hero-my),
+			hsl(280 60% 55% / 0.2),
+			transparent 62%
+		),
+		radial-gradient(
+			28rem 28rem at calc(100% - var(--hero-mx)) calc(var(--hero-my) + 22%),
+			hsl(326 90% 60% / 0.12),
+			transparent 60%
+		);
+}
+
+/* Streaming / typing caret. */
+.hero-caret {
+	display: inline-block;
+	width: 2px;
+	height: 1.05em;
+	margin-left: 1px;
+	vertical-align: -2px;
+	border-radius: 1px;
+	background: hsl(var(--primary));
+	animation: hero-blink 1.05s steps(1) infinite;
+}
+
+.dark .hero-caret {
+	background: hsl(280 55% 70%);
+}
+
+@keyframes hero-drift {
+	0%,
+	100% {
+		transform: translate3d(-4%, -2%, 0);
+	}
+	50% {
+		transform: translate3d(5%, 4%, 0);
+	}
+}
+
+@keyframes hero-blink {
+	0%,
+	50% {
+		opacity: 1;
+	}
+	50.01%,
+	100% {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hero-live {
+		transition: none;
+	}
+	.hero-mesh::after {
+		animation: none;
+	}
+	.hero-caret {
+		animation: none;
+		opacity: 1;
+	}
+}
+
+/* ─── Pricing: spotlight tiers + live calculator ───────────────────────── */
+/* Cards carry a cursor-following radial glow (positions fed as px vars from
+   React) and the Pro tier gets an animated brand-gradient border. Content is
+   wrapped in `.price-card__body` (z-10) so the glow tints the surface without
+   ever sitting above the text. */
+.price-card {
+	position: relative;
+	isolation: isolate;
+}
+
+.price-card__body {
+	position: relative;
+	z-index: 10;
+}
+
+.price-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	border-radius: inherit;
+	background: radial-gradient(
+		20rem 20rem at var(--spot-x, 50%) var(--spot-y, -10%),
+		hsl(var(--primary) / 0.1),
+		transparent 60%
+	);
+	opacity: 0;
+	transition: opacity 350ms ease;
+	pointer-events: none;
+}
+
+.price-card:hover::before,
+.price-card:focus-within::before {
+	opacity: 1;
+}
+
+/* Pro tier: warmer magenta→purple glow that stays faintly lit at rest. */
+.price-card--pro::before {
+	background: radial-gradient(
+		22rem 22rem at var(--spot-x, 50%) var(--spot-y, -10%),
+		hsl(var(--secondary) / 0.14),
+		hsl(var(--primary) / 0.1) 42%,
+		transparent 66%
+	);
+	opacity: 0.6;
+}
+
+.price-card--pro:hover::before {
+	opacity: 1;
+}
+
+/* Animated gradient border, drawn as a masked 1.25px ring. */
+.price-card--pro::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border-radius: inherit;
+	padding: 1.25px;
+	background: linear-gradient(
+		135deg,
+		hsl(var(--primary)),
+		hsl(var(--secondary)),
+		hsl(var(--primary))
+	);
+	background-size: 200% 200%;
+	animation: price-border 7s linear infinite;
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	pointer-events: none;
+}
+
+@keyframes price-border {
+	to {
+		background-position: 200% 200%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.price-card::before {
+		transition: none;
+	}
+	.price-card--pro::after {
+		animation: none;
+	}
+}
+
 /* The workspace/channel topbars should keep their light-mode appearance in dark mode.
    We do not force their container background — leave them unchanged. */
 

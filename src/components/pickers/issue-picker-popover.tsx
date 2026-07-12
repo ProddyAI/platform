@@ -38,6 +38,8 @@ interface IssuePickerPopoverProps {
 	isPending?: boolean;
 	label?: string;
 	emptyHint?: string;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 	onConfirm: (issueIds: Id<"issues">[]) => void | Promise<void>;
 }
 
@@ -47,9 +49,12 @@ export const IssuePickerPopover = ({
 	isPending = false,
 	label = "Add issues",
 	emptyHint = "Every issue is already here.",
+	open: controlledOpen,
+	onOpenChange,
 	onConfirm,
 }: IssuePickerPopoverProps) => {
-	const [open, setOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
 	const [selected, setSelected] = useState<Set<Id<"issues">>>(new Set());
 
 	const toggle = (issueId: Id<"issues">) => {
@@ -64,7 +69,8 @@ export const IssuePickerPopover = ({
 	const reset = () => setSelected(new Set());
 
 	const handleOpenChange = (next: boolean) => {
-		setOpen(next);
+		setInternalOpen(next);
+		onOpenChange?.(next);
 		if (!next) reset();
 	};
 
@@ -72,7 +78,7 @@ export const IssuePickerPopover = ({
 		if (selected.size === 0) return;
 		await onConfirm([...selected]);
 		reset();
-		setOpen(false);
+		handleOpenChange(false);
 	};
 
 	return (

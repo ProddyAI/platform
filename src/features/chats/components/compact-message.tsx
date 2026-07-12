@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { memo, useCallback } from "react";
 import { Hint } from "@/components/hint";
 import { useContextMenu } from "@/contexts/context-menu-context";
 import { cn } from "@/lib/utils";
@@ -19,7 +20,7 @@ interface CompactMessageProps extends MessageProps {
 	onContextMenuAction: (action: string) => void;
 }
 
-export const CompactMessage = ({
+const CompactMessageComponent = ({
 	id,
 	isAuthor,
 	body,
@@ -44,11 +45,14 @@ export const CompactMessage = ({
 }: CompactMessageProps) => {
 	const { openContextMenu } = useContextMenu();
 
-	const handleContextMenu = (e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		openContextMenu(e.clientX, e.clientY, id);
-	};
+	const handleContextMenu = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			openContextMenu(e.clientX, e.clientY, id);
+		},
+		[openContextMenu, id]
+	);
 
 	return (
 		<>
@@ -114,3 +118,5 @@ export const CompactMessage = ({
 		</>
 	);
 };
+
+export const CompactMessage = memo(CompactMessageComponent);

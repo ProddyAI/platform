@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { internalQuery, mutation, query } from "../_generated/server";
 
 export type ExpandedSections = Record<string, boolean>;
 
@@ -921,5 +921,37 @@ export const getNotificationPreferencesByUserId = query({
 			| undefined;
 
 		return buildNotificationDefaults(notifications);
+	},
+});
+
+/**
+ * Batch-resolve push notification targets for a set of users in a single
+ * transaction: the user's OneSignal external id plus their notification prefs.
+ */
+export const _getPushTargets = internalQuery({
+	args: {
+		userIds: v.array(v.id("users")),
+	},
+	handler: async (ctx, args) => {
+		return await Promise.all(
+			args.userIds.map(async (userId) => {
+				const user = await ctx.db.get(userId);
+				if (!user) return null;
+
+				const preferences = await ctx.db
+					.query("preferences")
+					.withIndex("by_user_id", (q) => q.eq("userId", userId))
+					.unique();
+
+				const notifications = preferences?.settings?.notifications as
+					| LegacyNotifications
+					| undefined;
+
+				return {
+					onesignalExternalId: user.onesignalExternalId ?? null,
+					notificationPrefs: buildNotificationDefaults(notifications),
+				};
+			})
+		);
 	},
 });

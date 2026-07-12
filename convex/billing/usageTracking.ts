@@ -108,6 +108,86 @@ const getUsageCount = (
 	fieldName: UsageCounterField
 ): number => row[fieldName] ?? 0;
 
+// Increment one usage counter for (user, workspace, current month), updating
+// BOTH the per-user usageStats row AND the workspace-level rollup. Every write
+// path funnels through here so the rollup can never drift from the per-user
+// rows. `enforceWorkspaceLimit` and the AI-limit checks read the rollup.
+async function applyUsageIncrement(
+	ctx: MutationCtx,
+	userId: Id<"users">,
+	workspaceId: Id<"workspaces">,
+	fieldName: UsageCounterField
+) {
+	const month = getCurrentMonth();
+
+	const existing = await ctx.db
+		.query("usageStats")
+		.withIndex("by_user_workspace_month", (q) =>
+			q.eq("userId", userId).eq("workspaceId", workspaceId).eq("month", month)
+		)
+		.unique();
+
+	if (existing) {
+		await ctx.db.patch(existing._id, {
+			[fieldName]: getUsageCount(existing, fieldName) + 1,
+			updatedAt: Date.now(),
+		});
+	} else {
+		await ctx.db.insert("usageStats", {
+			userId,
+			workspaceId,
+			month,
+			aiRequestCount: 0,
+			aiDiagramCount: 0,
+			aiSummaryCount: 0,
+			messageCount: 0,
+			taskCount: 0,
+			channelCount: 0,
+			boardCount: 0,
+			noteCount: 0,
+			[fieldName]: 1,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		});
+	}
+
+	const total = await ctx.db
+		.query("workspaceUsageTotals")
+		.withIndex("by_workspace_month", (q) =>
+			q.eq("workspaceId", workspaceId).eq("month", month)
+		)
+		.unique();
+
+	if (total) {
+		await ctx.db.patch(total._id, {
+			[fieldName]: (total[fieldName] ?? 0) + 1,
+			updatedAt: Date.now(),
+		});
+	} else {
+		await ctx.db.insert("workspaceUsageTotals", {
+			workspaceId,
+			month,
+			[fieldName]: 1,
+			updatedAt: Date.now(),
+		});
+	}
+}
+
+// Read a workspace's current-month usage for one counter from the rollup.
+async function readWorkspaceUsageTotal(
+	ctx: Pick<QueryCtx | MutationCtx, "db">,
+	workspaceId: Id<"workspaces">,
+	fieldName: UsageCounterField
+): Promise<number> {
+	const total = await ctx.db
+		.query("workspaceUsageTotals")
+		.withIndex("by_workspace_month", (q) =>
+			q.eq("workspaceId", workspaceId).eq("month", getCurrentMonth())
+		)
+		.unique();
+	return total?.[fieldName] ?? 0;
+}
+
 // ---------------------------------------------------------------------------
 // Core upsert-and-increment  (internal – called by other mutations/actions)
 // ---------------------------------------------------------------------------
@@ -119,46 +199,12 @@ export const incrementUsage = internalMutation({
 		featureType: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const month = getCurrentMonth();
 		const fieldName = FEATURE_FIELD_MAP[args.featureType as FeatureType];
 		if (!fieldName) {
 			console.warn(`[UsageTracking] Unknown feature type: ${args.featureType}`);
 			return;
 		}
-
-		const existing = await ctx.db
-			.query("usageStats")
-			.withIndex("by_user_workspace_month", (q) =>
-				q
-					.eq("userId", args.userId)
-					.eq("workspaceId", args.workspaceId)
-					.eq("month", month)
-			)
-			.unique();
-
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				[fieldName]: getUsageCount(existing, fieldName) + 1,
-				updatedAt: Date.now(),
-			});
-		} else {
-			await ctx.db.insert("usageStats", {
-				userId: args.userId,
-				workspaceId: args.workspaceId,
-				month,
-				aiRequestCount: 0,
-				aiDiagramCount: 0,
-				aiSummaryCount: 0,
-				messageCount: 0,
-				taskCount: 0,
-				channelCount: 0,
-				boardCount: 0,
-				noteCount: 0,
-				[fieldName]: 1,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-		}
+		await applyUsageIncrement(ctx, args.userId, args.workspaceId, fieldName);
 	},
 });
 
@@ -173,44 +219,10 @@ export const recordAIRequest = internalMutation({
 		featureType: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const month = getCurrentMonth();
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const fieldName = FEATURE_FIELD_MAP[featureType];
 		if (!fieldName) return;
-
-		const existing = await ctx.db
-			.query("usageStats")
-			.withIndex("by_user_workspace_month", (q) =>
-				q
-					.eq("userId", args.userId)
-					.eq("workspaceId", args.workspaceId)
-					.eq("month", month)
-			)
-			.unique();
-
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				[fieldName]: getUsageCount(existing, fieldName) + 1,
-				updatedAt: Date.now(),
-			});
-		} else {
-			await ctx.db.insert("usageStats", {
-				userId: args.userId,
-				workspaceId: args.workspaceId,
-				month,
-				aiRequestCount: 0,
-				aiDiagramCount: 0,
-				aiSummaryCount: 0,
-				messageCount: 0,
-				taskCount: 0,
-				channelCount: 0,
-				boardCount: 0,
-				noteCount: 0,
-				[fieldName]: 1,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-		}
+		await applyUsageIncrement(ctx, args.userId, args.workspaceId, fieldName);
 	},
 });
 
@@ -337,19 +349,12 @@ export const checkAIUsageLimit = internalQuery({
 
 		if (isUnlimited(limit)) return { allowed: true, used: 0, limit: -1 };
 
-		const month = getCurrentMonth();
-		const rows = await ctx.db
-			.query("usageStats")
-			.withIndex("by_workspace_month", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("month", month)
-			)
-			.collect();
-
 		const fieldName = FEATURE_FIELD_MAP[featureType];
-		let used = 0;
-		for (const row of rows) {
-			used += getUsageCount(row, fieldName);
-		}
+		const used = await readWorkspaceUsageTotal(
+			ctx,
+			args.workspaceId,
+			fieldName
+		);
 
 		return { allowed: used < limit, used, limit };
 	},
@@ -488,19 +493,12 @@ export const checkAIUsageLimitPublic = query({
 
 		if (isUnlimited(limit)) return { allowed: true, used: 0, limit: -1 };
 
-		const month = getCurrentMonth();
-		const rows = await ctx.db
-			.query("usageStats")
-			.withIndex("by_workspace_month", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("month", month)
-			)
-			.collect();
-
 		const fieldName = FEATURE_FIELD_MAP[featureType];
-		let used = 0;
-		for (const row of rows) {
-			used += getUsageCount(row, fieldName);
-		}
+		const used = await readWorkspaceUsageTotal(
+			ctx,
+			args.workspaceId,
+			fieldName
+		);
 
 		return { allowed: used < limit, used, limit };
 	},
@@ -528,44 +526,11 @@ export const recordAIRequestPublic = mutation({
 
 		if (!member) return;
 
-		const month = getCurrentMonth();
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const fieldName = FEATURE_FIELD_MAP[featureType];
 		if (!fieldName) return;
 
-		const existing = await ctx.db
-			.query("usageStats")
-			.withIndex("by_user_workspace_month", (q) =>
-				q
-					.eq("userId", userId)
-					.eq("workspaceId", args.workspaceId)
-					.eq("month", month)
-			)
-			.unique();
-
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				[fieldName]: getUsageCount(existing, fieldName) + 1,
-				updatedAt: Date.now(),
-			});
-		} else {
-			await ctx.db.insert("usageStats", {
-				userId,
-				workspaceId: args.workspaceId,
-				month,
-				aiRequestCount: 0,
-				aiDiagramCount: 0,
-				aiSummaryCount: 0,
-				messageCount: 0,
-				taskCount: 0,
-				channelCount: 0,
-				boardCount: 0,
-				noteCount: 0,
-				[fieldName]: 1,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-		}
+		await applyUsageIncrement(ctx, userId, args.workspaceId, fieldName);
 	},
 });
 
@@ -584,19 +549,8 @@ export async function enforceWorkspaceLimit(
 	const limit = plan.limits[limitKey];
 	if (isUnlimited(limit)) return; // Unlimited is allowed
 
-	const month = getCurrentMonth();
-	const rows = await ctx.db
-		.query("usageStats")
-		.withIndex("by_workspace_month", (q) =>
-			q.eq("workspaceId", workspaceId).eq("month", month)
-		)
-		.collect();
-
 	const fieldName = FEATURE_FIELD_MAP[featureType];
-	let used = 0;
-	for (const row of rows) {
-		used += getUsageCount(row, fieldName);
-	}
+	const used = await readWorkspaceUsageTotal(ctx, workspaceId, fieldName);
 
 	if (used >= limit) {
 		throw new Error("Limit reached. Upgrade your plan to continue.");

@@ -145,20 +145,15 @@ export const getMyCalendarToday = query({
 		const todayStart = startOfDayMs(now);
 		const todayEnd = endOfDayMs(now);
 
-		const allEvents = await ctx.db
+		const todayEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_member_id_date", (q) =>
+				q
+					.eq("memberId", member._id)
+					.gte("date", todayStart)
+					.lte("date", todayEnd)
 			)
 			.collect();
-
-		const todayEvents = allEvents.filter((event) => {
-			if (event.memberId !== member._id) {
-				return false;
-			}
-			const eventDate = new Date(event.date).getTime();
-			return eventDate >= todayStart && eventDate <= todayEnd;
-		});
 
 		return {
 			events: todayEvents.map((e) => ({
@@ -196,20 +191,15 @@ export const getMyCalendarTomorrow = query({
 		const tomorrowStart = startOfDayMs(tomorrow);
 		const tomorrowEnd = endOfDayMs(tomorrow);
 
-		const allEvents = await ctx.db
+		const tomorrowEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_member_id_date", (q) =>
+				q
+					.eq("memberId", member._id)
+					.gte("date", tomorrowStart)
+					.lte("date", tomorrowEnd)
 			)
 			.collect();
-
-		const tomorrowEvents = allEvents.filter((event) => {
-			if (event.memberId !== member._id) {
-				return false;
-			}
-			const eventDate = new Date(event.date).getTime();
-			return eventDate >= tomorrowStart && eventDate <= tomorrowEnd;
-		});
 
 		return {
 			events: tomorrowEvents.map((e) => ({
@@ -245,22 +235,15 @@ export const getMyCalendarThisWeek = query({
 		const now = new Date();
 		const thisWeekEnd = addDays(now, 7);
 
-		const allEvents = await ctx.db
+		const thisWeekEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_member_id_date", (q) =>
+				q
+					.eq("memberId", member._id)
+					.gte("date", startOfDayMs(now))
+					.lte("date", endOfDayMs(thisWeekEnd))
 			)
 			.collect();
-
-		const thisWeekEvents = allEvents.filter((event) => {
-			if (event.memberId !== member._id) {
-				return false;
-			}
-			const eventDate = new Date(event.date).getTime();
-			return (
-				eventDate >= startOfDayMs(now) && eventDate <= endOfDayMs(thisWeekEnd)
-			);
-		});
 
 		return {
 			events: thisWeekEvents.map((e) => ({
@@ -297,23 +280,15 @@ export const getMyCalendarNextWeek = query({
 		const nextWeekStart = addDays(now, 7);
 		const nextWeekEnd = addDays(now, 14);
 
-		const allEvents = await ctx.db
+		const nextWeekEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_member_id_date", (q) =>
+				q
+					.eq("memberId", member._id)
+					.gte("date", startOfDayMs(nextWeekStart))
+					.lte("date", endOfDayMs(nextWeekEnd))
 			)
 			.collect();
-
-		const nextWeekEvents = allEvents.filter((event) => {
-			if (event.memberId !== member._id) {
-				return false;
-			}
-			const eventDate = new Date(event.date).getTime();
-			return (
-				eventDate >= startOfDayMs(nextWeekStart) &&
-				eventDate <= endOfDayMs(nextWeekEnd)
-			);
-		});
 
 		return {
 			events: nextWeekEvents.map((e) => ({
@@ -354,10 +329,9 @@ export const getMyTasksToday = query({
 
 		const allTasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
-			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -408,10 +382,9 @@ export const getMyTasksTomorrow = query({
 
 		const allTasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
-			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -460,10 +433,9 @@ export const getMyTasksThisWeek = query({
 
 		const allTasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
-			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -514,10 +486,9 @@ export const getMyTasksNextWeek = query({
 
 		const allTasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
-			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -562,10 +533,9 @@ export const getMyAllTasks = query({
 
 		let query = ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.filter((q) => q.eq(q.field("userId"), authUserId));
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
+			);
 
 		if (!args.includeCompleted) {
 			query = query.filter((q) => q.eq(q.field("completed"), false));
@@ -1008,10 +978,9 @@ export const getWorkspaceOverview = query({
 			.collect();
 		const tasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
-			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 		const events = await ctx.db
@@ -1098,14 +1067,13 @@ export const getWorkspaceGeneralSummary = query({
 		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
 		const allTasks: Doc<"tasks">[] = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
-			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
-		const [noteResult, recentMessages, overview] = await Promise.all([
+		const [noteResult, recentMessages, channels] = await Promise.all([
 			ctx.runQuery(api.assistant.tools.getRecentNotes, {
 				workspaceId: args.workspaceId,
 				limit: 4,
@@ -1130,15 +1098,12 @@ export const getWorkspaceGeneralSummary = query({
 					_creationTime: number;
 				}>
 			>,
-			ctx.runQuery(api.assistant.tools.getWorkspaceOverview, {
-				workspaceId: args.workspaceId,
-				userId: authUserId,
-			}) as Promise<{
-				channelCount: number;
-				memberCount: number;
-				taskCount: number;
-				upcomingEvents: number;
-			}>,
+			ctx.db
+				.query("channels")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
+				)
+				.collect(),
 		]);
 
 		const highPriorityTasks = sortTasksForAssistant(allTasks)
@@ -1167,8 +1132,8 @@ export const getWorkspaceGeneralSummary = query({
 					creationTime: message._creationTime,
 				})
 			),
-			channelCount: overview.channelCount,
-			taskCount: overview.taskCount,
+			channelCount: channels.length,
+			taskCount: allTasks.length,
 		};
 	},
 });

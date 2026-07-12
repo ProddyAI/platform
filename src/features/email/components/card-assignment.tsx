@@ -1,16 +1,21 @@
-import { Button, Heading, Hr, Section, Text } from "@react-email/components";
+import { Button, Heading, Section, Text } from "@react-email/components";
 import type * as React from "react";
 import {
+	type EmailDetailItem,
+	EmailDetailList,
 	EmailLayout,
 	EmailUnsubscribeLine,
 	emailButton,
 	emailButtonContainer,
 	emailCalloutBox,
+	emailCalloutHeading,
+	emailCalloutText,
 	emailFooter,
 	emailHeading,
 	emailHr,
 	emailSection,
 	emailText,
+	Hr,
 } from "./email-layout";
 
 interface CardAssignmentTemplateProps {
@@ -44,54 +49,35 @@ export const CardAssignmentTemplate: React.FC<
 	workspaceName = "Proddy",
 	unsubscribeUrl,
 }) => {
-	const previewText = `${assignedBy} assigned you to "${cardTitle}"`;
+	const previewText = `${assignedBy} assigned you "${cardTitle}"`;
+
+	const details: EmailDetailItem[] = [];
+	if (listName) details.push({ label: "List", value: listName });
+	if (channelName) details.push({ label: "Channel", value: channelName });
+	if (priority) details.push({ label: "Priority", value: priority });
+	if (dueDate) details.push({ label: "Due date", value: dueDate });
 
 	return (
 		<EmailLayout previewText={previewText}>
-			<Heading style={emailHeading}>{assignedBy} assigned you a card</Heading>
+			<Heading style={emailHeading}>You were assigned a card</Heading>
 			<Section style={emailSection}>
 				<Text style={emailText}>Hi {firstName},</Text>
 				<Text style={emailText}>
-					{assignedBy} has assigned you to a card in {workspaceName}.
+					<strong>{assignedBy}</strong> assigned you a card in {workspaceName}.
 				</Text>
 
 				<Section style={emailCalloutBox}>
-					<Text style={cardTitleStyle}>{cardTitle}</Text>
-
-					{cardDescription && (
-						<Text style={cardDescriptionStyle}>{cardDescription}</Text>
-					)}
-
-					<Section style={metadataContainer}>
-						{listName && (
-							<Text style={metadataItem}>
-								<strong>List:</strong> {listName}
-							</Text>
-						)}
-
-						{channelName && (
-							<Text style={metadataItem}>
-								<strong>Channel:</strong> {channelName}
-							</Text>
-						)}
-
-						{priority && (
-							<Text style={metadataItem}>
-								<strong>Priority:</strong> {priority}
-							</Text>
-						)}
-
-						{dueDate && (
-							<Text style={metadataItem}>
-								<strong>Due Date:</strong> {dueDate}
-							</Text>
-						)}
-					</Section>
+					<Text style={emailCalloutHeading}>{cardTitle}</Text>
+					{cardDescription ? (
+						<Text style={emailCalloutText}>{cardDescription}</Text>
+					) : null}
 				</Section>
+
+				{details.length > 0 ? <EmailDetailList items={details} /> : null}
 
 				<Section style={emailButtonContainer}>
 					<Button href={cardUrl || workspaceUrl} style={emailButton}>
-						View Card
+						View card
 					</Button>
 				</Section>
 			</Section>
@@ -99,9 +85,8 @@ export const CardAssignmentTemplate: React.FC<
 			<Hr style={emailHr} />
 
 			<Text style={emailFooter}>
-				This email was sent from {workspaceName}, your team collaboration
-				platform. If you didn&apos;t expect this email, you can safely ignore
-				it.
+				You received this because you were assigned to a card in {workspaceName}
+				.
 			</Text>
 
 			<EmailUnsubscribeLine
@@ -110,31 +95,6 @@ export const CardAssignmentTemplate: React.FC<
 			/>
 		</EmailLayout>
 	);
-};
-
-// Styles specific to this template (not shared across other templates)
-const cardTitleStyle = {
-	color: "#0E1C36",
-	fontSize: "18px",
-	fontWeight: "600",
-	margin: "0 0 10px",
-};
-
-const cardDescriptionStyle = {
-	color: "#4A5568",
-	fontSize: "14px",
-	lineHeight: "1.5",
-	margin: "10px 0",
-};
-
-const metadataContainer = {
-	marginTop: "15px",
-};
-
-const metadataItem = {
-	color: "#4A5568",
-	fontSize: "14px",
-	margin: "5px 0",
 };
 
 export default CardAssignmentTemplate;

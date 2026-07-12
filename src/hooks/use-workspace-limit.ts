@@ -14,11 +14,11 @@ export type FeatureKey =
 	| "board"
 	| "note";
 
-export const useWorkspaceLimit = (featureKey: FeatureKey) => {
+export const useWorkspaceLimit = (featureKey: FeatureKey, enabled = true) => {
 	const workspaceId = useWorkspaceId();
 	const usage = useQuery(
 		api.billing.usageTracking.getWorkspaceUsage,
-		workspaceId ? { workspaceId } : "skip"
+		enabled && workspaceId ? { workspaceId } : "skip"
 	);
 
 	if (usage === undefined || !workspaceId) {

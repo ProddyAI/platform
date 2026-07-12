@@ -1,20 +1,12 @@
 "use client";
 
-import {
-	CreditCard,
-	Database,
-	Plug,
-	Settings,
-	Shield,
-	Users,
-} from "lucide-react";
+import { Database, Settings, Shield, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PageShell } from "@/components/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BillingSection } from "@/features/billing/components/billing-section";
 import { ImportDataManagement } from "@/features/manage/components/import-data-management";
-import { IntegrationsManagement } from "@/features/manage/components/integrations-management";
 import { MembersManagement } from "@/features/manage/components/members-management";
 import { WorkspaceManagement } from "@/features/manage/components/workspace-management";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -26,13 +18,7 @@ import {
 	WorkspaceTitle,
 } from "../workspace-title-context";
 
-const MANAGE_TABS = [
-	"workspace",
-	"members",
-	"billing",
-	"integrations",
-	"import",
-] as const;
+const MANAGE_TABS = ["workspace", "members", "import"] as const;
 
 type ManageTab = (typeof MANAGE_TABS)[number];
 
@@ -54,19 +40,6 @@ function getTabFromLocation(): ManageTab {
 		return queryTab as ManageTab;
 	}
 
-	// Payment providers may return status params. Default to billing tab in that flow.
-	if (
-		params.has("subscription_id") ||
-		params.has("status") ||
-		params.has("email")
-	) {
-		return "billing";
-	}
-
-	if (params.has("connected") && params.get("connected") === "true") {
-		return "integrations";
-	}
-
 	return "workspace";
 }
 
@@ -77,6 +50,7 @@ const ManagePage = () => {
 	useSetWorkspaceTitle(<WorkspaceTitle icon={Settings} label="Manage" />);
 
 	const workspaceId = useWorkspaceId();
+	const router = useRouter();
 	const [activeTab, setActiveTab] = useState<ManageTab>("workspace");
 
 	useEffect(() => {
@@ -113,6 +87,19 @@ const ManagePage = () => {
 		id: workspaceId,
 	});
 
+	// Manage is admin/owner-only. Regular members manage their own integrations
+	// on the dedicated /integrations page, so send them there.
+	const isRegularMember = !memberLoading && member?.role === "member";
+	useEffect(() => {
+		if (isRegularMember) {
+			router.push(`/workspace/${workspaceId}/integrations`);
+		}
+	}, [isRegularMember, router, workspaceId]);
+
+	if (isRegularMember) {
+		return null;
+	}
+
 	if (memberLoading || workspaceLoading) {
 		return (
 			<PageShell>
@@ -146,76 +133,41 @@ const ManagePage = () => {
 
 	return (
 		<PageShell>
-			{/* For members, show only Integrations */}
-			{member.role === "member" ? (
-				/* Members only manage their own integrations — the section header
-				   inside IntegrationsManagement carries the title and description. */
-				<div className={TAB_PANEL_CLASS}>
-					<IntegrationsManagement
+			<Tabs
+				className="w-full"
+				onValueChange={handleTabChange}
+				value={activeTab}
+			>
+				<TabsList className="grid w-full grid-cols-3 mb-8">
+					<TabsTrigger value="workspace">
+						<Settings className="size-4 mr-2" />
+						Workspace
+					</TabsTrigger>
+					<TabsTrigger value="members">
+						<Users className="size-4 mr-2" />
+						Members
+					</TabsTrigger>
+					<TabsTrigger value="import">
+						<Database className="size-4 mr-2" />
+						Import data
+					</TabsTrigger>
+				</TabsList>
+
+				<TabsContent className={TAB_PANEL_CLASS} value="workspace">
+					<WorkspaceManagement currentMember={member} workspace={workspace} />
+				</TabsContent>
+
+				<TabsContent className={TAB_PANEL_CLASS} value="members">
+					<MembersManagement currentMember={member} workspaceId={workspaceId} />
+				</TabsContent>
+
+				<TabsContent className={TAB_PANEL_CLASS} value="import">
+					<ImportDataManagement
 						currentMember={member}
 						workspaceId={workspaceId}
 					/>
-				</div>
-			) : (
-				/* For admins and owners, show all tabs */
-				<Tabs
-					className="w-full"
-					onValueChange={handleTabChange}
-					value={activeTab}
-				>
-					<TabsList className="grid w-full grid-cols-5 mb-8">
-						<TabsTrigger value="workspace">
-							<Settings className="size-4 mr-2" />
-							Workspace
-						</TabsTrigger>
-						<TabsTrigger value="members">
-							<Users className="size-4 mr-2" />
-							Members
-						</TabsTrigger>
-						<TabsTrigger value="billing">
-							<CreditCard className="size-4 mr-2" />
-							Billing
-						</TabsTrigger>
-						<TabsTrigger value="integrations">
-							<Plug className="size-4 mr-2" />
-							AI integrations
-						</TabsTrigger>
-						<TabsTrigger value="import">
-							<Database className="size-4 mr-2" />
-							Import data
-						</TabsTrigger>
-					</TabsList>
-
-					<TabsContent className={TAB_PANEL_CLASS} value="workspace">
-						<WorkspaceManagement currentMember={member} workspace={workspace} />
-					</TabsContent>
-
-					<TabsContent className={TAB_PANEL_CLASS} value="members">
-						<MembersManagement
-							currentMember={member}
-							workspaceId={workspaceId}
-						/>
-					</TabsContent>
-
-					<TabsContent className={TAB_PANEL_CLASS} value="billing">
-						<BillingSection currentMember={member} workspaceId={workspaceId} />
-					</TabsContent>
-
-					<TabsContent className={TAB_PANEL_CLASS} value="integrations">
-						<IntegrationsManagement
-							currentMember={member}
-							workspaceId={workspaceId}
-						/>
-					</TabsContent>
-
-					<TabsContent className={TAB_PANEL_CLASS} value="import">
-						<ImportDataManagement
-							currentMember={member}
-							workspaceId={workspaceId}
-						/>
-					</TabsContent>
-				</Tabs>
-			)}
+				</TabsContent>
+			</Tabs>
 		</PageShell>
 	);
 };

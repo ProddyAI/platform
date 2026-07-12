@@ -503,8 +503,7 @@ export const cleanupExpiredTokens = internalMutation({
 	handler: async (ctx) => {
 		const expiredTokens = await ctx.db
 			.query("passwordResetTokens")
-			.withIndex("by_expiry")
-			.filter((q) => q.lt(q.field("expiresAt"), Date.now()))
+			.withIndex("by_expiry", (q) => q.lt("expiresAt", Date.now()))
 			.collect();
 
 		for (const token of expiredTokens) {

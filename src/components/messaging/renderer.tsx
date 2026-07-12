@@ -2,9 +2,7 @@
 
 import Quill from "quill";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useGetMembers } from "@/features/members/api/use-get-members";
 import { UnifiedMessage } from "@/features/messages/components/unified-message";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { addMentionClickHandlers } from "@/lib/client/mention-handler";
 
 interface RendererProps {
@@ -23,8 +21,6 @@ type UnifiedMessagePayload = React.ComponentProps<
 const Renderer = ({ value, image }: RendererProps) => {
 	const [isEmpty, setIsEmpty] = useState(false);
 	const rendererRef = useRef<HTMLDivElement>(null);
-	const workspaceId = useWorkspaceId();
-	useGetMembers({ workspaceId });
 
 	const isUnifiedMessage = useMemo(() => {
 		try {

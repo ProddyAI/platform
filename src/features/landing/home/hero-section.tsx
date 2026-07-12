@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -54,29 +54,29 @@ export const HeroSection = () => {
 	return (
 		<section className="relative w-full pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-muted/30">
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
-				<motion.div
+				<m.div
 					animate={isVisible ? "visible" : "hidden"}
 					className="flex flex-col items-center text-center"
 					initial="hidden"
 					variants={containerVariants}
 				>
-					<motion.h1
+					<m.h1
 						className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-4 max-w-4xl"
 						variants={itemVariants}
 					>
 						Your Team&apos;s Smart <br />
 						<span className="text-primary">Work Management</span> Suite
-					</motion.h1>
+					</m.h1>
 
-					<motion.p
+					<m.p
 						className="text-lg md:text-xl text-muted-foreground mb-6 max-w-[800px]"
 						variants={itemVariants}
 					>
 						Proddy unifies messaging, tasks, boards, canvas, notes, and meetings
 						so work moves from discussion to execution without friction.
-					</motion.p>
+					</m.p>
 
-					<motion.div
+					<m.div
 						className="flex flex-col sm:flex-row gap-4 justify-center mb-10"
 						variants={itemVariants}
 					>
@@ -97,9 +97,9 @@ export const HeroSection = () => {
 						>
 							<Link href="#modules">See How It Works</Link>
 						</Button>
-					</motion.div>
+					</m.div>
 
-					<motion.div
+					<m.div
 						className="relative w-full max-w-[1600px]"
 						variants={imageVariants}
 					>
@@ -132,8 +132,8 @@ export const HeroSection = () => {
 								</div>
 							</div>
 						</div>
-					</motion.div>
-				</motion.div>
+					</m.div>
+				</m.div>
 			</div>
 		</section>
 	);

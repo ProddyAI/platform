@@ -1,4 +1,4 @@
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { AlertCircle, CheckCircle2, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -26,7 +26,6 @@ export const UploadRecordingButton = () => {
 		api.content.meetingNotes.saveUploadTranscript
 	);
 	const generateAI = useAction(api.content.meetingNotes.generateAIInsights);
-	const _user = useQuery(api.workspace.users.current);
 
 	const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];

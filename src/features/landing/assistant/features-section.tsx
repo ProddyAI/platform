@@ -1,146 +1,114 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
-import { Brain, Calendar, Search } from "lucide-react";
+import { m, useInView, useReducedMotion } from "framer-motion";
+import { Brain, Calendar, type LucideIcon, Search } from "lucide-react";
 import { useRef } from "react";
+
+type Feature = {
+	icon: LucideIcon;
+	title: string;
+	body: string;
+	points: string[];
+};
+
+const FEATURES: Feature[] = [
+	{
+		icon: Search,
+		title: "Contextual Search",
+		body: "Instantly find information across your workspace with natural-language queries that understand your team's context.",
+		points: [
+			"Searches messages, tasks, notes, and more",
+			"Understands natural-language questions",
+			"Cites a source for every answer",
+		],
+	},
+	{
+		icon: Calendar,
+		title: "Schedule Intelligence",
+		body: "Get quick insights about your meetings, events, and deadlines without digging through calendars.",
+		points: [
+			"Summarizes today's meetings and events",
+			"Surfaces upcoming deadline reminders",
+			"Helps coordinate team availability",
+		],
+	},
+	{
+		icon: Brain,
+		title: "Workspace Memory",
+		body: "Proddy AI keeps your team's context and prior interactions in view to give more relevant assistance.",
+		points: [
+			"Draws on your workspace's current data",
+			"Maintains conversation context",
+			"Uses that context for sharper answers",
+		],
+	},
+];
 
 export const FeaturesSection = () => {
 	const featuresRef = useRef<HTMLDivElement>(null);
-	const isFeaturesInView = useInView(featuresRef, {
-		once: true,
-		margin: "-100px 0px",
-	});
-	const shouldReduceMotion = useReducedMotion();
+	const isInView = useInView(featuresRef, { once: true, margin: "-100px 0px" });
+	const reduceMotion = useReducedMotion();
 
 	return (
-		<section className="py-20 bg-background" id="features" ref={featuresRef}>
-			<div className="container px-6 md:px-8 mx-auto max-w-7xl">
-				<div className="text-center mb-16">
-					<motion.h2
-						animate={
-							isFeaturesInView
-								? { opacity: 1, y: 0 }
-								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
-						}
-						className="text-3xl md:text-4xl font-bold text-foreground mb-4"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5 }}
+		<section className="bg-background py-20" id="features" ref={featuresRef}>
+			<div className="container mx-auto max-w-7xl px-6 md:px-8">
+				<div className="mx-auto mb-16 max-w-2xl text-center">
+					<m.h2
+						animate={isInView ? { opacity: 1, y: 0 } : {}}
+						className="text-balance text-3xl font-bold text-foreground md:text-4xl"
+						initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
 					>
-						Key Features of Proddy AI
-					</motion.h2>
-					<motion.p
-						animate={
-							isFeaturesInView
-								? { opacity: 1, y: 0 }
-								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
-						}
-						className="text-lg text-muted-foreground max-w-3xl mx-auto"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
+						Everything Proddy AI knows about your work
+					</m.h2>
+					<m.p
+						animate={isInView ? { opacity: 1, y: 0 } : {}}
+						className="mt-4 text-pretty text-lg text-muted-foreground"
+						initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
 					>
-						Designed to enhance your team&apos;s productivity with contextual
-						intelligence
-					</motion.p>
+						Three ways it turns scattered context into answers you can act on.
+					</m.p>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-					{/* Feature 1 */}
-					<motion.div
-						animate={
-							isFeaturesInView
-								? { opacity: 1, y: 0 }
-								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
-						}
-						className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.2 }}
-					>
-						<div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
-							<Search className="text-primary size-6" />
-						</div>
-						<h3 className="text-xl font-semibold mb-2">Contextual Search</h3>
-						<p className="text-muted-foreground mb-4">
-							Instantly find information across your workspace with natural
-							language queries that understand your team&apos;s context.
-						</p>
-						<ul className="space-y-2 list-disc pl-5 marker:text-primary">
-							<li className="text-sm text-muted-foreground">
-								Searches across messages, tasks, notes, and more
-							</li>
-							<li className="text-sm text-muted-foreground">
-								Understands natural language questions
-							</li>
-							<li className="text-sm text-muted-foreground">
-								Provides source references for all answers
-							</li>
-						</ul>
-					</motion.div>
+				<div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+					{FEATURES.map((feature, i) => (
+						<m.article
+							animate={isInView ? { opacity: 1, y: 0 } : {}}
+							className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+							initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+							key={feature.title}
+							transition={{
+								duration: 0.5,
+								delay: reduceMotion ? 0 : 0.15 + i * 0.12,
+								ease: [0.16, 1, 0.3, 1],
+							}}
+						>
+							{/* Accent wash that warms on hover. */}
+							<div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/[0.05] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-					{/* Feature 2 */}
-					<motion.div
-						animate={
-							isFeaturesInView
-								? { opacity: 1, y: 0 }
-								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
-						}
-						className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.3 }}
-					>
-						<div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
-							<Calendar className="text-primary size-6" />
-						</div>
-						<h3 className="text-xl font-semibold mb-2">
-							Schedule Intelligence
-						</h3>
-						<p className="text-muted-foreground mb-4">
-							Get quick insights about your meetings, events, and deadlines
-							without digging through calendars.
-						</p>
-						<ul className="space-y-2 list-disc pl-5 marker:text-primary">
-							<li className="text-sm text-muted-foreground">
-								Summarizes today&apos;s meetings and events
-							</li>
-							<li className="text-sm text-muted-foreground">
-								Provides upcoming deadline reminders
-							</li>
-							<li className="text-sm text-muted-foreground">
-								Helps coordinate team availability
-							</li>
-						</ul>
-					</motion.div>
-
-					{/* Feature 3 */}
-					<motion.div
-						animate={
-							isFeaturesInView
-								? { opacity: 1, y: 0 }
-								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
-						}
-						className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300"
-						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-						transition={{ duration: 0.5, delay: 0.4 }}
-					>
-						<div className="bg-primary/10 p-3 rounded-full w-fit mb-4">
-							<Brain className="text-primary size-6" />
-						</div>
-						<h3 className="text-xl font-semibold mb-2">Workspace Memory</h3>
-						<p className="text-muted-foreground mb-4">
-							Proddy AI remembers your team&apos;s context and previous
-							interactions to provide more relevant assistance.
-						</p>
-						<ul className="space-y-2 list-disc pl-5 marker:text-primary">
-							<li className="text-sm text-muted-foreground">
-								Draws on your workspace&apos;s current data
-							</li>
-							<li className="text-sm text-muted-foreground">
-								Maintains conversation context
-							</li>
-							<li className="text-sm text-muted-foreground">
-								Uses that context to give more relevant answers
-							</li>
-						</ul>
-					</motion.div>
+							<div className="relative">
+								<span className="grid size-12 place-items-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 ease-out group-hover:scale-105">
+									<feature.icon className="size-6" />
+								</span>
+								<h3 className="mt-5 text-xl font-semibold text-foreground">
+									{feature.title}
+								</h3>
+								<p className="mt-2 text-muted-foreground">{feature.body}</p>
+								<ul className="mt-4 space-y-2">
+									{feature.points.map((point) => (
+										<li
+											className="flex items-start gap-2.5 text-sm text-muted-foreground"
+											key={point}
+										>
+											<span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary/50" />
+											{point}
+										</li>
+									))}
+								</ul>
+							</div>
+						</m.article>
+					))}
 				</div>
 			</div>
 		</section>

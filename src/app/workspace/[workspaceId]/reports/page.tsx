@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useConvex } from "convex/react";
 import { format, subDays } from "date-fns";
 import {
 	Activity,
@@ -52,6 +52,7 @@ const ReportsPage = () => {
 	useSetWorkspaceTitle(<WorkspaceTitle icon={BarChart} label="Reports" />);
 
 	const workspaceId = useWorkspaceId();
+	const convex = useConvex();
 	const router = useRouter();
 	const [timeRange, setTimeRange] = useState<"1d" | "7d" | "30d">("7d");
 	const [isExporting, setIsExporting] = useState(false);
@@ -83,45 +84,6 @@ const ReportsPage = () => {
 		activityType: "reports_page_view",
 	});
 
-	// Fetch workspace overview data
-	const overviewData = useQuery(
-		api.workspace.analytics.getWorkspaceOverview,
-		workspaceId
-			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
-			: "skip"
-	);
-	const isOverviewLoading = overviewData === undefined;
-
-	// Fetch message and task analytics for the export payload. The dashboards
-	// below fetch and render this same data themselves, so the reports page no
-	// longer needs its own loading flags for these — only handleExport reads
-	// the raw values.
-	const messageData = useQuery(
-		api.workspace.analytics.getMessageAnalytics,
-		workspaceId
-			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
-			: "skip"
-	);
-
-	const taskData = useQuery(
-		api.workspace.analytics.getTaskAnalytics,
-		workspaceId
-			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
-			: "skip"
-	);
-
 	// Check if user has permission to access this page
 	const isUnauthorizedMember =
 		!memberLoading && member && member.role === "member";
@@ -139,18 +101,36 @@ const ReportsPage = () => {
 
 	// Handle export
 	const handleExport = async () => {
-		if (!overviewData) return;
+		if (!workspaceId) return;
 
 		setIsExporting(true);
 
 		try {
+			const [overview, messages, tasks] = await Promise.all([
+				convex.query(api.workspace.analytics.getWorkspaceOverview, {
+					workspaceId,
+					startDate,
+					endDate,
+				}),
+				convex.query(api.workspace.analytics.getMessageAnalytics, {
+					workspaceId,
+					startDate,
+					endDate,
+				}),
+				convex.query(api.workspace.analytics.getTaskAnalytics, {
+					workspaceId,
+					startDate,
+					endDate,
+				}),
+			]);
+
 			// Create export data
 			const exportData = {
 				generatedAt: new Date().toISOString(),
 				timeRange,
-				overview: overviewData,
-				messages: messageData,
-				tasks: taskData,
+				overview,
+				messages,
+				tasks,
 			};
 
 			if (exportFormat === "pdf") {
@@ -222,10 +202,9 @@ const ReportsPage = () => {
 							<span className="text-xs md:text-sm font-medium text-foreground">
 								Time range
 							</span>
-							<div
+							<fieldset
 								aria-label="Time range"
-								className="inline-flex items-center gap-1 rounded-full bg-muted p-1"
-								role="group"
+								className="inline-flex items-center gap-1 rounded-full border-0 bg-muted p-1 m-0"
 							>
 								<Button
 									className="rounded-full text-xs md:text-sm px-2 md:px-4"
@@ -254,11 +233,11 @@ const ReportsPage = () => {
 								>
 									30 days
 								</Button>
-							</div>
+							</fieldset>
 							<div className="flex items-center">
 								<Button
 									className="rounded-r-none border-r-0 text-xs md:text-sm"
-									disabled={isExporting || isOverviewLoading}
+									disabled={isExporting || !workspaceId}
 									onClick={handleExport}
 									size="sm"
 									variant="outline"
@@ -278,7 +257,7 @@ const ReportsPage = () => {
 										<Button
 											aria-label="Choose export format"
 											className="rounded-l-none px-2"
-											disabled={isExporting || isOverviewLoading}
+											disabled={isExporting || !workspaceId}
 											size="sm"
 											variant="outline"
 										>

@@ -20,10 +20,7 @@ export const LimitIndicator = ({
 			label={`You have reached the limit for ${featureLabel} on your current plan. Click here to upgrade.`}
 			side="top"
 		>
-			<Link
-				className={className}
-				href={`/workspace/${workspaceId}/manage#billing`}
-			>
+			<Link className={className} href={`/workspace/${workspaceId}/billing`}>
 				<Badge
 					className="cursor-pointer gap-1.5 px-2.5 py-1 text-xs font-semibold transition-standard hover:bg-destructive/20"
 					variant="destructiveSoft"

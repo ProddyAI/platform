@@ -224,7 +224,7 @@ export function BillingSection({
 
 	const handleManageBilling = async () => {
 		if (!showBillingSummary) {
-			router.push(`/workspace/${workspaceId}/manage#billing`);
+			router.push(`/workspace/${workspaceId}/billing`);
 			return;
 		}
 

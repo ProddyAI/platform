@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { memo, useCallback } from "react";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useContextMenu } from "@/contexts/context-menu-context";
@@ -21,7 +22,7 @@ interface FullMessageProps extends MessageProps {
 	onContextMenuAction: (action: string) => void;
 }
 
-export const FullMessage = ({
+const FullMessageComponent = ({
 	id,
 	isAuthor,
 	body,
@@ -51,11 +52,14 @@ export const FullMessage = ({
 	const { openContextMenu } = useContextMenu();
 	const avatarFallback = authorName.charAt(0).toUpperCase();
 
-	const handleContextMenu = (e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		openContextMenu(e.clientX, e.clientY, id);
-	};
+	const handleContextMenu = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			openContextMenu(e.clientX, e.clientY, id);
+		},
+		[openContextMenu, id]
+	);
 
 	return (
 		<>
@@ -148,3 +152,5 @@ export const FullMessage = ({
 		</>
 	);
 };
+
+export const FullMessage = memo(FullMessageComponent);

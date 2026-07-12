@@ -3,9 +3,14 @@
 import crypto from "node:crypto";
 import { v } from "convex/values";
 import { Resend } from "resend";
+import { AutoInviteTemplate } from "../../src/features/email/components/auto-invite";
+import { CardAssignmentTemplate } from "../../src/features/email/components/card-assignment";
 import { DirectMessageTemplate } from "../../src/features/email/components/direct-message-template";
+import { ImportCompletionTemplate } from "../../src/features/email/components/import-completion";
+import { IssueAssignmentTemplate } from "../../src/features/email/components/issue-assignment";
 import { MentionTemplate } from "../../src/features/email/components/mention-template";
 import { OTPVerificationMail } from "../../src/features/email/components/otp-verification-mail";
+import { PlanChangeTemplate } from "../../src/features/email/components/plan-change";
 import { ThreadReplyTemplate } from "../../src/features/email/components/thread-reply-template";
 import { WeeklyDigestTemplate } from "../../src/features/email/components/weekly-digest-template";
 import { logger } from "../../src/lib/logger";
@@ -1084,34 +1089,37 @@ export const sendCardAssignmentEmail = internalAction({
 			// Send the email directly using Resend
 			try {
 				const { fromAddress, replyToAddress } = getEmailConfig();
-				const subject = `Card Assignment: ${escapeHtml(card.title)}`;
+				const subject = `${assignerName || "A team member"} assigned you "${card.title}"`;
 				const siteUrl = getSiteUrl();
-				const workspaceUrl = `${siteUrl}/workspace/${escapeHtml(card.workspaceId)}/channel/${escapeHtml(card.channelId)}/board`;
+				const workspaceUrl = `${siteUrl}/workspace/${card.workspaceId}/channel/${card.channelId}/board`;
 
 				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [assigneeEmail],
 					subject,
-					html: `
-						<html>
-							<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-								<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-									<h2>Card Assignment</h2>
-									<p>Hi ${escapeHtml(assigneeName || "User")},</p>
-									<p><strong>${escapeHtml(assignerName || "A team member")}</strong> assigned you a card in <strong>${escapeHtml(card.channelName)}</strong>:</p>
-									<div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea;">
-										<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(card.title)}</h3>
-										${card.description ? `<p style="margin: 5px 0; color: #666;"><strong>Description:</strong> ${escapeHtml(card.description)}</p>` : ""}
-										${card.dueDate ? `<p style="margin: 5px 0; color: #666;"><strong>Due:</strong> ${new Date(typeof card.dueDate === "string" ? parseInt(card.dueDate, 10) : card.dueDate).toLocaleDateString()}</p>` : ""}
-										${card.priority ? `<p style="margin: 5px 0; color: #666;"><strong>Priority:</strong> ${escapeHtml(card.priority)}</p>` : ""}
-										<p style="margin: 5px 0; color: #666;"><strong>List:</strong> ${escapeHtml(card.listName)}</p>
-									</div>
-									<p><a href="${escapeHtml(workspaceUrl)}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Card</a></p>
-									${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from assignment emails</a></p>` : ""}
-								</div>
-							</body>
-						</html>
-					`,
+					react: CardAssignmentTemplate({
+						firstName: assigneeName || "there",
+						cardTitle: card.title,
+						cardDescription: card.description,
+						dueDate: card.dueDate
+							? new Date(
+									typeof card.dueDate === "string"
+										? parseInt(card.dueDate, 10)
+										: card.dueDate
+								).toLocaleDateString("en-US", {
+									month: "short",
+									day: "numeric",
+									year: "numeric",
+								})
+							: undefined,
+						priority: card.priority,
+						listName: card.listName,
+						channelName: card.channelName,
+						assignedBy: assignerName || "A team member",
+						cardUrl: workspaceUrl,
+						workspaceUrl: `${siteUrl}/workspace/${card.workspaceId}`,
+						unsubscribeUrl,
+					}),
 					replyTo: replyToAddress,
 				});
 
@@ -1215,34 +1223,37 @@ export const sendIssueAssignmentEmail = internalAction({
 			// Send the email directly using Resend
 			try {
 				const { fromAddress, replyToAddress } = getEmailConfig();
-				const subject = `Issue Assignment: ${escapeHtml(issue.title)}`;
+				const subject = `${assignerName || "A team member"} assigned you "${issue.title}"`;
 				const siteUrl = getSiteUrl();
-				const workspaceUrl = `${siteUrl}/workspace/${escapeHtml(issue.workspaceId)}/channel/${escapeHtml(issue.channelId)}/board`;
+				const workspaceUrl = `${siteUrl}/workspace/${issue.workspaceId}/channel/${issue.channelId}/board`;
 
 				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [assigneeEmail],
 					subject,
-					html: `
-						<html>
-							<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-								<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-									<h2>Issue Assignment</h2>
-									<p>Hi ${escapeHtml(assigneeName || "User")},</p>
-									<p><strong>${escapeHtml(assignerName || "A team member")}</strong> assigned you an issue in <strong>${escapeHtml(issue.channelName)}</strong>:</p>
-									<div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea;">
-										<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(issue.title)}</h3>
-										${issue.description ? `<p style="margin: 5px 0; color: #666;"><strong>Description:</strong> ${escapeHtml(issue.description)}</p>` : ""}
-										${issue.dueDate ? `<p style="margin: 5px 0; color: #666;"><strong>Due:</strong> ${new Date(typeof issue.dueDate === "string" ? parseInt(issue.dueDate, 10) : issue.dueDate).toLocaleDateString()}</p>` : ""}
-										${issue.priority ? `<p style="margin: 5px 0; color: #666;"><strong>Priority:</strong> ${escapeHtml(issue.priority)}</p>` : ""}
-										<p style="margin: 5px 0; color: #666;"><strong>Status:</strong> ${escapeHtml(issue.statusName || "Board")}</p>
-									</div>
-									<p><a href="${escapeHtml(workspaceUrl)}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Issue</a></p>
-									${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from assignment emails</a></p>` : ""}
-								</div>
-							</body>
-						</html>
-					`,
+					react: IssueAssignmentTemplate({
+						firstName: assigneeName || "there",
+						issueTitle: issue.title,
+						issueDescription: issue.description,
+						dueDate: issue.dueDate
+							? new Date(
+									typeof issue.dueDate === "string"
+										? parseInt(issue.dueDate, 10)
+										: issue.dueDate
+								).toLocaleDateString("en-US", {
+									month: "short",
+									day: "numeric",
+									year: "numeric",
+								})
+							: undefined,
+						priority: issue.priority,
+						statusName: issue.statusName || "Board",
+						channelName: issue.channelName,
+						assignedBy: assignerName || "A team member",
+						issueUrl: workspaceUrl,
+						workspaceUrl: `${siteUrl}/workspace/${issue.workspaceId}`,
+						unsubscribeUrl,
+					}),
 					replyTo: replyToAddress,
 				});
 
@@ -1301,60 +1312,9 @@ export const sendImportCompletionEmail = internalAction({
 			const platformName =
 				args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
 
-			let subject: string;
-			let html: string;
-
-			if (args.status === "completed") {
-				subject = `✅ ${platformName} Import Completed Successfully`;
-				html = `
-					<html>
-						<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-							<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-								<h1 style="margin-top: 0; color: #333;">🎉 Import Completed!</h1>
-								<p>Hi ${escapeHtml(args.userName)},</p>
-								<p>Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.</p>
-								<div style="background: #f0f7ff; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea;">
-									<h3 style="margin: 0 0 10px 0; color: #333;">Import Summary</h3>
-									<p style="margin: 5px 0;"><strong>Channels Imported:</strong> ${args.channelsImported}</p>
-									<p style="margin: 5px 0;"><strong>Messages Imported:</strong> ${args.messagesImported.toLocaleString()}</p>
-									<p style="margin: 5px 0;"><strong>Platform:</strong> ${escapeHtml(platformName)}</p>
-								</div>
-								<p>All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!</p>
-								<p><a href="${escapeHtml(workspaceUrl)}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Go to Workspace</a></p>
-							</div>
-						</body>
-					</html>
-				`;
-			} else if (args.status === "failed") {
-				subject = `❌ ${platformName} Import Failed`;
-				html = `
-					<html>
-						<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-							<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-								<h1 style="margin-top: 0; color: #ef4444;">Import Failed</h1>
-								<p>Hi ${escapeHtml(args.userName)},</p>
-								<p>Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.</p>
-								<p>Please try again or contact our support team if the issue persists.</p>
-								<p><a href="${escapeHtml(workspaceUrl)}/manage?tab=import" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Try Again</a></p>
-							</div>
-						</body>
-					</html>
-				`;
-			} else {
-				subject = `${platformName} Import Cancelled`;
-				html = `
-					<html>
-						<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-							<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-								<h1 style="margin-top: 0; color: #f59e0b;">Import Cancelled</h1>
-								<p>Hi ${escapeHtml(args.userName)},</p>
-								<p>Your ${escapeHtml(platformName)} data import was cancelled.</p>
-								<p>You can start a new import anytime from your workspace settings.</p>
-							</div>
-						</body>
-					</html>
-				`;
-			}
+			const subject = `${platformName} import ${
+				args.status === "completed" ? "complete" : args.status
+			}`;
 
 			// Send email directly using Resend
 			try {
@@ -1362,7 +1322,14 @@ export const sendImportCompletionEmail = internalAction({
 					from: fromAddress,
 					to: [args.email],
 					subject,
-					html,
+					react: ImportCompletionTemplate({
+						userName: args.userName || "there",
+						platformName,
+						status: args.status,
+						channelsImported: args.channelsImported,
+						messagesImported: args.messagesImported,
+						workspaceUrl,
+					}),
 					replyTo: replyToAddress,
 				});
 
@@ -1435,6 +1402,206 @@ export const sendOTPVerificationEmail = internalAction({
 			return { success: true, emailId: data?.id };
 		} catch (error) {
 			logger.error("Error sending OTP verification email via Resend:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+// --- Workspace plan-change email -------------------------------------------
+// Lives here (not in convex/notify/email.ts) so it can render the shared React
+// Email template through the Resend SDK, which requires the "use node" runtime.
+
+const planLabel = (plan: string | null | undefined): string => {
+	if (plan === "pro") return "Pro";
+	if (plan === "enterprise") return "Enterprise";
+	return "Free";
+};
+
+const formatCents = (
+	amount: number | null | undefined,
+	currency: string | null | undefined
+): string | null => {
+	if (typeof amount !== "number") return null;
+	try {
+		return new Intl.NumberFormat("en-US", {
+			style: "currency",
+			currency: currency || "USD",
+		}).format(amount / 100);
+	} catch {
+		return `${amount} ${currency ?? ""}`.trim();
+	}
+};
+
+const billingRow = (
+	label: string,
+	amount: number | null | undefined,
+	currency: string | null | undefined
+): [string, string] | null => {
+	if (typeof amount !== "number" || amount < 0) return null;
+	const formatted = formatCents(amount, currency);
+	return formatted ? [label, formatted] : null;
+};
+
+export const sendWorkspacePlanChangeEmail = internalAction({
+	args: {
+		workspaceId: v.id("workspaces"),
+		previousPlan: v.optional(v.union(v.string(), v.null())),
+		newPlan: v.string(),
+		changeType: v.union(v.literal("upgrade"), v.literal("downgrade")),
+		invoiceUrl: v.optional(v.string()),
+		amountDue: v.optional(v.number()),
+		currency: v.optional(v.string()),
+		taxAmount: v.optional(v.number()),
+		usedAmount: v.optional(v.number()),
+		refundAmount: v.optional(v.number()),
+		refundCurrency: v.optional(v.string()),
+	},
+	handler: async (ctx, args): Promise<EmailNotificationResult> => {
+		if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+			logger.error("Resend email not configured");
+			return { success: false, error: "Email service not configured" };
+		}
+
+		const { workspaceName, recipients } = await ctx.runQuery(
+			internal.notify.email.getWorkspaceBillingRecipients,
+			{ workspaceId: args.workspaceId }
+		);
+
+		if (recipients.length === 0) {
+			return { success: true, skipped: true };
+		}
+
+		const appUrl = getSiteUrl();
+		const billingUrl = `${appUrl}/workspace/${args.workspaceId}/billing`;
+		const previousPlanLabel = planLabel(args.previousPlan);
+		const newPlanLabel = planLabel(args.newPlan);
+		const actionText =
+			args.changeType === "upgrade" ? "upgraded" : "downgraded";
+		const currency = args.currency ?? "USD";
+		const invoiceTotal = args.amountDue ?? null;
+		const taxAmount = args.taxAmount ?? null;
+		const refundAmount = args.refundAmount ?? null;
+		const refundCurrency = args.refundCurrency ?? currency;
+		const usedAmount = args.usedAmount ?? null;
+		const planAmount =
+			typeof invoiceTotal === "number" && typeof taxAmount === "number"
+				? Math.max(0, invoiceTotal - taxAmount)
+				: null;
+		const netPaid =
+			typeof invoiceTotal === "number" && typeof refundAmount === "number"
+				? Math.max(0, invoiceTotal - refundAmount)
+				: null;
+		const summaryRows = [
+			billingRow("Plan amount before tax", planAmount, currency),
+			billingRow("Tax", taxAmount, currency),
+			billingRow("Paid amount", invoiceTotal, currency),
+			billingRow("Deducted amount", usedAmount, currency),
+			billingRow("Refunded amount", refundAmount, refundCurrency),
+			billingRow("Net paid after refund", netPaid, currency),
+		].filter((row): row is [string, string] => Boolean(row?.[1]));
+
+		const { fromAddress, replyToAddress } = getEmailConfig();
+		const subject = `${workspaceName} plan ${actionText} to ${newPlanLabel}`;
+
+		const results = [];
+		for (const recipient of recipients) {
+			try {
+				const { error } = await getResendClient().emails.send({
+					from: fromAddress,
+					to: [recipient.email],
+					subject,
+					react: PlanChangeTemplate({
+						recipientName: recipient.name,
+						workspaceName,
+						actionText,
+						previousPlanLabel,
+						newPlanLabel,
+						changeType: args.changeType,
+						summaryRows,
+						billingUrl,
+						invoiceUrl: args.invoiceUrl,
+					}),
+					replyTo: replyToAddress,
+				});
+
+				if (error) {
+					logger.error("Resend error sending plan change email:", error);
+					results.push({ email: recipient.email, success: false });
+					continue;
+				}
+
+				results.push({ email: recipient.email, success: true });
+			} catch (error) {
+				logger.error("Error sending plan change email:", error);
+				results.push({ email: recipient.email, success: false });
+			}
+		}
+
+		return {
+			success: results.some((result) => result.success),
+			...(results.every((result) => !result.success)
+				? { error: "Failed to send all plan change emails" }
+				: {}),
+		};
+	},
+});
+
+// Invitation for a user auto-added to a workspace during an import.
+export const sendAutoInviteEmail = internalAction({
+	args: {
+		email: v.string(),
+		name: v.string(),
+		workspaceId: v.id("workspaces"),
+		workspaceName: v.string(),
+		platform: v.string(), // e.g., "linear", "slack"
+	},
+	handler: async (_ctx, args): Promise<EmailNotificationResult> => {
+		try {
+			if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+				logger.info(
+					"[AutoInvite] Email not configured, skipping invite email for",
+					args.email
+				);
+				return { success: false, error: "Email service not configured" };
+			}
+
+			const { fromAddress, replyToAddress } = getEmailConfig();
+			const workspaceUrl = `${getSiteUrl()}/workspace/${args.workspaceId}`;
+			const firstName = args.name.split(" ")[0] || args.name || "there";
+			const platformName =
+				args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
+
+			const { data, error } = await getResendClient().emails.send({
+				from: fromAddress,
+				to: [args.email],
+				subject: `You've been added to ${args.workspaceName} on Proddy`,
+				react: AutoInviteTemplate({
+					firstName,
+					workspaceName: args.workspaceName,
+					platformName,
+					email: args.email,
+					workspaceUrl,
+				}),
+				replyTo: replyToAddress,
+			});
+
+			if (error) {
+				logger.error("[AutoInvite] Resend error:", error);
+				return {
+					success: false,
+					error: `Failed to send email: ${error.message}`,
+				};
+			}
+
+			logger.info("[AutoInvite] Invite email sent to", args.email, {
+				emailId: data?.id,
+			});
+			return { success: true, emailId: data?.id };
+		} catch (error) {
+			logger.error("[AutoInvite] Failed to send invite email:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

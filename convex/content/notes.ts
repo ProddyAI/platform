@@ -19,9 +19,6 @@ async function findMemberForUser(
 	workspaceId: Id<"workspaces">,
 	userId: Id<"users">
 ) {
-	console.log(
-		`DEBUG: Checking membership for userId ${userId} in workspaceId ${workspaceId}`
-	);
 	// 1. Try the mapped/correct workspace ID
 	let member = await ctx.db
 		.query("members")
@@ -31,13 +28,8 @@ async function findMemberForUser(
 		.first();
 
 	if (member) {
-		console.log(`DEBUG: Found member ${member._id}`);
 		return member;
 	}
-
-	console.log(
-		"DEBUG: Member not found for exact workspace, trying fallbacks..."
-	);
 
 	// 2. Try the "Personal" workspace if it exists (very common fallback)
 	const personalWorkspace = await ctx.db

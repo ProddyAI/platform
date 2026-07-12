@@ -6,13 +6,13 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 type DirectMessagesReturnType =
 	typeof api.messaging.direct.getDirectMessagesForCurrentUser._returnType;
 
-export const useGetDirectMessages = (includeRead?: boolean) => {
+export const useGetDirectMessages = (includeRead?: boolean, enabled = true) => {
 	const workspaceId = useWorkspaceId();
 
 	// Use the direct query
 	const result = useQuery(
 		api.messaging.direct.getDirectMessagesForCurrentUser,
-		workspaceId
+		enabled && workspaceId
 			? {
 					workspaceId,
 					includeRead,

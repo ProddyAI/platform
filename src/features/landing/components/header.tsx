@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, domAnimation, LazyMotion, m } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import {
 	BarChart,
@@ -144,126 +144,133 @@ export const Header = () => {
 	}, []);
 
 	return (
-		<header
-			className={cn(
-				"fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-				isScrolled ? "bg-background shadow-sm py-3" : "bg-transparent py-5"
-			)}
-		>
-			<div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between h-full">
-					{/* Logo */}
-					<Link className="flex items-center gap-2 group" href="/home">
-						<div className="relative size-10 overflow-hidden">
-							<Image
-								alt="Proddy Logo"
-								className="object-contain"
-								fill
-								src="/logo-nobg.png"
-							/>
-						</div>
-						<span className="text-xl font-bold text-foreground transition-colors duration-300">
-							Proddy
-						</span>
-					</Link>
-
-					{/* Desktop Navigation */}
-					<nav className="hidden md:flex items-center gap-8">
-						{/* Features dropdown */}
-
-						<div
-							className="relative"
-							onBlur={() => setIsModulesOpen(false)}
-							onFocus={openModules}
-							onKeyDown={(event) => {
-								if (event.key === "Escape") {
-									setIsModulesOpen(false);
-								}
-							}}
-							onMouseEnter={openModules}
-							onMouseLeave={closeModulesWithIntent}
-						>
-							<Link
-								aria-controls="features-mega-menu"
-								aria-expanded={isModulesOpen}
-								aria-haspopup="true"
-								className={cn(
-									"flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary",
-									isModulesOpen && "text-primary"
-								)}
-								href="/features"
-							>
-								<span>Features</span>
-								<ChevronDown
-									className={cn(
-										"size-4 transition-transform duration-200",
-										isModulesOpen && "rotate-180"
-									)}
+		// Self-contained motion provider: the Header renders on landing pages whose
+		// layouts don't wrap children in LazyMotion (pricing, contact, features…),
+		// so without this the `m.*` mega/mobile menus stay frozen at opacity 0.
+		<LazyMotion features={domAnimation}>
+			<header
+				className={cn(
+					"fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+					isScrolled ? "bg-background shadow-sm py-3" : "bg-transparent py-5"
+				)}
+			>
+				<div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+					<div className="flex items-center justify-between h-full">
+						{/* Logo */}
+						<Link className="flex items-center gap-2 group" href="/home">
+							<div className="relative size-10 overflow-hidden">
+								<Image
+									alt="Proddy Logo"
+									className="object-contain"
+									fill
+									src="/logo-nobg.png"
 								/>
-							</Link>
+							</div>
+							<span className="text-xl font-bold text-foreground transition-colors duration-300">
+								Proddy
+							</span>
+						</Link>
 
-							{/* Mega menu dropdown */}
-							<AnimatePresence>
-								{isModulesOpen && (
-									<motion.div
-										animate={{ opacity: 1, y: 0 }}
-										className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-[600px] bg-card rounded-xl shadow-lg border border-border overflow-hidden z-50"
-										exit={{ opacity: 0, y: 10 }}
-										id="features-mega-menu"
-										initial={{ opacity: 0, y: 10 }}
-										transition={{ duration: 0.2 }}
-									>
-										<div className="p-6">
-											<div className="grid grid-cols-2 gap-4 mb-4">
-												{modules.map((module) => (
-													<Link
-														className="flex items-start p-3 rounded-lg hover:bg-muted transition-colors duration-150"
-														href={module.href}
-														key={module.name}
-													>
-														<div className="flex-shrink-0 flex items-center justify-center size-10 rounded-md bg-primary/5">
-															<module.icon className="size-5 text-primary" />
-														</div>
-														<div className="ml-4">
-															<p className="text-sm font-medium text-foreground">
-																{module.name}
-															</p>
-															<p className="mt-1 text-xs text-muted-foreground">
-																{module.description}
-															</p>
-														</div>
-													</Link>
-												))}
-											</div>
+						{/* Desktop Navigation */}
+						<nav className="hidden md:flex items-center gap-8">
+							{/* Features dropdown */}
 
-											{/* Special Assistant Feature */}
-											<div className="mt-4 pt-4 border-t border-border">
-												<Link
-													className="flex items-start p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-all duration-200"
-													href="/assistant"
-												>
-													<div className="flex-shrink-0 flex items-center justify-center size-12 rounded-md bg-primary/20 text-2xl">
-														🤖
+							<div
+								className="relative"
+								onBlur={() => setIsModulesOpen(false)}
+								onFocus={openModules}
+								onKeyDown={(event) => {
+									if (event.key === "Escape") {
+										setIsModulesOpen(false);
+									}
+								}}
+								onMouseEnter={openModules}
+								onMouseLeave={closeModulesWithIntent}
+							>
+								<Link
+									aria-controls="features-mega-menu"
+									aria-expanded={isModulesOpen}
+									aria-haspopup="true"
+									className={cn(
+										"flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary",
+										isModulesOpen && "text-primary"
+									)}
+									href="/features"
+								>
+									<span>Features</span>
+									<ChevronDown
+										className={cn(
+											"size-4 transition-transform duration-200",
+											isModulesOpen && "rotate-180"
+										)}
+									/>
+								</Link>
+
+								{/* Mega menu dropdown */}
+								<AnimatePresence>
+									{isModulesOpen && (
+										<m.div
+											animate={{ opacity: 1, y: 0 }}
+											className="absolute top-full left-1/2 z-50 w-[600px] -translate-x-1/2 pt-2"
+											exit={{ opacity: 0, y: 10 }}
+											id="features-mega-menu"
+											initial={{ opacity: 0, y: 10 }}
+											transition={{ duration: 0.2 }}
+										>
+											<div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+												<div className="p-6">
+													<div className="grid grid-cols-2 gap-4 mb-4">
+														{modules.map((module) => (
+															<Link
+																className="flex items-start p-3 rounded-lg hover:bg-muted transition-colors duration-150"
+																href={module.href}
+																key={module.name}
+															>
+																<div className="flex-shrink-0 flex items-center justify-center size-10 rounded-md bg-primary/5">
+																	<module.icon className="size-5 text-primary" />
+																</div>
+																<div className="ml-4">
+																	<p className="text-sm font-medium text-foreground">
+																		{module.name}
+																	</p>
+																	<p className="mt-1 text-xs text-muted-foreground">
+																		{module.description}
+																	</p>
+																</div>
+															</Link>
+														))}
 													</div>
-													<div className="ml-4">
-														<div className="flex items-center gap-2">
-															<p className="text-base font-medium text-foreground">
-																Proddy AI Assistant
-															</p>
-															<Badge variant="primarySoft">New</Badge>
-														</div>
-														<p className="mt-1 text-sm text-muted-foreground">
-															Your intelligent workspace companion powered by AI
-														</p>
+
+													{/* Special Assistant Feature */}
+													<div className="mt-4 pt-4 border-t border-border">
+														<Link
+															className="flex items-start p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-all duration-200"
+															href="/assistant"
+														>
+															<div className="flex-shrink-0 flex items-center justify-center size-12 rounded-md bg-primary/20 text-2xl">
+																🤖
+															</div>
+															<div className="ml-4">
+																<div className="flex items-center gap-2">
+																	<p className="text-base font-medium text-foreground">
+																		Proddy AI Assistant
+																	</p>
+																	<Badge variant="primarySoft">New</Badge>
+																</div>
+																<p className="mt-1 text-sm text-muted-foreground">
+																	Your intelligent workspace companion powered
+																	by AI
+																</p>
+															</div>
+														</Link>
 													</div>
-												</Link>
+												</div>
 											</div>
-										</div>
-									</motion.div>
-								)}
-							</AnimatePresence>
-						</div>
-						{/* <Link
+										</m.div>
+									)}
+								</AnimatePresence>
+							</div>
+							{/* <Link
               href="/why-proddy"
               className={cn(
                 "text-sm font-medium transition-colors duration-200",
@@ -272,147 +279,147 @@ export const Header = () => {
             >
               Why Proddy?
             </Link> */}
-						<Link
-							className="text-sm font-medium text-muted-foreground transition-colors duration-200 flex items-center gap-1 hover:text-primary"
-							href="/assistant"
-						>
-							<span>AI Assistant</span>
-							<Badge variant="primarySoft">New</Badge>
-						</Link>
-						<Link
-							className="text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary"
-							href="/pricing"
-						>
-							Pricing
-						</Link>
-						<Link
-							className="text-sm font-medium text-muted-foreground transition-colors duration-200 flex items-center gap-1 hover:text-primary"
-							href={process.env.NEXT_PUBLIC_GITHUB_URL || "#"}
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							GitHub <ExternalLink className="size-3" />
-						</Link>
-					</nav>
-
-					{/* CTA Button */}
-					<div className="hidden md:flex items-center gap-3">
-						{currentUser ? (
-							<Button
-								asChild
-								className={cn(
-									"rounded-full transition-all duration-300 flex items-center gap-2",
-									isScrolled
-										? "bg-primary hover:bg-primary/90 text-white shadow-sm"
-										: "bg-primary hover:bg-primary/90 text-white shadow-md"
-								)}
+							<Link
+								className="text-sm font-medium text-muted-foreground transition-colors duration-200 flex items-center gap-1 hover:text-primary"
+								href="/assistant"
 							>
-								<Link href="/workspace">
-									<LayoutDashboard className="size-4" />
-									Dashboard
-								</Link>
-							</Button>
-						) : (
-							<>
-								<Button
-									asChild
-									className="rounded-full border-border hover:border-primary/50 hover:text-primary"
-									variant="outline"
-								>
-									<Link href="/auth/signin">Sign In</Link>
-								</Button>
+								<span>AI Assistant</span>
+								<Badge variant="primarySoft">New</Badge>
+							</Link>
+							<Link
+								className="text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary"
+								href="/pricing"
+							>
+								Pricing
+							</Link>
+							<Link
+								className="text-sm font-medium text-muted-foreground transition-colors duration-200 flex items-center gap-1 hover:text-primary"
+								href={process.env.NEXT_PUBLIC_GITHUB_URL || "#"}
+								rel="noopener noreferrer"
+								target="_blank"
+							>
+								GitHub <ExternalLink className="size-3" />
+							</Link>
+						</nav>
+
+						{/* CTA Button */}
+						<div className="hidden md:flex items-center gap-3">
+							{currentUser ? (
 								<Button
 									asChild
 									className={cn(
-										"rounded-full transition-all duration-300",
+										"rounded-full transition-all duration-300 flex items-center gap-2",
 										isScrolled
 											? "bg-primary hover:bg-primary/90 text-white shadow-sm"
 											: "bg-primary hover:bg-primary/90 text-white shadow-md"
 									)}
 								>
-									<Link href="/auth/signup">Get Started</Link>
+									<Link href="/workspace">
+										<LayoutDashboard className="size-4" />
+										Dashboard
+									</Link>
 								</Button>
-							</>
-						)}
-					</div>
-
-					{/* Mobile CTA + Menu Button */}
-					<div className="flex items-center gap-2 md:hidden">
-						<Button asChild className="rounded-full" size="sm">
-							<Link href={currentUser ? "/workspace" : "/auth/signup"}>
-								{currentUser ? "Dashboard" : "Get Started"}
-							</Link>
-						</Button>
-						<button
-							aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-							className="p-2 rounded-full text-muted-foreground hover:bg-muted transition-colors"
-							onClick={toggleMenu}
-							type="button"
-						>
-							{isMenuOpen ? (
-								<X className="size-6" />
 							) : (
-								<Menu className="size-6" />
+								<>
+									<Button
+										asChild
+										className="rounded-full border-border hover:border-primary/50 hover:text-primary"
+										variant="outline"
+									>
+										<Link href="/auth/signin">Sign In</Link>
+									</Button>
+									<Button
+										asChild
+										className={cn(
+											"rounded-full transition-all duration-300",
+											isScrolled
+												? "bg-primary hover:bg-primary/90 text-white shadow-sm"
+												: "bg-primary hover:bg-primary/90 text-white shadow-md"
+										)}
+									>
+										<Link href="/auth/signup">Get Started</Link>
+									</Button>
+								</>
 							)}
-						</button>
+						</div>
+
+						{/* Mobile CTA + Menu Button */}
+						<div className="flex items-center gap-2 md:hidden">
+							<Button asChild className="rounded-full" size="sm">
+								<Link href={currentUser ? "/workspace" : "/auth/signup"}>
+									{currentUser ? "Dashboard" : "Get Started"}
+								</Link>
+							</Button>
+							<button
+								aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+								className="p-2 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+								onClick={toggleMenu}
+								type="button"
+							>
+								{isMenuOpen ? (
+									<X className="size-6" />
+								) : (
+									<Menu className="size-6" />
+								)}
+							</button>
+						</div>
 					</div>
 				</div>
-			</div>
 
-			{/* Mobile Menu */}
-			<AnimatePresence>
-				{isMenuOpen && (
-					<motion.div
-						animate={{ opacity: 1, height: "auto" }}
-						className="md:hidden bg-background border-t border-border shadow-lg"
-						exit={{ opacity: 0, height: 0 }}
-						initial={{ opacity: 0, height: 0 }}
-						transition={{ duration: 0.3 }}
-					>
-						<div className="px-5 py-6 space-y-6">
-							<div className="space-y-4">
-								{/* Features with submenu */}
-								<div className="space-y-3">
-									<div className="flex items-center justify-between">
-										<Link
-											className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
-											href="/features"
-											onClick={() => setIsMenuOpen(false)}
-										>
-											Features
-										</Link>
-									</div>
-
-									<div className="pl-4 grid grid-cols-2 gap-3">
-										{modules.map((module) => (
+				{/* Mobile Menu */}
+				<AnimatePresence>
+					{isMenuOpen && (
+						<m.div
+							animate={{ opacity: 1, height: "auto" }}
+							className="md:hidden bg-background border-t border-border shadow-lg"
+							exit={{ opacity: 0, height: 0 }}
+							initial={{ opacity: 0, height: 0 }}
+							transition={{ duration: 0.3 }}
+						>
+							<div className="px-5 py-6 space-y-6">
+								<div className="space-y-4">
+									{/* Features with submenu */}
+									<div className="space-y-3">
+										<div className="flex items-center justify-between">
 											<Link
-												className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-												href={module.href}
-												key={module.name}
+												className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
+												href="/features"
 												onClick={() => setIsMenuOpen(false)}
 											>
-												<module.icon className="size-4" />
-												<span>{module.name}</span>
+												Features
 											</Link>
-										))}
+										</div>
 
-										{/* Special Assistant Feature for mobile */}
-										<Link
-											className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors col-span-2 mt-2 bg-primary/5 p-2 rounded-md"
-											href="/assistant"
-											onClick={() => setIsMenuOpen(false)}
-										>
-											<span className="text-lg">🤖</span>
-											<div>
-												<span>Proddy AI Assistant</span>
-												<Badge className="ml-2" variant="primarySoft">
-													New
-												</Badge>
-											</div>
-										</Link>
+										<div className="pl-4 grid grid-cols-2 gap-3">
+											{modules.map((module) => (
+												<Link
+													className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+													href={module.href}
+													key={module.name}
+													onClick={() => setIsMenuOpen(false)}
+												>
+													<module.icon className="size-4" />
+													<span>{module.name}</span>
+												</Link>
+											))}
+
+											{/* Special Assistant Feature for mobile */}
+											<Link
+												className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors col-span-2 mt-2 bg-primary/5 p-2 rounded-md"
+												href="/assistant"
+												onClick={() => setIsMenuOpen(false)}
+											>
+												<span className="text-lg">🤖</span>
+												<div>
+													<span>Proddy AI Assistant</span>
+													<Badge className="ml-2" variant="primarySoft">
+														New
+													</Badge>
+												</div>
+											</Link>
+										</div>
 									</div>
-								</div>
-								{/* <Link
+									{/* <Link
                   href="/why-proddy"
                   className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
@@ -420,67 +427,68 @@ export const Header = () => {
                   Why Proddy?
                 </Link> */}
 
-								<Link
-									className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
-									href="/pricing"
-									onClick={() => setIsMenuOpen(false)}
-								>
-									Pricing
-								</Link>
-
-								<Link
-									className="flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-primary transition-colors"
-									href={process.env.NEXT_PUBLIC_GITHUB_URL || "#"}
-									onClick={() => setIsMenuOpen(false)}
-									rel="noopener noreferrer"
-									target="_blank"
-								>
-									GitHub <ExternalLink className="size-3" />
-								</Link>
-							</div>
-							<div className="pt-4 border-t border-border space-y-3">
-								{currentUser ? (
-									<Button
-										asChild
-										className="w-full rounded-full flex items-center justify-center gap-2"
+									<Link
+										className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
+										href="/pricing"
+										onClick={() => setIsMenuOpen(false)}
 									>
-										<Link
-											href="/workspace"
-											onClick={() => setIsMenuOpen(false)}
-										>
-											<LayoutDashboard className="size-4" />
-											Dashboard
-										</Link>
-									</Button>
-								) : (
-									<>
+										Pricing
+									</Link>
+
+									<Link
+										className="flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-primary transition-colors"
+										href={process.env.NEXT_PUBLIC_GITHUB_URL || "#"}
+										onClick={() => setIsMenuOpen(false)}
+										rel="noopener noreferrer"
+										target="_blank"
+									>
+										GitHub <ExternalLink className="size-3" />
+									</Link>
+								</div>
+								<div className="pt-4 border-t border-border space-y-3">
+									{currentUser ? (
 										<Button
 											asChild
-											className="w-full rounded-full"
-											variant="outline"
+											className="w-full rounded-full flex items-center justify-center gap-2"
 										>
 											<Link
-												href="/auth/signin"
+												href="/workspace"
 												onClick={() => setIsMenuOpen(false)}
 											>
-												Sign In
+												<LayoutDashboard className="size-4" />
+												Dashboard
 											</Link>
 										</Button>
-										<Button asChild className="w-full rounded-full">
-											<Link
-												href="/auth/signup"
-												onClick={() => setIsMenuOpen(false)}
+									) : (
+										<>
+											<Button
+												asChild
+												className="w-full rounded-full"
+												variant="outline"
 											>
-												Get Started
-											</Link>
-										</Button>
-									</>
-								)}
+												<Link
+													href="/auth/signin"
+													onClick={() => setIsMenuOpen(false)}
+												>
+													Sign In
+												</Link>
+											</Button>
+											<Button asChild className="w-full rounded-full">
+												<Link
+													href="/auth/signup"
+													onClick={() => setIsMenuOpen(false)}
+												>
+													Get Started
+												</Link>
+											</Button>
+										</>
+									)}
+								</div>
 							</div>
-						</div>
-					</motion.div>
-				)}
-			</AnimatePresence>
-		</header>
+						</m.div>
+					)}
+				</AnimatePresence>
+			</header>
+		</LazyMotion>
 	);
 };

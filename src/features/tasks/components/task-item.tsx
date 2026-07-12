@@ -26,9 +26,9 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useDeleteTask } from "../api/use-delete-task";
-import { useGetTaskCategories } from "../api/use-get-task-categories";
 import { useToggleTaskCompletion } from "../api/use-toggle-task-completion";
 import { TaskEditForm } from "./task-edit-form";
+import type { TaskCategory } from "./task-toggle-view";
 
 interface TaskItemProps {
 	id: Id<"tasks">;
@@ -38,6 +38,7 @@ interface TaskItemProps {
 	dueDate?: number;
 	priority?: "low" | "medium" | "high";
 	categoryId?: Id<"categories">;
+	category?: TaskCategory;
 	workspaceId: Id<"workspaces">;
 }
 
@@ -72,6 +73,7 @@ export const TaskItem = ({
 	dueDate,
 	priority,
 	categoryId,
+	category,
 	workspaceId,
 }: TaskItemProps) => {
 	const [isEditing, setIsEditing] = useState(false);
@@ -79,9 +81,6 @@ export const TaskItem = ({
 	const deleteTask = useDeleteTask();
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-	const { data: categories } = useGetTaskCategories({ workspaceId });
-
-	const category = categories?.find((cat) => cat._id === categoryId);
 
 	const handleToggleCompletion = async () => {
 		try {

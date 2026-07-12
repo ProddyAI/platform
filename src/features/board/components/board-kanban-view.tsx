@@ -132,7 +132,10 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	focusedStatusId = null,
 }) => {
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
-	const issueIds = useMemo(() => issues.map((issue) => issue._id), [issues]);
+	const issueIds = useMemo(
+		() => issues.map((issue) => issue._id).sort(),
+		[issues]
+	);
 	const subIssueStatsMap = useQuery(
 		api.board.board.getBatchSubIssueStats,
 		issueIds.length > 0 ? { issueIds } : "skip"
@@ -380,8 +383,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 											issues={issuesByStatus[status._id] || []}
 											onClickIssue={onClickIssue}
 											onCreateIssue={onCreateIssue}
-											onDeleteStatus={() => onDeleteStatus(status)}
-											onEditStatus={() => onEditStatus(status)}
+											onDeleteStatus={onDeleteStatus}
+											onEditStatus={onEditStatus}
 											status={status}
 											subIssueStatsMap={subIssueStatsMap}
 										/>
@@ -397,7 +400,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 								assigneeData={memberDataMap}
 								isDragOverlay
 								issue={activeItem.item}
-								onClick={() => {
+								onClickIssue={() => {
 									// No-op: drag overlay is not interactive
 								}}
 								statusColor={activeIssueStatus?.color || "#b4b4b4"}

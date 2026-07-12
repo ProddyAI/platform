@@ -1,20 +1,46 @@
 "use client";
 
 import { Brain, FileText, Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { StreamAudioRoom } from "@/features/audio";
 import { LiveHeader, LiveSidebar } from "@/features/live";
 import {
-	BlockNoteNotesEditor,
 	ExportNoteDialog,
+	ShareNoteDialog,
 	useLiveNoteSession,
 } from "@/features/notes";
 import type { Note } from "@/features/notes/types";
 import { useNoteContent } from "@/hooks/use-note-content";
+
+const BlockNoteNotesEditor = dynamic(
+	() =>
+		import("@/features/notes/components/blocknote-notes-editor").then(
+			(m) => m.BlockNoteNotesEditor
+		),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex size-full items-center justify-center">
+				<div className="flex flex-col items-center gap-3 text-muted-foreground">
+					<Loader2 className="size-6 animate-spin text-primary" />
+					<span className="text-sm">Loading note…</span>
+				</div>
+			</div>
+		),
+	}
+);
+
+const StreamAudioRoom = dynamic(
+	() =>
+		import("@/features/audio/components/stream-audio-room").then(
+			(m) => m.StreamAudioRoom
+		),
+	{ ssr: false }
+);
 
 // Component that contains the notes content and live session logic
 // This needs to be inside the LiveblocksRoom to access RoomProvider
@@ -55,6 +81,8 @@ export const NotesContent = ({
 }: NotesContentProps) => {
 	// Local state for sidebar
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	// Share dialog visibility (public / password-protected link)
+	const [showShareDialog, setShowShareDialog] = useState(false);
 
 	// Live note session hook — inside RoomProvider context
 	const dummyNoteId = "kn7cvx952gp794j4vzvxxqqgk57k9yhh" as Id<"notes">;
@@ -150,6 +178,10 @@ export const NotesContent = ({
 		setShowExportDialog(true);
 	}, [setShowExportDialog]);
 
+	const memoizedOnShare = useCallback(() => {
+		setShowShareDialog(true);
+	}, []);
+
 	const memoizedOnTagsChange = useCallback(
 		(tags: string[]) => {
 			handleUpdate({ tags }).catch((error) => {
@@ -218,6 +250,7 @@ export const NotesContent = ({
 							lastSaved={activeNote?.updatedAt}
 							onExport={memoizedOnExport}
 							onSave={handleSave}
+							onShare={activeNote ? memoizedOnShare : undefined}
 							onTagsChange={memoizedOnTagsChange}
 							onTitleChange={handleNoteTitleChange}
 							showFullScreenToggle
@@ -302,6 +335,16 @@ export const NotesContent = ({
 					isOpen={showExportDialog}
 					note={activeNote}
 					onClose={() => setShowExportDialog(false)}
+				/>
+			)}
+
+			{/* Share Dialog — public / password-protected link */}
+			{activeNote && (
+				<ShareNoteDialog
+					isOpen={showShareDialog}
+					noteId={activeNote._id}
+					noteTitle={activeNote.title}
+					onClose={() => setShowShareDialog(false)}
 				/>
 			)}
 		</div>

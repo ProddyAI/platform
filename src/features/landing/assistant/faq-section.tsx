@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 
 export const FAQSection = () => {
@@ -12,7 +12,7 @@ export const FAQSection = () => {
 		<section className="py-20 bg-muted/50" ref={faqRef}>
 			<div className="container px-6 md:px-8 mx-auto max-w-7xl">
 				<div className="text-center mb-16">
-					<motion.h2
+					<m.h2
 						animate={
 							isFaqInView
 								? { opacity: 1, y: 0 }
@@ -23,8 +23,8 @@ export const FAQSection = () => {
 						transition={{ duration: 0.5 }}
 					>
 						Frequently Asked Questions
-					</motion.h2>
-					<motion.p
+					</m.h2>
+					<m.p
 						animate={
 							isFaqInView
 								? { opacity: 1, y: 0 }
@@ -35,11 +35,11 @@ export const FAQSection = () => {
 						transition={{ duration: 0.5, delay: shouldReduceMotion ? 0 : 0.1 }}
 					>
 						Common questions about Proddy AI and how it works
-					</motion.p>
+					</m.p>
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-					<motion.div
+					<m.div
 						animate={
 							isFaqInView
 								? { opacity: 1, y: 0 }
@@ -84,9 +84,9 @@ export const FAQSection = () => {
 								organizing information.
 							</p>
 						</div>
-					</motion.div>
+					</m.div>
 
-					<motion.div
+					<m.div
 						animate={
 							isFaqInView
 								? { opacity: 1, y: 0 }
@@ -130,7 +130,7 @@ export const FAQSection = () => {
 								plans — see the pricing page for details.
 							</p>
 						</div>
-					</motion.div>
+					</m.div>
 				</div>
 			</div>
 		</section>

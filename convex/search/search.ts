@@ -53,8 +53,33 @@ export const searchMessages = query({
 				q.eq("workspaceId", args.workspaceId)
 			)
 			.collect();
-
 		const channelMap = new Map(channels.map((c) => [c._id, c.name]));
+
+		// Direct-message conversations the current member can see.
+		const conversations = await ctx.db
+			.query("conversations")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+		const visibleConversationIds = new Set(
+			conversations
+				.filter(
+					(conv) =>
+						conv.memberOneId === member._id || conv.memberTwoId === member._id
+				)
+				.map((conv) => conv._id)
+		);
+
+		// Relevance-ranked candidates from the full-text index, then apply the
+		// same channel/DM visibility rules the scan used to.
+		const matches = await ctx.db
+			.query("messages")
+			.withSearchIndex("search_plain_text", (q) =>
+				q.search("plainText", searchTerm).eq("workspaceId", args.workspaceId)
+			)
+			.take(Math.max(limit * 4, 100));
+
 		const results: Array<{
 			_id: Id<"messages">;
 			channelId: Id<"channels"> | undefined;
@@ -63,55 +88,28 @@ export const searchMessages = query({
 			text: string;
 		}> = [];
 
-		for (const channel of channels) {
-			const messages = await ctx.db
-				.query("messages")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
-				.collect();
-			for (const msg of messages) {
-				const text = extractTextFromRichText(msg.body);
-				if (text.toLowerCase().includes(searchTerm)) {
-					results.push({
-						_id: msg._id,
-						channelId: msg.channelId,
-						channelName: channelMap.get(channel._id) ?? "",
-						_creationTime: msg._creationTime,
-						text,
-					});
-					if (results.length >= limit) return results;
-				}
+		for (const msg of matches) {
+			if (msg.channelId) {
+				results.push({
+					_id: msg._id,
+					channelId: msg.channelId,
+					channelName: channelMap.get(msg.channelId) ?? "",
+					_creationTime: msg._creationTime,
+					text: extractTextFromRichText(msg.body),
+				});
+			} else if (
+				msg.conversationId &&
+				visibleConversationIds.has(msg.conversationId)
+			) {
+				results.push({
+					_id: msg._id,
+					channelId: undefined,
+					channelName: "Direct message",
+					_creationTime: msg._creationTime,
+					text: extractTextFromRichText(msg.body),
+				});
 			}
-		}
-
-		const conversations = await ctx.db
-			.query("conversations")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
-			)
-			.collect();
-
-		for (const conv of conversations) {
-			if (conv.memberOneId !== member._id && conv.memberTwoId !== member._id)
-				continue;
-			const messages = await ctx.db
-				.query("messages")
-				.withIndex("by_conversation_id", (q) =>
-					q.eq("conversationId", conv._id)
-				)
-				.collect();
-			for (const msg of messages) {
-				const text = extractTextFromRichText(msg.body);
-				if (text.toLowerCase().includes(searchTerm)) {
-					results.push({
-						_id: msg._id,
-						channelId: undefined,
-						channelName: "Direct message",
-						_creationTime: msg._creationTime,
-						text,
-					});
-					if (results.length >= limit) return results;
-				}
-			}
+			if (results.length >= limit) break;
 		}
 		return results;
 	},
@@ -341,57 +339,51 @@ export const searchAll = query({
 			)
 			.collect();
 		const channelMap = new Map(channels.map((c) => [c._id, c.name]));
-		for (const channel of channels) {
-			const msgs = await ctx.db
-				.query("messages")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
-				.collect();
-			for (const msg of msgs) {
-				const text = extractTextFromRichText(msg.body);
-				if (text.toLowerCase().includes(searchTerm)) {
-					messages.push({
-						_id: msg._id,
-						channelId: msg.channelId,
-						channelName: channelMap.get(channel._id) ?? "",
-						_creationTime: msg._creationTime,
-						text,
-					});
-					if (messages.length >= limit) break;
-				}
+
+		const conversations = await ctx.db
+			.query("conversations")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+		const visibleConversationIds = new Set(
+			conversations
+				.filter(
+					(conv) =>
+						conv.memberOneId === member._id || conv.memberTwoId === member._id
+				)
+				.map((conv) => conv._id)
+		);
+
+		const messageMatches = await ctx.db
+			.query("messages")
+			.withSearchIndex("search_plain_text", (q) =>
+				q.search("plainText", searchTerm).eq("workspaceId", args.workspaceId)
+			)
+			.take(Math.max(limit * 4, 100));
+
+		for (const msg of messageMatches) {
+			if (msg.channelId) {
+				messages.push({
+					_id: msg._id,
+					channelId: msg.channelId,
+					channelName: channelMap.get(msg.channelId) ?? "",
+					_creationTime: msg._creationTime,
+					text: extractTextFromRichText(msg.body),
+				});
+			} else if (
+				msg.conversationId &&
+				visibleConversationIds.has(msg.conversationId)
+			) {
+				messages.push({
+					_id: msg._id,
+					channelId: undefined,
+					channelName: "Direct message",
+					_creationTime: msg._creationTime,
+					text: extractTextFromRichText(msg.body),
+				});
 			}
 			if (messages.length >= limit) break;
-		}
-		if (messages.length < limit) {
-			const conversations = await ctx.db
-				.query("conversations")
-				.withIndex("by_workspace_id", (q) =>
-					q.eq("workspaceId", args.workspaceId)
-				)
-				.collect();
-			for (const conv of conversations) {
-				if (conv.memberOneId !== member._id && conv.memberTwoId !== member._id)
-					continue;
-				const msgs = await ctx.db
-					.query("messages")
-					.withIndex("by_conversation_id", (q) =>
-						q.eq("conversationId", conv._id)
-					)
-					.collect();
-				for (const msg of msgs) {
-					const text = extractTextFromRichText(msg.body);
-					if (text.toLowerCase().includes(searchTerm)) {
-						messages.push({
-							_id: msg._id,
-							channelId: undefined,
-							channelName: "Direct message",
-							_creationTime: msg._creationTime,
-							text,
-						});
-						if (messages.length >= limit) break;
-					}
-				}
-				if (messages.length >= limit) break;
-			}
 		}
 
 		const notes: Array<{

@@ -1,4 +1,5 @@
-import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
+import type { EmojiClickData } from "emoji-picker-react";
+import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { type PropsWithChildren, useState } from "react";
 
@@ -8,6 +9,28 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+
+const EmojiPicker = dynamic(
+	() =>
+		import("emoji-picker-react").then((mod) => {
+			const { default: Picker, Theme } = mod;
+			return function ThemedEmojiPicker({
+				isDark,
+				onEmojiClick,
+			}: {
+				isDark: boolean;
+				onEmojiClick: (emojiData: EmojiClickData) => void;
+			}) {
+				return (
+					<Picker
+						onEmojiClick={onEmojiClick}
+						theme={isDark ? Theme.DARK : Theme.LIGHT}
+					/>
+				);
+			};
+		}),
+	{ ssr: false }
+);
 
 interface EmojiPopoverProps {
 	hint?: string;
@@ -35,10 +58,9 @@ export const EmojiPopover = ({
 			</Hint>
 
 			<PopoverContent className="w-full border-none p-0 shadow-none">
-				<EmojiPicker
-					onEmojiClick={onSelect}
-					theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
-				/>
+				{popoverOpen && (
+					<EmojiPicker isDark={theme === "dark"} onEmojiClick={onSelect} />
+				)}
 			</PopoverContent>
 		</Popover>
 	);

@@ -2,6 +2,7 @@
 
 import { useConvexAuth } from "convex/react";
 import { Loader } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
@@ -10,9 +11,6 @@ import { useCallback, useEffect, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { NavigationListener } from "@/components/navigation-listener";
 import { MessageSelectionProvider } from "@/contexts/message-selection-context";
-import { SelectionModal } from "@/features/chats/components/selection-modal";
-import { Profile } from "@/features/members/components/profile";
-import { Thread } from "@/features/messages/components/thread";
 import { WorkspacePresenceTracker } from "@/features/presence/components/workspace-presence-tracker";
 import { useUpdateLastActiveWorkspace } from "@/features/workspaces/api/use-update-last-active-workspace";
 import { useSidebarCollapsed } from "@/features/workspaces/api/use-workspace-preferences";
@@ -27,6 +25,38 @@ import { MobileFooter } from "./mobile-footer";
 import { WorkspaceSidebar } from "./sidebar";
 import { WorkspaceToolbar } from "./toolbar";
 import { WorkspaceTitleProvider } from "./workspace-title-context";
+
+const Thread = dynamic(
+	() => import("@/features/messages/components/thread").then((m) => m.Thread),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex h-full items-center justify-center">
+				<Loader className="size-5 animate-spin text-muted-foreground" />
+			</div>
+		),
+	}
+);
+
+const Profile = dynamic(
+	() => import("@/features/members/components/profile").then((m) => m.Profile),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex h-full items-center justify-center">
+				<Loader className="size-5 animate-spin text-muted-foreground" />
+			</div>
+		),
+	}
+);
+
+const SelectionModal = dynamic(
+	() =>
+		import("@/features/chats/components/selection-modal").then(
+			(m) => m.SelectionModal
+		),
+	{ ssr: false }
+);
 
 const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	const router = useRouter();
@@ -139,7 +169,6 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 
 									{/* Drag handle to resize the expanded sidebar. */}
 									{!isCollapsed && (
-										// biome-ignore lint/a11y/noStaticElementInteractions: a keyboard-operable collapse toggle already exists in the sidebar footer; this pointer-only affordance augments it for mouse users.
 										<div
 											aria-hidden="true"
 											className={cn(

@@ -1,8 +1,4 @@
-import {
-	type Call,
-	StreamVideoClient,
-	type User,
-} from "@stream-io/video-react-sdk";
+import type { Call, StreamVideoClient, User } from "@stream-io/video-react-sdk";
 import { useQuery } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
@@ -141,6 +137,9 @@ export const useAudioRoom = ({
 				const { token } = tokenResponse;
 
 				// Initialize Stream client
+				const { StreamVideoClient } = await import(
+					"@stream-io/video-react-sdk"
+				);
 				const videoClient = new StreamVideoClient({
 					apiKey,
 					user,

@@ -1,8 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
-import { jsPDF } from "jspdf";
+import type { Paragraph } from "docx";
 import { Check, Copy, File, FileOutput, Sparkles } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -50,8 +49,9 @@ export const DailyRecapModal = ({
 		}, 2000);
 	};
 
-	const handleExportPDF = () => {
+	const handleExportPDF = async () => {
 		try {
+			const { jsPDF } = await import("jspdf");
 			// Create a new PDF document
 			const doc = new jsPDF();
 
@@ -94,6 +94,8 @@ export const DailyRecapModal = ({
 
 	const handleExportWord = async () => {
 		try {
+			const { Document, HeadingLevel, Packer, Paragraph, TextRun } =
+				await import("docx");
 			// Process markdown content to create document sections
 			const lines = recap.split("\n");
 			const paragraphs: Paragraph[] = [];

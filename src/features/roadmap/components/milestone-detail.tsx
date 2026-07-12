@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { ArrowLeft, CheckCircle2, Circle, Clock, Flag, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -50,8 +51,11 @@ export const MilestoneDetail = ({
 		milestoneId: milestone._id,
 	});
 	const { data: stats } = useGetMilestoneStats({ milestoneId: milestone._id });
+	const [pickerOpen, setPickerOpen] = useState(false);
 	const { data: linkable, isLoading: linkableLoading } =
-		useGetLinkableMilestoneIssues({ milestoneId: milestone._id });
+		useGetLinkableMilestoneIssues({
+			milestoneId: pickerOpen ? milestone._id : null,
+		});
 	const { mutate: linkIssues, isPending: linking } = useLinkMilestoneIssues();
 	const { mutate: unlinkIssue } = useUnlinkMilestoneIssue();
 
@@ -168,6 +172,8 @@ export const MilestoneDetail = ({
 					issues={linkable}
 					label="Link issues"
 					onConfirm={handleLink}
+					onOpenChange={setPickerOpen}
+					open={pickerOpen}
 				/>
 			</div>
 

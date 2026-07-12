@@ -32,6 +32,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardWidgets } from "@/features/workspaces/api/use-workspace-preferences";
 import { cn } from "@/lib/utils";
 import type {
@@ -231,7 +232,9 @@ export const DashboardWidgets = ({
 	const [selectedWidgets, setSelectedWidgets] = useState<string[]>([]);
 
 	// Use the Convex-backed dashboard widgets state
-	const [widgets, setWidgets] = useDashboardWidgets({ workspaceId });
+	const [dashboardWidgets, setWidgets] = useDashboardWidgets({ workspaceId });
+	const isWidgetsLoading = dashboardWidgets === null;
+	const widgets = dashboardWidgets ?? [];
 
 	// Set up sensors for drag and drop - only enabled in edit mode
 	const sensors = useSensors(
@@ -470,49 +473,64 @@ export const DashboardWidgets = ({
 					</div>
 				)}
 
-				<DndContext
-					collisionDetection={closestCenter}
-					onDragEnd={handleDragEnd}
-					onDragStart={handleDragStart}
-					sensors={sensors}
-				>
-					<SortableContext
-						items={widgets.map((w) => w.id)}
-						strategy={rectSortingStrategy}
-					>
-						{/* Grid layout - 12 columns on desktop for more size flexibility */}
-						<div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-12">
-							{widgets.map((widget) => (
-								<SortableWidget
-									id={widget.id}
-									isEditMode={isEditMode}
-									key={widget.id}
-									onDelete={() => handleDeleteWidget(widget.id)}
-									onResize={(newSize) => updateWidgetSize(widget.id, newSize)}
-									size={widget.size}
-								>
-									{renderWidget(widget.id)}
-								</SortableWidget>
-							))}
-						</div>
-					</SortableContext>
+				{isWidgetsLoading ? (
+					<div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-12">
+						{["a", "b", "c", "d"].map((key) => (
+							<Skeleton
+								className="h-[300px] rounded-2xl md:col-span-6"
+								key={key}
+							/>
+						))}
+					</div>
+				) : (
+					<>
+						<DndContext
+							collisionDetection={closestCenter}
+							onDragEnd={handleDragEnd}
+							onDragStart={handleDragStart}
+							sensors={sensors}
+						>
+							<SortableContext
+								items={widgets.map((w) => w.id)}
+								strategy={rectSortingStrategy}
+							>
+								{/* Grid layout - 12 columns on desktop for more size flexibility */}
+								<div className="grid grid-cols-1 gap-4 pb-4 md:grid-cols-12">
+									{widgets.map((widget) => (
+										<SortableWidget
+											id={widget.id}
+											isEditMode={isEditMode}
+											key={widget.id}
+											onDelete={() => handleDeleteWidget(widget.id)}
+											onResize={(newSize) =>
+												updateWidgetSize(widget.id, newSize)
+											}
+											size={widget.size}
+										>
+											{renderWidget(widget.id)}
+										</SortableWidget>
+									))}
+								</div>
+							</SortableContext>
 
-					{/* Drag overlay for visual feedback */}
-					<DragOverlay>
-						{activeId && isEditMode ? (
-							<div className="w-full overflow-hidden rounded-2xl opacity-90 shadow-lg ring-1 ring-border">
-								{renderWidget(activeId as WidgetType)}
-							</div>
-						) : null}
-					</DragOverlay>
-				</DndContext>
+							{/* Drag overlay for visual feedback */}
+							<DragOverlay>
+								{activeId && isEditMode ? (
+									<div className="w-full overflow-hidden rounded-2xl opacity-90 shadow-lg ring-1 ring-border">
+										{renderWidget(activeId as WidgetType)}
+									</div>
+								) : null}
+							</DragOverlay>
+						</DndContext>
 
-				{widgets.length === 0 && (
-					<EmptyState
-						description='Click "Add Widget" to get started'
-						icon={Plus}
-						title="No widgets added yet"
-					/>
+						{widgets.length === 0 && (
+							<EmptyState
+								description='Click "Add Widget" to get started'
+								icon={Plus}
+								title="No widgets added yet"
+							/>
+						)}
+					</>
 				)}
 			</div>
 

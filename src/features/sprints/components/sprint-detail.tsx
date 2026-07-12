@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { ArrowLeft, CheckCircle2, Circle, Clock, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -48,8 +49,11 @@ export const SprintDetail = ({ sprint, onBack }: SprintDetailProps) => {
 		sprintId: sprint._id,
 	});
 	const { data: stats } = useGetSprintStats({ sprintId: sprint._id });
+	const [pickerOpen, setPickerOpen] = useState(false);
 	const { data: addable, isLoading: addableLoading } =
-		useGetAddableSprintIssues({ sprintId: sprint._id });
+		useGetAddableSprintIssues({
+			sprintId: pickerOpen ? sprint._id : null,
+		});
 	const { mutate: addIssues, isPending: adding } = useAddSprintIssues();
 	const { mutate: removeIssue } = useRemoveSprintIssue();
 
@@ -149,6 +153,8 @@ export const SprintDetail = ({ sprint, onBack }: SprintDetailProps) => {
 					isPending={adding}
 					issues={addable}
 					onConfirm={handleAdd}
+					onOpenChange={setPickerOpen}
+					open={pickerOpen}
 				/>
 			</div>
 

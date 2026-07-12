@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import React, { useRef } from "react";
 import {
@@ -142,7 +142,7 @@ export const ReplacementSection = () => {
 			ref={sectionRef}
 		>
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
-				<motion.h2
+				<m.h2
 					animate={
 						isInView
 							? { opacity: 1, y: 0 }
@@ -154,9 +154,9 @@ export const ReplacementSection = () => {
 				>
 					Replace Multiple Tools with{" "}
 					<span className="text-primary">Proddy</span>
-				</motion.h2>
+				</m.h2>
 
-				<motion.div
+				<m.div
 					animate={isInView ? { opacity: 1 } : { opacity: 0 }}
 					className="relative h-[400px] md:h-[500px] w-full"
 					initial={{ opacity: 0 }}
@@ -166,7 +166,7 @@ export const ReplacementSection = () => {
 					{/* Left: Tools - Increased space-y to space-y-8 for more vertical separation */}
 					<div className="z-30 absolute left-0 top-1/2 transform -translate-y-1/2 w-1/3 flex flex-col items-center space-y-8">
 						{tools.map((tool, index) => (
-							<motion.div
+							<m.div
 								animate={
 									isInView
 										? {
@@ -189,13 +189,13 @@ export const ReplacementSection = () => {
 								}}
 								whileHover={shouldReduceMotion ? undefined : { scale: 1.02 }}
 							>
-								<motion.div>
+								<m.div>
 									<tool.icon className="mr-2 size-6" color={tool.color} />
-								</motion.div>
+								</m.div>
 								<span className="font-medium text-card-foreground">
 									{tool.name}
 								</span>
-							</motion.div>
+							</m.div>
 						))}
 					</div>
 
@@ -219,7 +219,7 @@ export const ReplacementSection = () => {
 						})}
 
 					{/* Right: Proddy */}
-					<motion.div
+					<m.div
 						animate={
 							isInView
 								? { x: 0, opacity: 1 }
@@ -246,8 +246,8 @@ export const ReplacementSection = () => {
 								</div>
 							</div>
 						</div>
-					</motion.div>
-				</motion.div>
+					</m.div>
+				</m.div>
 			</div>
 		</section>
 	);

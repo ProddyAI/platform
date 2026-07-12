@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
@@ -16,7 +16,7 @@ export const CTASection = () => {
 	return (
 		<section className="py-20 bg-background" ref={ctaRef}>
 			<div className="container px-6 md:px-8 mx-auto max-w-4xl">
-				<motion.div
+				<m.div
 					animate={
 						isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: hiddenY }
 					}
@@ -24,7 +24,7 @@ export const CTASection = () => {
 					initial={{ opacity: 0, y: hiddenY }}
 					transition={{ duration: 0.35 }}
 				>
-					<motion.h2
+					<m.h2
 						animate={
 							isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: hiddenY }
 						}
@@ -34,9 +34,9 @@ export const CTASection = () => {
 					>
 						Start Building with{" "}
 						<span className="text-primary">Proddy Today</span>
-					</motion.h2>
+					</m.h2>
 
-					<motion.p
+					<m.p
 						animate={
 							isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: hiddenY }
 						}
@@ -45,9 +45,9 @@ export const CTASection = () => {
 						transition={{ duration: 0.35, delay: 0.1 }}
 					>
 						Create a workspace. Invite your team. Free to get started.
-					</motion.p>
+					</m.p>
 
-					<motion.div
+					<m.div
 						animate={
 							isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: hiddenY }
 						}
@@ -72,9 +72,9 @@ export const CTASection = () => {
 						>
 							<Link href="/pricing">See pricing</Link>
 						</Button>
-					</motion.div>
+					</m.div>
 
-					<motion.p
+					<m.p
 						animate={
 							isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: hiddenY }
 						}
@@ -83,8 +83,8 @@ export const CTASection = () => {
 						transition={{ duration: 0.35, delay: 0.2 }}
 					>
 						No credit card required • Free plan available • Full platform access
-					</motion.p>
-				</motion.div>
+					</m.p>
+				</m.div>
 			</div>
 		</section>
 	);

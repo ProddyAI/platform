@@ -1,9 +1,8 @@
 import { v } from "convex/values";
-import { api, internal } from "../_generated/api";
+import { api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import {
 	type ActionCtx,
-	internalAction,
 	internalQuery,
 	type QueryCtx,
 	query,
@@ -39,33 +38,37 @@ export const getUserWeeklyDigest = query({
 			.withIndex("by_user_id", (q) => q.eq("userId", args.userId))
 			.collect();
 
-		const workspaceDigests = [];
-		let totalMessages = 0;
-		let totalTasks = 0;
+		const perWorkspace = await Promise.all(
+			memberships.map(async (membership) => {
+				const [workspace, workspaceStats] = await Promise.all([
+					ctx.db.get(membership.workspaceId),
+					getWorkspaceWeeklyStats(ctx, {
+						workspaceId: membership.workspaceId,
+						startDate: args.startDate,
+						endDate: args.endDate,
+					}),
+				]);
 
-		for (const membership of memberships) {
-			const workspace = await ctx.db.get(membership.workspaceId);
-			if (!workspace) continue;
+				if (!workspace || !workspaceStats) return null;
 
-			// Get workspace stats for the week
-			const workspaceStats = await getWorkspaceWeeklyStats(ctx, {
-				workspaceId: membership.workspaceId,
-				startDate: args.startDate,
-				endDate: args.endDate,
-			});
-
-			if (workspaceStats) {
-				workspaceDigests.push({
+				return {
 					workspaceName: workspace.name,
 					workspaceUrl: `${process.env.SITE_URL}/workspace/${workspace._id}`,
 					stats: workspaceStats.stats,
 					topChannels: workspaceStats.topChannels,
 					recentTasks: workspaceStats.recentTasks,
-				});
+				};
+			})
+		);
 
-				totalMessages += workspaceStats.stats.totalMessages;
-				totalTasks += workspaceStats.stats.totalTasks;
-			}
+		const workspaceDigests = perWorkspace.filter(
+			(digest): digest is NonNullable<typeof digest> => digest !== null
+		);
+		let totalMessages = 0;
+		let totalTasks = 0;
+		for (const digest of workspaceDigests) {
+			totalMessages += digest.stats.totalMessages;
+			totalTasks += digest.stats.totalTasks;
 		}
 
 		return {
@@ -91,12 +94,11 @@ async function getWorkspaceWeeklyStats(
 	// Get messages count
 	const messages = await ctx.db
 		.query("messages")
-		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
-		.filter((q) =>
-			q.and(
-				q.gte(q.field("_creationTime"), args.startDate),
-				q.lte(q.field("_creationTime"), args.endDate)
-			)
+		.withIndex("by_workspace_id", (q) =>
+			q
+				.eq("workspaceId", args.workspaceId)
+				.gte("_creationTime", args.startDate)
+				.lte("_creationTime", args.endDate)
 		)
 		.collect();
 
@@ -128,17 +130,22 @@ async function getWorkspaceWeeklyStats(
 		}
 	}
 
+	const channelIds = Object.keys(channelMessageCounts).filter((channelId) =>
+		Object.hasOwn(channelMessageCounts, channelId)
+	);
+	const channels = await Promise.all(
+		channelIds.map((channelId) => ctx.db.get(channelId as Id<"channels">))
+	);
+
 	const topChannels = [];
-	for (const channelId in channelMessageCounts) {
-		if (Object.hasOwn(channelMessageCounts, channelId)) {
-			const count = channelMessageCounts[channelId];
-			const channel = await ctx.db.get(channelId as Id<"channels">);
-			if (channel && "name" in channel && count) {
-				topChannels.push({
-					name: channel.name,
-					messageCount: count,
-				});
-			}
+	for (let i = 0; i < channelIds.length; i++) {
+		const count = channelMessageCounts[channelIds[i]];
+		const channel = channels[i];
+		if (channel && "name" in channel && count) {
+			topChannels.push({
+				name: channel.name,
+				messageCount: count,
+			});
 		}
 	}
 
@@ -254,37 +261,6 @@ export const escapeHtml = (unsafe: string): string => {
 		.replace(/'/g, "&#039;");
 };
 
-const planLabel = (plan: string | null | undefined): string => {
-	if (plan === "pro") return "Pro";
-	if (plan === "enterprise") return "Enterprise";
-	return "Free";
-};
-
-const formatCents = (
-	amount: number | null | undefined,
-	currency: string | null | undefined
-) => {
-	if (typeof amount !== "number") return null;
-	try {
-		return new Intl.NumberFormat("en-US", {
-			style: "currency",
-			currency: currency || "USD",
-		}).format(amount / 100);
-	} catch {
-		return `${amount} ${currency ?? ""}`.trim();
-	}
-};
-
-const billingRow = (
-	label: string,
-	amount: number | null | undefined,
-	currency: string | null | undefined
-): [string, string] | null => {
-	if (typeof amount !== "number" || amount < 0) return null;
-	const formatted = formatCents(amount, currency);
-	return formatted ? [label, formatted] : null;
-};
-
 export const getWorkspaceBillingRecipients = internalQuery({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -328,162 +304,6 @@ export const getWorkspaceBillingRecipients = internalQuery({
 		return {
 			workspaceName: workspace.name,
 			recipients,
-		};
-	},
-});
-
-export const sendWorkspacePlanChangeEmail = internalAction({
-	args: {
-		workspaceId: v.id("workspaces"),
-		previousPlan: v.optional(v.union(v.string(), v.null())),
-		newPlan: v.string(),
-		changeType: v.union(v.literal("upgrade"), v.literal("downgrade")),
-		invoiceUrl: v.optional(v.string()),
-		amountDue: v.optional(v.number()),
-		currency: v.optional(v.string()),
-		taxAmount: v.optional(v.number()),
-		usedAmount: v.optional(v.number()),
-		refundAmount: v.optional(v.number()),
-		refundCurrency: v.optional(v.string()),
-	},
-	handler: async (ctx, args): Promise<EmailNotificationResult> => {
-		const apiKey = process.env.RESEND_API_KEY;
-		const fromEmail = process.env.RESEND_FROM_EMAIL;
-		if (!apiKey || !fromEmail) {
-			console.error("Resend email not configured");
-			return { success: false, error: "Email service not configured" };
-		}
-
-		const { workspaceName, recipients } = await ctx.runQuery(
-			internal.notify.email.getWorkspaceBillingRecipients,
-			{ workspaceId: args.workspaceId }
-		);
-
-		if (recipients.length === 0) {
-			return { success: true, skipped: true };
-		}
-
-		const appUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-		const billingUrl = appUrl
-			? `${appUrl}/workspace/${args.workspaceId}/manage#billing`
-			: undefined;
-		const previousPlanLabel = planLabel(args.previousPlan);
-		const newPlanLabel = planLabel(args.newPlan);
-		const actionText =
-			args.changeType === "upgrade" ? "upgraded" : "downgraded";
-		const subject = `${workspaceName} plan ${actionText} to ${newPlanLabel}`;
-		const latestInvoiceUrl = args.invoiceUrl;
-		const currency = args.currency ?? "USD";
-		const invoiceTotal = args.amountDue ?? null;
-		const taxAmount = args.taxAmount ?? null;
-		const refundAmount = args.refundAmount ?? null;
-		const refundCurrency = args.refundCurrency ?? currency;
-		const usedAmount = args.usedAmount ?? null;
-		const planAmount =
-			typeof invoiceTotal === "number" && typeof taxAmount === "number"
-				? Math.max(0, invoiceTotal - taxAmount)
-				: null;
-		const netPaid =
-			typeof invoiceTotal === "number" && typeof refundAmount === "number"
-				? Math.max(0, invoiceTotal - refundAmount)
-				: null;
-		const summaryRows = [
-			billingRow("Plan amount before tax", planAmount, currency),
-			billingRow("Tax", taxAmount, currency),
-			billingRow("Paid amount", invoiceTotal, currency),
-			billingRow("Deducted amount", usedAmount, currency),
-			billingRow("Refunded amount", refundAmount, refundCurrency),
-			billingRow("Net paid after refund", netPaid, currency),
-		].filter((row): row is [string, string] => Boolean(row?.[1]));
-
-		const results = [];
-		for (const recipient of recipients) {
-			const summaryHtml = summaryRows.length
-				? `<div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin: 18px 0;">
-						<p style="font-weight: 600; margin: 0 0 10px;">Fair billing details</p>
-						${summaryRows
-							.map(
-								([label, value]) =>
-									`<p style="display: flex; justify-content: space-between; gap: 16px; margin: 6px 0;"><span style="color: #6b7280;">${label}</span><strong>${value}</strong></p>`
-							)
-							.join("")}
-						${
-							args.changeType === "downgrade"
-								? '<p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">These amounts come from the Dodo payment and refund records for this plan change.</p>'
-								: '<p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">These amounts come from the Dodo invoice for this plan change.</p>'
-						}
-					</div>`
-				: "";
-			const html = `
-				<!DOCTYPE html>
-				<html>
-					<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937;">
-						<div style="max-width: 600px; margin: 0 auto; padding: 24px;">
-							<h1 style="font-size: 24px; margin: 0 0 16px;">Workspace plan ${actionText}</h1>
-							<p>Hi ${escapeHtml(recipient.name)},</p>
-							<p>The <strong>${escapeHtml(workspaceName)}</strong> workspace plan was ${actionText} from <strong>${previousPlanLabel}</strong> to <strong>${newPlanLabel}</strong>.</p>
-							${summaryHtml}
-							${
-								billingUrl
-									? `<p><a href="${billingUrl}" style="display: inline-block; background: #111827; color: white; text-decoration: none; padding: 10px 16px; border-radius: 6px;">View billing</a></p>`
-									: ""
-							}
-							${
-								latestInvoiceUrl
-									? `<p><a href="${latestInvoiceUrl}" style="display: inline-block; border: 1px solid #d1d5db; color: #111827; text-decoration: none; padding: 9px 15px; border-radius: 6px;">View invoice</a></p>`
-									: ""
-							}
-							<p style="font-size: 12px; color: #6b7280; margin-top: 24px;">You are receiving this because you are an owner or admin of this workspace.</p>
-						</div>
-					</body>
-				</html>
-			`;
-
-			try {
-				const controller = new AbortController();
-				const timeoutId = setTimeout(() => controller.abort(), 10_000);
-				let response: Response;
-				try {
-					response = await fetch("https://api.resend.com/emails", {
-						method: "POST",
-						headers: {
-							Authorization: `Bearer ${apiKey}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							from: fromEmail,
-							to: recipient.email,
-							subject,
-							html,
-						}),
-						signal: controller.signal,
-					});
-				} finally {
-					clearTimeout(timeoutId);
-				}
-
-				if (!response.ok) {
-					const errorText = await response.text();
-					console.error("Plan change email API error:", {
-						status: response.status,
-						body: errorText,
-					});
-					results.push({ email: recipient.email, success: false });
-					continue;
-				}
-
-				results.push({ email: recipient.email, success: true });
-			} catch (error) {
-				console.error("Error sending plan change email:", error);
-				results.push({ email: recipient.email, success: false });
-			}
-		}
-
-		return {
-			success: results.some((result) => result.success),
-			...(results.every((result) => !result.success)
-				? { error: "Failed to send all plan change emails" }
-				: {}),
 		};
 	},
 });

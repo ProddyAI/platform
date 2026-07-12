@@ -50,6 +50,58 @@ export const useSidebarCollapsed = ({
 	return [isCollapsed, setIsCollapsed] as const;
 };
 
+const DEFAULT_DASHBOARD_WIDGETS: DashboardWidget[] = [
+	{
+		id: "calendar",
+		title: "Upcoming Events",
+		description: "Shows events for the next 7 days",
+		visible: true,
+		size: "large",
+	},
+	{
+		id: "mentions",
+		title: "Mentions",
+		description: "Shows messages where you were mentioned",
+		visible: true,
+		size: "small",
+	},
+	{
+		id: "threads",
+		title: "Thread Replies",
+		description: "Shows replies to your message threads",
+		visible: true,
+		size: "small",
+	},
+	{
+		id: "tasks",
+		title: "Your Tasks",
+		description: "Shows your assigned tasks",
+		visible: true,
+		size: "small",
+	},
+	{
+		id: "cards",
+		title: "Board Cards",
+		description: "Shows your assigned board cards",
+		visible: true,
+		size: "small",
+	},
+	{
+		id: "notes",
+		title: "Recent Notes",
+		description: "Shows recently updated notes",
+		visible: true,
+		size: "medium",
+	},
+	{
+		id: "canvas",
+		title: "Recent Canvas",
+		description: "Shows recently updated canvas items",
+		visible: true,
+		size: "medium",
+	},
+];
+
 export const useDashboardWidgets = ({
 	workspaceId,
 }: {
@@ -57,59 +109,7 @@ export const useDashboardWidgets = ({
 }) => {
 	type WidgetConfig = DashboardWidget;
 
-	const defaultWidgets: WidgetConfig[] = [
-		{
-			id: "calendar",
-			title: "Upcoming Events",
-			description: "Shows events for the next 7 days",
-			visible: true,
-			size: "large",
-		},
-		{
-			id: "mentions",
-			title: "Mentions",
-			description: "Shows messages where you were mentioned",
-			visible: true,
-			size: "small",
-		},
-		{
-			id: "threads",
-			title: "Thread Replies",
-			description: "Shows replies to your message threads",
-			visible: true,
-			size: "small",
-		},
-		{
-			id: "tasks",
-			title: "Your Tasks",
-			description: "Shows your assigned tasks",
-			visible: true,
-			size: "small",
-		},
-		{
-			id: "cards",
-			title: "Board Cards",
-			description: "Shows your assigned board cards",
-			visible: true,
-			size: "small",
-		},
-		{
-			id: "notes",
-			title: "Recent Notes",
-			description: "Shows recently updated notes",
-			visible: true,
-			size: "medium",
-		},
-		{
-			id: "canvas",
-			title: "Recent Canvas",
-			description: "Shows recently updated canvas items",
-			visible: true,
-			size: "medium",
-		},
-	];
-
-	const [widgets, setWidgetsLocal] = useState<WidgetConfig[]>(defaultWidgets);
+	const [widgets, setWidgetsLocal] = useState<WidgetConfig[] | null>(null);
 
 	const { data: preferences, isLoading } = useWorkspacePreferences({
 		workspaceId,
@@ -120,8 +120,10 @@ export const useDashboardWidgets = ({
 	);
 
 	useEffect(() => {
-		if (!isLoading && preferences && preferences.dashboardWidgets) {
-			setWidgetsLocal(preferences.dashboardWidgets);
+		if (!isLoading) {
+			setWidgetsLocal(
+				preferences?.dashboardWidgets ?? DEFAULT_DASHBOARD_WIDGETS
+			);
 		}
 	}, [preferences, isLoading]);
 
@@ -132,6 +134,7 @@ export const useDashboardWidgets = ({
 	) => {
 		if (typeof newWidgetsOrUpdater === "function") {
 			setWidgetsLocal((prev) => {
+				if (!prev) return prev;
 				const newWidgets = newWidgetsOrUpdater(prev);
 				updateDashboardWidgets({ workspaceId, dashboardWidgets: newWidgets });
 				return newWidgets;

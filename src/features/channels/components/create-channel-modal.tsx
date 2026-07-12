@@ -38,7 +38,7 @@ export const CreateChannelModal = () => {
 
 	const { mutate, isPending } = useCreateChannel();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
-	const { maxReached } = useWorkspaceLimit("channel");
+	const { maxReached } = useWorkspaceLimit("channel", open);
 
 	// Cleanup blob URL on unmount to prevent memory leaks
 	useEffect(() => {

@@ -22,9 +22,7 @@ export default function UsagePage() {
 	return (
 		<PageShell>
 			<UsageDashboard
-				onUpgradeClick={() =>
-					router.push(`/workspace/${workspaceId}/manage#billing`)
-				}
+				onUpgradeClick={() => router.push(`/workspace/${workspaceId}/billing`)}
 				workspaceId={workspaceId}
 			/>
 		</PageShell>
