@@ -4,7 +4,6 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
-import { ClarityTracking } from "@/components/3pc/clarity-tracking";
 import { Formbricks } from "@/components/3pc/formbricks";
 import { GoogleAnalyticsTracking } from "@/components/3pc/google-analytics-tracking";
 import { AuthenticatedOneSignalTracking } from "@/components/3pc/notifications";
@@ -89,7 +88,6 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 									<AuthenticatedOneSignalTracking />
 									<TidioChat />
 									<Formbricks />
-									<ClarityTracking />
 									<ApolloTracking />
 									<GoogleAnalyticsTracking />
 									{children}
