@@ -33,12 +33,11 @@ import {
 	SiGooglecalendar,
 	SiMiro,
 	SiNotion,
-	SiSlack,
 	SiTodoist,
 	SiTrello,
 	SiZoom,
 } from "react-icons/si";
-
+import { FaSlack } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 
 // Divider position (0 = all "before", 100 = all Proddy). The panel opens mostly
