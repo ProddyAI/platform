@@ -53,7 +53,7 @@ const MAX = 96;
 const legacyTools = [
 	{
 		job: "Team messaging",
-		Icon: SiSlack,
+		Icon: FaSlack,
 		color: "#4A154B",
 		pos: "left-[4%] top-[9%] -rotate-3",
 	},

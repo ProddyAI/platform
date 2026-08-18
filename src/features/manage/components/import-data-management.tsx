@@ -18,9 +18,9 @@ import {
 	SiLinear,
 	SiMiro,
 	SiNotion,
-	SiSlack,
 	SiTodoist,
 } from "react-icons/si";
+import { FaSlack } from "react-icons/fa";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -87,7 +87,7 @@ const PLATFORMS = [
 		name: "Slack",
 		description:
 			"Import channels, messages, and user data from Slack workspaces",
-		icon: SiSlack,
+		icon: FaSlack,
 		available: true,
 	},
 	{
