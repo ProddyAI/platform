@@ -14,7 +14,8 @@ import {
 	Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { SiGithub, SiSlack } from "react-icons/si";
+import { FaSlack } from "react-icons/fa";
+import { SiGithub } from "react-icons/si";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -102,7 +103,7 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 		capability: "Send · Read · Search",
 	},
 	slack: {
-		icon: SiSlack,
+		icon: FaSlack,
 		name: "Slack",
 		description: "Send messages, manage channels & team notifications",
 		capability: "Messages · Channels · Users",

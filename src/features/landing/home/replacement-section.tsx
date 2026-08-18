@@ -3,11 +3,11 @@
 import { m, useInView, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import React, { useRef } from "react";
+import { FaSlack } from "react-icons/fa";
 import {
 	SiConfluence,
 	SiMiro,
 	SiNotion,
-	SiSlack,
 	SiTodoist,
 } from "react-icons/si";
 
@@ -15,7 +15,7 @@ import {
 const tools = [
 	{ name: "Confluence", icon: SiConfluence, color: "#0052CC" },
 	{ name: "Notion", icon: SiNotion, color: "#000000" },
-	{ name: "Slack", icon: SiSlack, color: "#4A154B" },
+	{ name: "Slack", icon: FaSlack, color: "#4A154B" },
 	{ name: "Todoist", icon: SiTodoist, color: "#E44332" },
 	{ name: "Miro Board", icon: SiMiro, color: "#FFD02F" },
 ];
